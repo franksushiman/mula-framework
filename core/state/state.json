@@ -2,5 +2,9 @@
   "booted": false,
   "nodes": {},
   "active_requests": {},
+  "federation": {
+    "enabled": true,
+    "mode": "implicit"
+  },
   "logs": []
 }
