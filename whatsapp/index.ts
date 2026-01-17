@@ -5,8 +5,8 @@ import makeWASocket, {
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import qrcode from "qrcode-terminal";
-import fs from "fs";
 import path from "path";
+import { coreStatus } from "../core";
 
 const AUTH_DIR = path.resolve("auth");
 
@@ -51,7 +51,7 @@ async function startWhatsApp() {
 
     if (text === "/mula status") {
       await sock.sendMessage(from, {
-        text: "MULA V3 ativo. Nó soberano em operação."
+        text: coreStatus()
       });
     }
   });

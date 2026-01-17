@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { assertEconomicContract } from "./guards/economic-contract.guard";
+import { getCoreStatus } from "./status";
 
 const statePath = path.resolve("core/state/state.json");
 
@@ -16,6 +17,10 @@ export function initCore() {
 
   fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
   console.log("✅ MULA CORE iniciado com contrato econômico válido");
+}
+
+export function coreStatus() {
+  return getCoreStatus();
 }
 
 initCore();
