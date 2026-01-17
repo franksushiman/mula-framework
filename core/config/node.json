@@ -1,0 +1,16 @@
+{
+  "node_name": "MULA_NODE",
+  "node_type": "sovereign",
+  "interface": {
+    "site": false,
+    "whatsapp": true
+  },
+  "federation": {
+    "enabled": true,
+    "mandatory_sharing": true
+  },
+  "monetization": {
+    "enabled": false,
+    "scope": "local_only"
+  }
+}
