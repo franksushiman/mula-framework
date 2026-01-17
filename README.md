@@ -1,0 +1,1 @@
+MULA é um framework comunitário para coordenação de transporte, entregas e serviços via chat, sem intermediação comercial. Opera por nós soberanos, com compartilhamento obrigatório de frota, cooperação federada e regras públicas, auditáveis e inegociáveis.
