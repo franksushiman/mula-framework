@@ -1,41 +1,38 @@
 import makeWASocket, {
   useMultiFileAuthState,
-  fetchLatestBaileysVersion,
-  DisconnectReason
+  fetchLatestBaileysVersion
 } from "@whiskeysockets/baileys";
-import { Boom } from "@hapi/boom";
-import qrcode from "qrcode-terminal";
+
+import { InterfaceAdapter } from "../adapter/interface-adapter";
 import path from "path";
-import { coreStatus } from "../core";
 
 const AUTH_DIR = path.resolve("auth");
 
-async function startWhatsApp() {
+/**
+ * Interface WhatsApp — MULA V3
+ * Interface mínima, sem lógica de negócio.
+ */
+
+const adapter: InterfaceAdapter = {
+  async receive(message) {
+    if (message.text.trim() === "/status") {
+      return { text: "MULA ativo e aguardando comandos." };
+    }
+    return null;
+  }
+};
+
+async function start() {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
     version,
     auth: state,
-    printQRInTerminal: false
+    printQRInTerminal: true
   });
 
   sock.ev.on("creds.update", saveCreds);
-
-  sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect, qr } = update;
-
-    if (qr) {
-      qrcode.generate(qr, { small: true });
-    }
-
-    if (connection === "close") {
-      const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
-      if (reason !== DisconnectReason.loggedOut) {
-        process.exit(1);
-      }
-    }
-  });
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const msg = messages[0];
@@ -49,12 +46,15 @@ async function startWhatsApp() {
       msg.message.extendedTextMessage?.text ||
       "";
 
-    if (text === "/mula status") {
-      await sock.sendMessage(from, {
-        text: coreStatus()
-      });
+    const response = await adapter.receive({
+      senderId: from,
+      text
+    });
+
+    if (response) {
+      await sock.sendMessage(from, { text: response.text });
     }
   });
 }
 
-startWhatsApp();
+start();
