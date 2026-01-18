@@ -1,0 +1,13 @@
+# Estado local
+auth/
+core/state/state.json
+
+# Build / runtime
+node_modules/
+dist/
+
+# Config local
+tsconfig.json
+
+# Logs
+*.log
