@@ -104,8 +104,31 @@ window.manualOrder = function() {
     window.showToast('Pedido criado!', 'success');
 };
 
+window.updateDashboard = function() {
+    // Atualizar contadores do dashboard
+    const ordersNew = document.getElementById('orders-new');
+    if (ordersNew) {
+        ordersNew.textContent = window.pendingOrders.length;
+    }
+    
+    const todaySales = document.getElementById('today-sales');
+    if (todaySales) {
+        const total = window.pendingOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        todaySales.textContent = 'R$ ' + total.toFixed(2);
+    }
+    
+    const ordersPrep = document.getElementById('orders-prep');
+    if (ordersPrep) {
+        // Simulação: contar pedidos com status 'preparing'
+        const preparing = window.pendingOrders.filter(order => order.status === 'preparing').length;
+        ordersPrep.textContent = preparing;
+    }
+};
+
 window.renderOrders = function() {
     const orderList = document.getElementById('order-list');
+    if (!orderList) return;
+    
     orderList.innerHTML = '';
     window.pendingOrders.forEach(order => {
         const div = document.createElement('div');
@@ -120,7 +143,7 @@ window.renderOrders = function() {
         `;
         orderList.appendChild(div);
     });
-    document.getElementById('orders-new').textContent = window.pendingOrders.length;
+    window.updateDashboard();
 };
 
 window.dispatchOrder = function(orderId) {
@@ -378,74 +401,100 @@ window.showToast = function(message, type = 'success') {
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
-    // Configurar navegação
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            const panelId = item.getAttribute('data-panel');
-            window.nav(panelId);
-        });
-    });
-
-    // Configurar botão de pausa
-    document.getElementById('btn-pause').addEventListener('click', window.togglePause);
-
-    // Carregar configuração
-    window.config = await window.electronAPI.loadConfig();
-    
-    // Preencher campos de configuração
-    if (window.config) {
-        const setValue = (id, value) => {
-            const element = document.getElementById(id);
-            if (element) element.value = value || '';
-        };
-        setValue('k-goo', window.config.googleMapsKey);
-        setValue('k-ope', window.config.openAIKey);
-        setValue('k-tel', window.config.telegramToken);
-        setValue('addr', window.config.restaurantAddress);
-        setValue('k-adm', window.config.adminNumber);
-        setValue('golden-rules', window.config.goldenRules);
-        setValue('golden-rules-text', window.config.goldenRules);
-        
-        // Atualizar botão de pausa
-        const btn = document.getElementById('btn-pause');
-        if (btn && window.config.botPaused) {
-            btn.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
-            btn.className = 'btn btn-success';
+    try {
+        // Configurar navegação
+        const navItems = document.querySelectorAll('.nav-item');
+        if (navItems.length === 0) {
+            console.error('Nenhum item de navegação encontrado');
         }
-    }
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const panelId = item.getAttribute('data-panel');
+                window.nav(panelId);
+            });
+        });
 
-    // Configurar listeners de eventos
-    window.electronAPI.onDriverPos((event, data) => {
-        console.log('Driver position updated:', data);
-        window.driverLastSeen[data.phone] = Date.now();
+        // Configurar botão de pausa
+        const btnPause = document.getElementById('btn-pause');
+        if (btnPause) {
+            btnPause.addEventListener('click', window.togglePause);
+        } else {
+            console.warn('Botão de pausa não encontrado');
+        }
+
+        // Carregar configuração
+        window.config = await window.electronAPI.loadConfig();
+        
+        // Preencher campos de configuração
+        if (window.config) {
+            const setValue = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.value = value || '';
+                } else {
+                    console.warn(`Elemento #${id} não encontrado`);
+                }
+            };
+            setValue('k-goo', window.config.googleMapsKey);
+            setValue('k-ope', window.config.openAIKey);
+            setValue('k-tel', window.config.telegramToken);
+            setValue('addr', window.config.restaurantAddress);
+            setValue('k-adm', window.config.adminNumber);
+            setValue('golden-rules', window.config.goldenRules);
+            setValue('golden-rules-text', window.config.goldenRules);
+            
+            // Atualizar botão de pausa
+            if (btnPause && window.config.botPaused) {
+                btnPause.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
+                btnPause.className = 'btn btn-success';
+            }
+        }
+
+        // Configurar listeners de eventos
+        window.electronAPI.onDriverPos((event, data) => {
+            console.log('Driver position updated:', data);
+            window.driverLastSeen[data.phone] = Date.now();
+            window.renderFleet();
+        });
+
+        window.electronAPI.onDriverAccepted((event, data) => {
+            console.log('Driver accepted order:', data);
+            window.showToast(`Motoboy ${data.driverName} aceitou o pedido ${data.orderId}`, 'success');
+        });
+
+        window.electronAPI.onShowQR((event, qrUrl) => {
+            window.showToast('QR Code recebido: ' + qrUrl, 'success');
+        });
+
+        window.electronAPI.onBotStatus((event, data) => {
+            console.log('Bot status:', data);
+            window.showToast(`Bot ${data.online ? 'online' : 'offline'}`, data.online ? 'success' : 'error');
+        });
+
+        // Inicializar componentes
         window.renderFleet();
-    });
-
-    window.electronAPI.onDriverAccepted((event, data) => {
-        console.log('Driver accepted order:', data);
-        window.showToast(`Motoboy ${data.driverName} aceitou o pedido ${data.orderId}`, 'success');
-    });
-
-    window.electronAPI.onShowQR((event, qrUrl) => {
-        window.showToast('QR Code recebido: ' + qrUrl, 'success');
-    });
-
-    window.electronAPI.onBotStatus((event, data) => {
-        console.log('Bot status:', data);
-        window.showToast(`Bot ${data.online ? 'online' : 'offline'}`, data.online ? 'success' : 'error');
-    });
-
-    // Inicializar componentes
-    window.renderFleet();
-    window.renderOrders();
-    window.renderT();
-    window.loadPrinters();
-    window.initMap();
-    
-    // Carregar configuração de impressora se existir
-    if (window.config.printerConfig) {
-        document.getElementById('printer-main').value = window.config.printerConfig.mainPrinter || '';
-        document.getElementById('auto-print').checked = window.config.printerConfig.autoPrint || false;
+        window.renderOrders();
+        window.renderT();
+        window.loadPrinters();
+        window.initMap();
+        window.updateDashboard();
+        
+        // Carregar configuração de impressora se existir
+        if (window.config.printerConfig) {
+            const printerSelect = document.getElementById('printer-main');
+            const autoPrintCheck = document.getElementById('auto-print');
+            if (printerSelect) {
+                printerSelect.value = window.config.printerConfig.mainPrinter || '';
+            }
+            if (autoPrintCheck) {
+                autoPrintCheck.checked = window.config.printerConfig.autoPrint || false;
+            }
+        }
+        
+        console.log('Aplicativo inicializado com sucesso');
+    } catch (error) {
+        console.error('Erro durante a inicialização:', error);
+        window.showToast('Erro ao inicializar: ' + error.message, 'error');
     }
 });
