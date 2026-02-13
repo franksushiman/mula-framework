@@ -276,10 +276,26 @@ window.delS = function() {
 };
 
 window.nav = function(panelId) {
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
-    document.querySelector(`[data-panel="${panelId}"]`).classList.add('active');
-    document.getElementById(panelId).classList.add('active');
+    // Remover classe active de todos os itens de navegação
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    // Remover classe active de todos os painéis
+    document.querySelectorAll('.panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    // Ativar o item de navegação correspondente
+    const navItem = document.querySelector(`[data-panel="${panelId}"]`);
+    if (navItem) {
+        navItem.classList.add('active');
+    }
+    // Ativar o painel correspondente
+    const panel = document.getElementById(panelId);
+    if (panel) {
+        panel.classList.add('active');
+    } else {
+        console.error(`Painel ${panelId} não encontrado`);
+    }
 };
 
 window.doBackup = function() {
@@ -522,10 +538,12 @@ window.renderFleetNew = function() {
 window.saveTelegramConfig = function() {
     const botToken = document.getElementById('telegram-bot-token').value;
     const chatId = document.getElementById('telegram-chat-id').value;
+    const motoboysChannel = document.getElementById('telegram-motoboys-channel').value;
     
     if (!window.config.telegram) window.config.telegram = {};
     window.config.telegram.botToken = botToken;
     window.config.telegram.chatId = chatId;
+    window.config.telegram.motoboysChannel = motoboysChannel;
     
     window.electronAPI.saveConfig(window.config).then(result => {
         window.showToast('Configuração do Telegram salva!', 'success');
@@ -533,7 +551,7 @@ window.saveTelegramConfig = function() {
 };
 
 window.testTelegram = function() {
-    const message = document.getElementById('telegram-test-message').value || 'Mensagem de teste do Ceia Delivery Manager';
+    const message = document.getElementById('telegram-test-message').value || 'Teste do sistema Ceia Delivery';
     const botToken = document.getElementById('telegram-bot-token').value;
     const chatId = document.getElementById('telegram-chat-id').value;
     
@@ -557,116 +575,12 @@ window.testTelegram = function() {
     });
 };
 
-window.getTelegramUpdates = function() {
-    const botToken = document.getElementById('telegram-bot-token').value;
-    if (!botToken) {
-        window.showToast('Insira o token do bot primeiro!', 'error');
-        return;
+window.hideMotoboysChannel = function() {
+    const section = document.getElementById('motoboys-channel-section');
+    if (section) {
+        section.style.display = 'none';
+        window.showToast('Canal dos motoboys ocultado. O sistema usará o canal embutido.', 'success');
     }
-    
-    window.electronAPI.getTelegramUpdates(botToken).then(result => {
-        if (result.success) {
-            window.showToast(`Recebidas ${result.updates?.length || 0} atualizações`, 'success');
-            const statusDiv = document.getElementById('telegram-status');
-            const statusText = document.getElementById('telegram-status-text');
-            if (statusDiv && statusText) {
-                statusDiv.style.display = 'block';
-                statusText.textContent = `Última atualização: ${new Date().toLocaleTimeString()}. ${result.updates?.length || 0} mensagens recebidas.`;
-            }
-        } else {
-            window.showToast('Erro ao buscar atualizações: ' + result.error, 'error');
-        }
-    });
-};
-
-// Funções para Bayleis
-window.saveBayleisConfig = function() {
-    const apiKey = document.getElementById('bayleis-api-key').value;
-    const secretKey = document.getElementById('bayleis-secret-key').value;
-    const webhookUrl = document.getElementById('bayleis-webhook-url').value;
-    const sandbox = document.getElementById('bayleis-sandbox').value === 'true';
-    const extraConfig = document.getElementById('bayleis-extra-config').value;
-    
-    if (!window.config.bayleis) window.config.bayleis = {};
-    window.config.bayleis.apiKey = apiKey;
-    window.config.bayleis.secretKey = secretKey;
-    window.config.bayleis.webhookUrl = webhookUrl;
-    window.config.bayleis.sandbox = sandbox;
-    
-    try {
-        if (extraConfig) {
-            window.config.bayleis.extraConfig = JSON.parse(extraConfig);
-        }
-    } catch (e) {
-        window.showToast('JSON inválido nas configurações extras', 'error');
-        return;
-    }
-    
-    window.electronAPI.saveConfig(window.config).then(result => {
-        window.showToast('Configuração do Bayleis salva!', 'success');
-    });
-};
-
-window.testBayleisConnection = function() {
-    const apiKey = document.getElementById('bayleis-api-key').value;
-    const secretKey = document.getElementById('bayleis-secret-key').value;
-    
-    if (!apiKey || !secretKey) {
-        window.showToast('Preencha a API Key e Secret Key primeiro!', 'error');
-        return;
-    }
-    
-    window.electronAPI.testBayleisConnection({ apiKey, secretKey }).then(result => {
-        const statusDiv = document.getElementById('bayleis-status');
-        const statusText = document.getElementById('bayleis-status-text');
-        if (statusDiv && statusText) {
-            statusDiv.style.display = 'block';
-            if (result.success) {
-                statusText.textContent = `Conexão bem-sucedida! Saldo: R$ ${result.balance?.toFixed(2) || '0.00'}`;
-                window.showToast('Conexão com Bayleis estabelecida!', 'success');
-            } else {
-                statusText.textContent = `Erro: ${result.error}`;
-                window.showToast('Erro na conexão: ' + result.error, 'error');
-            }
-        }
-    });
-};
-
-window.createBayleisPayment = function() {
-    const apiKey = document.getElementById('bayleis-api-key').value;
-    const secretKey = document.getElementById('bayleis-secret-key').value;
-    
-    if (!apiKey || !secretKey) {
-        window.showToast('Configure as chaves do Bayleis primeiro!', 'error');
-        return;
-    }
-    
-    const amount = parseFloat(prompt('Valor do pagamento (R$):', '10.00'));
-    if (isNaN(amount) || amount <= 0) {
-        window.showToast('Valor inválido!', 'error');
-        return;
-    }
-    
-    const description = prompt('Descrição do pagamento:', 'Pagamento de teste Ceia');
-    
-    window.electronAPI.createBayleisPayment({ 
-        apiKey, 
-        secretKey, 
-        amount, 
-        description 
-    }).then(result => {
-        if (result.success) {
-            window.showToast(`Pagamento criado! ID: ${result.paymentId}`, 'success');
-            const statusDiv = document.getElementById('bayleis-status');
-            const statusText = document.getElementById('bayleis-status-text');
-            if (statusDiv && statusText) {
-                statusDiv.style.display = 'block';
-                statusText.textContent = `Pagamento ${result.paymentId} criado. QR Code: ${result.qrCodeUrl || 'N/A'}`;
-            }
-        } else {
-            window.showToast('Erro ao criar pagamento: ' + result.error, 'error');
-        }
-    });
 };
 
 // Funções adicionais (mantidas para compatibilidade)
@@ -1008,17 +922,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.config.telegram) {
                 setValue('telegram-bot-token', window.config.telegram.botToken);
                 setValue('telegram-chat-id', window.config.telegram.chatId);
-            }
-            
-            // Preencher configurações do Bayleis
-            if (window.config.bayleis) {
-                setValue('bayleis-api-key', window.config.bayleis.apiKey);
-                setValue('bayleis-secret-key', window.config.bayleis.secretKey);
-                setValue('bayleis-webhook-url', window.config.bayleis.webhookUrl);
-                setValue('bayleis-sandbox', window.config.bayleis.sandbox ? 'true' : 'false');
-                if (window.config.bayleis.extraConfig) {
-                    setValue('bayleis-extra-config', JSON.stringify(window.config.bayleis.extraConfig, null, 2));
-                }
+                setValue('telegram-motoboys-channel', window.config.telegram.motoboysChannel || 'bot_embutido_ceia_frota');
             }
             
             // Atualizar botão de pausa

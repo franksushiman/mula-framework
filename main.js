@@ -454,48 +454,6 @@ ipcMain.handle('get-telegram-updates', async (event, botToken) => {
   }
 });
 
-// Handlers para Bayleis (simulação - você precisará implementar a API real)
-ipcMain.handle('test-bayleis-connection', async (event, { apiKey, secretKey }) => {
-  try {
-    // Simulação de conexão com Bayleis
-    // Em produção, você faria uma requisição real para a API do Bayleis
-    console.log('Testando conexão Bayleis com API Key:', apiKey.substring(0, 10) + '...');
-    
-    // Simular uma resposta bem-sucedida
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return {
-      success: true,
-      balance: Math.random() * 1000,
-      merchantName: 'Ceia Delivery Test'
-    };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('create-bayleis-payment', async (event, { apiKey, secretKey, amount, description }) => {
-  try {
-    // Simulação de criação de pagamento
-    console.log(`Criando pagamento Bayleis: R$ ${amount} - ${description}`);
-    
-    // Simular processamento
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const paymentId = `bay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=bayleis:${paymentId}`;
-    
-    return {
-      success: true,
-      paymentId,
-      qrCodeUrl,
-      paymentUrl: `https://bayleis.com/pay/${paymentId}`,
-      expiresAt: Date.now() + 3600000 // 1 hora
-    };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
 
 // Event listeners
 ipcMain.on('save-config', (event, data) => {

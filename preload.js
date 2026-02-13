@@ -54,9 +54,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendTelegramMessage: (data) => ipcRenderer.invoke('send-telegram-message', data),
   getTelegramUpdates: (botToken) => ipcRenderer.invoke('get-telegram-updates', botToken),
   
-  // Bayleis
-  testBayleisConnection: (data) => ipcRenderer.invoke('test-bayleis-connection', data),
-  createBayleisPayment: (data) => ipcRenderer.invoke('create-bayleis-payment', data),
   
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
