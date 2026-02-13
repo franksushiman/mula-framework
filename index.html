@@ -387,7 +387,6 @@
             </div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active" data-panel="home-panel"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="#" class="nav-item" data-panel="orders-panel"><i class="fas fa-shopping-cart"></i> Pedidos</a>
                 <a href="#" class="nav-item" data-panel="fleet-panel"><i class="fas fa-motorcycle"></i> Frota</a>
                 <a href="#" class="nav-item" data-panel="menu-panel"><i class="fas fa-utensils"></i> Cardápio</a>
                 <a href="#" class="nav-item" data-panel="tables-panel"><i class="fas fa-chair"></i> Mesas</a>
@@ -444,7 +443,7 @@
                     <!-- CARDS OPERACIONAIS (HIERARQUIA POR URGÊNCIA) -->
                     <div class="cards-grid">
                         <!-- PRIORIDADE ALTA: Pedidos + Em Preparo -->
-                        <div class="card-operacional card-alta" onclick="window.nav('orders-panel')">
+                        <div class="card-operacional card-alta">
                             <div class="card-header">
                                 <span class="card-icone">📦</span>
                                 <span class="card-titulo">PEDIDOS HOJE</span>
@@ -453,7 +452,7 @@
                             <div class="card-sub">total do dia</div>
                         </div>
 
-                        <div class="card-operacional card-alta" onclick="window.nav('orders-panel')">
+                        <div class="card-operacional card-alta">
                             <div class="card-header">
                                 <span class="card-icone">👨‍🍳</span>
                                 <span class="card-titulo">EM PREPARO</span>
@@ -487,7 +486,7 @@
                     <div class="ultimos-pedidos-card">
                         <div class="ultimos-header">
                             <h4>🕒 Últimos pedidos</h4>
-                            <button class="btn-ver-todos" onclick="window.nav('orders-panel')">Ver todos →</button>
+                            <button class="btn-ver-todos" onclick="window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info')">Ver detalhes →</button>
                         </div>
                         <table class="ultimos-tabela">
                             <thead>
@@ -518,15 +517,6 @@
                 </div>
             </div>
 
-            <div id="orders-panel" class="panel">
-                <div class="card">
-                    <h2>Pedidos Pendentes</h2>
-                    <button class="btn btn-primary" onclick="window.manualOrder()">
-                        <i class="fas fa-plus"></i> Novo Pedido Manual
-                    </button>
-                    <div id="order-list" style="margin-top: 20px;"></div>
-                </div>
-            </div>
 
             <div id="fleet-panel" class="panel">
                 <div class="card">

@@ -91,6 +91,9 @@ window.saveC = function() {
 };
 
 window.manualOrder = function() {
+    window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info');
+    // Opcional: ainda permitir criar pedidos para testes
+    /*
     const order = {
         id: Date.now(),
         cliente: prompt('Nome do cliente:'),
@@ -102,10 +105,11 @@ window.manualOrder = function() {
     window.pendingOrders.push(order);
     window.renderOrders();
     window.showToast('Pedido criado!', 'success');
+    */
 };
 
 window.updateDashboard = function() {
-    // Atualizar contadores do dashboard
+    // Atualizar contadores do dashboard (se os elementos existirem)
     const ordersNew = document.getElementById('orders-new');
     if (ordersNew) {
         ordersNew.textContent = window.pendingOrders.length;
@@ -126,24 +130,9 @@ window.updateDashboard = function() {
 };
 
 window.renderOrders = function() {
-    const orderList = document.getElementById('order-list');
-    if (!orderList) return;
-    
-    orderList.innerHTML = '';
-    window.pendingOrders.forEach(order => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-            <h4>Pedido #${order.id}</h4>
-            <p>Cliente: ${order.cliente}</p>
-            <p>Endereço: ${order.endereco}</p>
-            <p>Total: R$ ${order.total.toFixed(2)}</p>
-            <p>Taxa: R$ ${order.taxa.toFixed(2)}</p>
-            <button class="btn btn-primary" onclick="window.dispatchOrder(${order.id})">Disparar</button>
-        `;
-        orderList.appendChild(div);
-    });
+    // Esta função agora apenas atualiza o dashboard, já que o painel de pedidos foi removido
     window.updateDashboard();
+    window.renderDashboardStats();
 };
 
 window.dispatchOrder = function(orderId) {
@@ -659,7 +648,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Inicializar componentes
         window.renderFleet();
-        window.renderOrders();
+        // window.renderOrders() removido porque o painel de pedidos foi removido
         window.renderT();
         window.loadPrinters();
         window.initMap();
