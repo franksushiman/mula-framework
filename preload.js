@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFleetStatus: () => ipcRenderer.invoke('get-fleet-status'),
   fleetInviteCreate: (data) => ipcRenderer.invoke('fleet-invite-create', data),
   requestDriverLocation: (data) => ipcRenderer.invoke('request-driver-location', data),
+  dispatchFleet: (order, drivers) => ipcRenderer.invoke('dispatch-fleet', { order, drivers }),
   
   // Pedidos
   getPersistedOrders: () => ipcRenderer.invoke('get-persisted-orders'),

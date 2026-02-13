@@ -117,6 +117,12 @@ ipcMain.handle('get-fleet-status', async () => {
   });
 });
 
+ipcMain.handle('dispatch-fleet', async (event, { order, drivers }) => {
+  // Simulação de envio para frota
+  console.log('Dispatching order:', order, 'to drivers:', drivers);
+  return { success: true, message: 'Pedido enviado para a frota' };
+});
+
 ipcMain.handle('fleet-invite-create', async (event, { phone, slug }) => {
   const config = loadConfig();
   const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

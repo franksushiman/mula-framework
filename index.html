@@ -91,8 +91,11 @@
 
             <div id="orders-panel" class="panel">
                 <div class="card">
-                    <h2>Pedidos</h2>
-                    <div id="order-list"></div>
+                    <h2>Pedidos Pendentes</h2>
+                    <button class="btn btn-primary" onclick="window.manualOrder()">
+                        <i class="fas fa-plus"></i> Novo Pedido Manual
+                    </button>
+                    <div id="order-list" style="margin-top: 20px;"></div>
                 </div>
             </div>
 
@@ -101,6 +104,23 @@
                     <h2>Frota</h2>
                     <input id="fleet-invite-phone" class="form-input" placeholder="Telefone do motoboy">
                     <button class="btn btn-primary" onclick="window.inviteDriver()">Convidar</button>
+                    <div style="margin-top: 20px;">
+                        <table class="table" id="tb-fleet">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Vulgo</th>
+                                    <th>Telefone</th>
+                                    <th>Veículo</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dados da frota serão inseridos aqui -->
+                            </tbody>
+                        </table>
+                    </div>
                     <div id="fleet-cards" style="margin-top: 20px;"></div>
                 </div>
             </div>
@@ -109,12 +129,28 @@
                 <div class="card">
                     <h2>Cardápio</h2>
                     <div id="menu-categories"></div>
-                    <table class="table">
+                    <table class="table" id="tb">
                         <thead>
-                            <tr><th>Nome</th><th>Preço</th><th>Ações</th></tr>
+                            <tr>
+                                <th>Categoria</th>
+                                <th>Nome</th>
+                                <th>Ingredientes</th>
+                                <th>Preço</th>
+                                <th>Impressora</th>
+                                <th>Ações</th>
+                            </tr>
                         </thead>
-                        <tbody id="items-table-body"></tbody>
+                        <tbody>
+                            <!-- Itens do cardápio serão inseridos aqui -->
+                        </tbody>
                     </table>
+                    <div style="margin-top: 20px;">
+                        <h3>Importar via IA</h3>
+                        <textarea id="menu-import-text" placeholder="Cole o texto do cardápio aqui..." rows="4" style="width: 100%; padding: 10px; background: #3d3d3d; color: white; border: 1px solid #555; border-radius: 4px;"></textarea>
+                        <button class="btn btn-primary" onclick="window.aiM()" style="margin-top: 10px;">
+                            <i class="fas fa-robot"></i> Processar com IA
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -143,22 +179,76 @@
 
             <div id="printers-panel" class="panel">
                 <div class="card">
-                    <h2>Impressoras</h2>
-                    <select id="printer-main" class="form-input"></select>
-                    <button class="btn btn-primary" onclick="window.testPrint()">Testar</button>
+                    <h2>Configuração de Impressoras</h2>
+                    <div class="form-group">
+                        <label class="form-label">Impressora Principal</label>
+                        <select id="printer-main" class="form-input">
+                            <option value="">Selecione uma impressora</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="auto-print"> Impressão Automática
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-secondary" onclick="window.loadPrinters()">
+                            <i class="fas fa-sync"></i> Atualizar Lista
+                        </button>
+                        <button class="btn btn-primary" onclick="window.savePrinterCfg()" style="margin-left: 10px;">
+                            <i class="fas fa-save"></i> Salvar Configuração
+                        </button>
+                        <button class="btn btn-success" onclick="window.testPrint()" style="margin-left: 10px;">
+                            <i class="fas fa-print"></i> Testar Impressão
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div id="config-panel" class="panel">
                 <div class="card">
                     <h2>Configurações</h2>
-                    <input id="addr" class="form-input" placeholder="Endereço">
-                    <input id="k-goo" class="form-input" placeholder="Google Maps Key">
-                    <input id="k-ope" class="form-input" placeholder="OpenAI Key">
-                    <input id="telegram-client-token" class="form-input" placeholder="Token Telegram">
-                    <input id="telegram-client-bot-user" class="form-input" placeholder="Bot Username">
-                    <textarea id="golden-rules" class="form-input" placeholder="Regras"></textarea>
-                    <button class="btn btn-primary" onclick="window.saveConfig()">Salvar</button>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label>Google Maps API Key</label>
+                            <input type="text" id="k-goo" class="form-input" placeholder="Chave do Google Maps">
+                        </div>
+                        <div>
+                            <label>OpenAI API Key</label>
+                            <input type="text" id="k-ope" class="form-input" placeholder="Chave da OpenAI">
+                        </div>
+                        <div>
+                            <label>Telegram Bot Token</label>
+                            <input type="text" id="k-tel" class="form-input" placeholder="Token do Telegram Bot">
+                        </div>
+                        <div>
+                            <label>Telegram Bot Username</label>
+                            <input type="text" id="telegram-client-bot-user" class="form-input" placeholder="Bot Username">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label>Endereço do Restaurante</label>
+                            <input type="text" id="addr" class="form-input" placeholder="Endereço completo">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label>Número do Admin</label>
+                            <input type="text" id="k-adm" class="form-input" placeholder="Telefone do administrador">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label>Regras de Ouro</label>
+                            <textarea id="golden-rules" class="form-input" rows="6" placeholder="Regras importantes para a operação"></textarea>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="window.saveC()">
+                            <i class="fas fa-save"></i> Salvar Configurações
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.doBackup()" style="margin-left: 10px;">
+                            <i class="fas fa-download"></i> Exportar Backup
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.doRestore()" style="margin-left: 10px;">
+                            <i class="fas fa-upload"></i> Importar Backup
+                        </button>
+                    </div>
                 </div>
             </div>
 
