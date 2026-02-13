@@ -1,49 +1,25 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { loadConfig, saveConfig } = require('./core/config');
-
-let win;
-
-function createWindow() {
-  win = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
-  });
-
-  win.loadFile('index.html');
-}
-
-app.whenReady().then(createWindow);
-
-/* -------- CONFIG -------- */
-
-// carregar tudo ao abrir
-ipcMain.handle('config-load', () => {
-  return loadConfig();
-});
-
-// salvar chaves
-ipcMain.on('config-save', (_, payload) => {
-  saveConfig(payload);
-});
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
 const fs = require('fs');
 
+// Caminhos dos arquivos de persistência
+const configPath = path.join(app.getPath('userData'), 'config.json');
+const tablesPath = path.join(app.getPath('userData'), 'tables.json');
+const keysPath = path.join(app.getPath('userData'), 'keys.json');
+
 // Configurações padrão
-const defaultConfig = {
+const defaultStoreConfig = {
   storeName: 'Minha Loja',
   storeAddress: '',
   storePhone: ''
 };
 
-// Caminhos dos arquivos de persistência
-const configPath = path.join(app.getPath('userData'), 'config.json');
-const tablesPath = path.join(app.getPath('userData'), 'tables.json');
+const defaultKeysConfig = {
+  key_ai: '',
+  key_tg: '',
+  key_mp: '',
+  key_maps: ''
+};
 
 // Funções auxiliares para ler/escrever JSON
 function readJSON(filePath, defaultValue = {}) {
@@ -68,15 +44,14 @@ function writeJSON(filePath, data) {
   }
 }
 
-// Handlers IPC
-ipcMain.handle('publish-ceia-wp', async (event) => {
-  // Simulação de publicação
+// Handlers IPC para o sistema Ceia
+ipcMain.handle('publish-ceia-wp', async () => {
   console.log('Publicando no WordPress...');
   return 'Cardápio publicado com sucesso!';
 });
 
-ipcMain.handle('load-config', async (event) => {
-  return readJSON(configPath, defaultConfig);
+ipcMain.handle('load-config', async () => {
+  return readJSON(configPath, defaultStoreConfig);
 });
 
 ipcMain.handle('save-config', async (event, config) => {
@@ -84,12 +59,11 @@ ipcMain.handle('save-config', async (event, config) => {
   return success ? 'Configurações salvas!' : 'Erro ao salvar configurações.';
 });
 
-ipcMain.handle('get-store-config', async (event) => {
-  return readJSON(configPath, defaultConfig);
+ipcMain.handle('get-store-config', async () => {
+  return readJSON(configPath, defaultStoreConfig);
 });
 
-ipcMain.handle('cashier-close', async (event) => {
-  // Lógica de fechamento de caixa
+ipcMain.handle('cashier-close', async () => {
   const now = new Date().toLocaleString();
   console.log(`Caixa fechado em ${now}`);
   return `Caixa fechado com sucesso em ${now}`;
@@ -100,11 +74,20 @@ ipcMain.handle('tables-save', async (event, tablesData) => {
   return success ? 'Layout das mesas salvo!' : 'Erro ao salvar layout.';
 });
 
+// Handlers para as chaves de API (MULA HUB)
+ipcMain.handle('config-load', async () => {
+  return readJSON(keysPath, defaultKeysConfig);
+});
+
+ipcMain.on('config-save', (event, payload) => {
+  writeJSON(keysPath, payload);
+});
+
 // Criar janela principal
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 900,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

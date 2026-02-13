@@ -1,73 +1,4 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>MULA HUB</title>
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-black text-white font-sans h-screen flex items-center justify-center">
-
-<div class="w-[500px] space-y-6">
-  <h1 class="text-2xl font-bold text-yellow-400">Configurações</h1>
-
-  <div>
-    <label>OpenAI API Key</label>
-    <input id="key_ai" class="w-full bg-zinc-800 p-2 mt-1">
-  </div>
-
-  <div>
-    <label>Telegram Bot Token</label>
-    <input id="key_tg" class="w-full bg-zinc-800 p-2 mt-1">
-  </div>
-
-  <div>
-    <label>Mercado Pago Token</label>
-    <input id="key_mp" class="w-full bg-zinc-800 p-2 mt-1">
-  </div>
-
-  <div>
-    <label>Google Maps Key</label>
-    <input id="key_maps" class="w-full bg-zinc-800 p-2 mt-1">
-  </div>
-
-  <button id="save" class="bg-yellow-400 text-black px-4 py-2 font-bold">
-    Salvar
-  </button>
-
-  <p id="status" class="text-green-400"></p>
-</div>
-
-<script>
-const { ipcRenderer } = require('electron');
-
-// carregar config ao abrir
-window.onload = async () => {
-  const config = await ipcRenderer.invoke('config-load');
-  if (!config) return;
-
-  key_ai.value = config.key_ai || '';
-  key_tg.value = config.key_tg || '';
-  key_mp.value = config.key_mp || '';
-  key_maps.value = config.key_maps || '';
-};
-
-// salvar config
-document.getElementById('save').onclick = () => {
-  ipcRenderer.send('config-save', {
-    key_ai: key_ai.value,
-    key_tg: key_tg.value,
-    key_mp: key_mp.value,
-    key_maps: key_maps.value
-  });
-
-  status.innerText = 'Salvo com sucesso';
-};
-</script>
-
-</body>
-</html>
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -232,7 +163,7 @@ document.getElementById('save').onclick = () => {
             });
         });
 
-        // IPC para renderer (simulação)
+        // IPC para renderer
         const { ipcRenderer } = require('electron');
 
         // Botão Publicar no WordPress
