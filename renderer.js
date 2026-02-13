@@ -48,12 +48,12 @@ window.delDriver = function(phone) {
 
 window.saveC = function() {
     // Atualizar window.config com os valores atuais
-    window.config.googleMapsKey = document.getElementById('k-goo').value;
-    window.config.openAIKey = document.getElementById('k-ope').value;
-    window.config.telegramToken = document.getElementById('k-tel').value;
-    window.config.restaurantAddress = document.getElementById('addr').value;
-    window.config.adminNumber = document.getElementById('k-adm').value;
-    window.config.goldenRules = document.getElementById('golden-rules').value;
+    window.config.googleMapsKey = document.getElementById('k-goo')?.value || '';
+    window.config.openAIKey = document.getElementById('k-ope')?.value || '';
+    window.config.telegramToken = document.getElementById('k-tel')?.value || '';
+    window.config.restaurantAddress = document.getElementById('addr')?.value || '';
+    window.config.adminNumber = document.getElementById('k-adm')?.value || '';
+    window.config.goldenRules = document.getElementById('golden-rules')?.value || '';
     // Salvar
     window.electronAPI.saveConfig(window.config).then(result => {
         window.showToast(result, 'success');
@@ -219,17 +219,34 @@ window.saveRules = function() {
 
 window.togglePause = function() {
     const btn = document.getElementById('btn-pause');
+    const dashboardBtn = document.getElementById('btn-pause-dashboard');
     window.config.botPaused = !window.config.botPaused;
+    
     if (window.config.botPaused) {
-        btn.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
-        btn.className = 'btn btn-success';
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
+            btn.className = 'btn btn-success';
+        }
+        if (dashboardBtn) {
+            dashboardBtn.classList.add('paused');
+            dashboardBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
+        }
         window.showToast('Loja pausada', 'error');
     } else {
-        btn.innerHTML = '<i class="fas fa-pause"></i> Pausar Loja';
-        btn.className = 'btn btn-secondary';
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-pause"></i> Pausar Loja';
+            btn.className = 'btn btn-secondary';
+        }
+        if (dashboardBtn) {
+            dashboardBtn.classList.remove('paused');
+            dashboardBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
+        }
         window.showToast('Loja retomada', 'success');
     }
-    window.saveC();
+    // Salvar configuração
+    window.electronAPI.saveConfig(window.config).then(result => {
+        console.log('Configuração salva após pausa:', result);
+    });
 };
 
 window.initMap = function() {
@@ -840,6 +857,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btnPause && window.config.botPaused) {
                 btnPause.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
                 btnPause.className = 'btn btn-success';
+            }
+            // Atualizar botão de pausa do dashboard
+            const dashboardPauseBtn = document.getElementById('btn-pause-dashboard');
+            if (dashboardPauseBtn) {
+                if (window.config.botPaused) {
+                    dashboardPauseBtn.classList.add('paused');
+                    dashboardPauseBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
+                } else {
+                    dashboardPauseBtn.classList.remove('paused');
+                    dashboardPauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
+                }
             }
         }
 
