@@ -346,12 +346,18 @@ window.copyInviteLink = function() {
     window.showToast('Link copiado!', 'success');
 };
 
-window.selectFleetTeam = function(team) {
+window.selectFleetTeam = function(team, event) {
     // Atualizar tabs
     document.querySelectorAll('.fleet-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // Fallback: encontrar a tab correspondente
+        const tab = document.querySelector(`.fleet-tab[data-team="${team}"]`);
+        if (tab) tab.classList.add('active');
+    }
     
     // Filtrar cards (implementação básica)
     const cards = document.querySelectorAll('.fleet-card');
@@ -362,6 +368,8 @@ window.selectFleetTeam = function(team) {
             card.style.display = isOnline ? 'none' : 'block';
         } else if (team === 'fixos' || team === 'freelancers') {
             card.style.display = cardTeam === team ? 'block' : 'none';
+        } else {
+            card.style.display = 'block';
         }
     });
 };
@@ -527,114 +535,153 @@ window.showToast = function(message, type = 'success') {
 
 // Dashboard functions
 window.renderDashboardStats = async function() {
-    // Atualiza status do sistema
-    const systemDot = document.getElementById('system-status-dot');
-    if (systemDot) {
-        systemDot.className = 'status-dot online';
-    }
-    
-    // Busca dados do dashboard
-    let summary = { 
-        today_sales: 0, 
-        orders_in_kitchen: 0, 
-        orders_delivering: 0, 
-        active_drivers: 0, 
-        today_orders_count: 0 
-    };
-    
     try {
-        summary = await window.electronAPI.getDashboardSummary(window.pendingOrders) || summary;
-    } catch (e) {
-        console.warn('Erro ao buscar dashboard summary:', e);
-    }
-    
-    // Atualiza cards
-    const safeSet = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value;
-    };
-    
-    safeSet('orders-today', String(summary.today_orders_count || 0));
-    safeSet('orders-in-kitchen', String(summary.orders_in_kitchen || 0));
-    safeSet('fleet-online', String(summary.active_drivers || 0));
-    
-    const financeEl = document.getElementById('finance-total-hoje');
-    if (financeEl) {
-        const valor = (summary.today_sales || 0).toFixed(2).replace('.', ',');
-        financeEl.textContent = `R$ ${valor}`;
-    }
-    
-    // Atualiza status da loja
-    const isPaused = window.config.botPaused === true;
-    const statusDot = document.getElementById('store-status-dot');
-    const statusText = document.getElementById('store-status-text');
-    
-    if (statusDot && statusText) {
-        if (isPaused) {
-            statusDot.className = 'status-dot paused';
-            statusText.textContent = 'Loja pausada · sem receber pedidos';
-        } else {
-            statusDot.className = 'status-dot online';
-            statusText.textContent = 'Loja aberta · sistema pronto';
+        // Atualiza status do sistema
+        const systemDot = document.getElementById('system-status-dot');
+        if (systemDot) {
+            systemDot.className = 'status-dot online';
         }
-    }
-    
-    // Atualiza botão de pausa do dashboard
-    const pauseBtn = document.getElementById('btn-pause-dashboard');
-    if (pauseBtn) {
-        if (isPaused) {
-            pauseBtn.classList.add('paused');
-            pauseBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
-        } else {
-            pauseBtn.classList.remove('paused');
-            pauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
+        
+        // Busca dados do dashboard
+        let summary = { 
+            today_sales: 0, 
+            orders_in_kitchen: 0, 
+            orders_delivering: 0, 
+            active_drivers: 0, 
+            today_orders_count: 0 
+        };
+        
+        try {
+            summary = await window.electronAPI.getDashboardSummary(window.pendingOrders) || summary;
+        } catch (e) {
+            console.warn('Erro ao buscar dashboard summary:', e);
         }
+        
+        // Atualiza cards
+        const safeSet = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+        
+        safeSet('orders-today', String(summary.today_orders_count || 0));
+        safeSet('orders-in-kitchen', String(summary.orders_in_kitchen || 0));
+        safeSet('fleet-online', String(summary.active_drivers || 0));
+        
+        const financeEl = document.getElementById('finance-total-hoje');
+        if (financeEl) {
+            const valor = (summary.today_sales || 0).toFixed(2).replace('.', ',');
+            financeEl.textContent = `R$ ${valor}`;
+        }
+        
+        // Atualiza status da loja
+        const isPaused = window.config.botPaused === true;
+        const statusDot = document.getElementById('store-status-dot');
+        const statusText = document.getElementById('store-status-text');
+        
+        if (statusDot && statusText) {
+            if (isPaused) {
+                statusDot.className = 'status-dot paused';
+                statusText.textContent = 'Loja pausada · sem receber pedidos';
+            } else {
+                statusDot.className = 'status-dot online';
+                statusText.textContent = 'Loja aberta · sistema pronto';
+            }
+        }
+        
+        // Atualiza botão de pausa do dashboard
+        const pauseBtn = document.getElementById('btn-pause-dashboard');
+        if (pauseBtn) {
+            if (isPaused) {
+                pauseBtn.classList.add('paused');
+                pauseBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
+            } else {
+                pauseBtn.classList.remove('paused');
+                pauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOja</span>';
+            }
+        }
+        
+        // Renderiza feed da frota
+        window.renderFleetFeed();
+        
+        // Renderiza últimos pedidos
+        window.renderDashboardLastOrders();
+        
+        // Renderiza oportunidades
+        window.renderDashboardOpportunities();
+    } catch (error) {
+        console.error('Erro em renderDashboardStats:', error);
     }
-    
-    // Renderiza feed da frota
-    window.renderFleetFeed();
-    
-    // Renderiza últimos pedidos
-    window.renderDashboardLastOrders();
-    
-    // Renderiza oportunidades
-    window.renderDashboardOpportunities();
 };
 
 window.renderFleetFeed = function() {
-    const feedList = document.getElementById('fleet-feed-list');
-    if (!feedList) return;
-    
-    const fleet = window.config.fleet || [];
-    const now = Date.now();
-    
-    // Filtra motoristas ativos (últimos 30 minutos)
-    const activeDrivers = fleet.filter(driver => {
-        const lastSeen = window.driverLastSeen[driver.phone] || 0;
-        return lastSeen && (now - lastSeen) < 30 * 60000;
-    });
-    
-    if (activeDrivers.length === 0) {
-        feedList.innerHTML = '<div class="fleet-feed-item"><span class="feed-item-icon">🟡</span><div class="feed-item-content">Nenhum entregador ativo no momento</div></div>';
-        return;
+    // Renderiza feed no dashboard
+    const dashboardFeed = document.getElementById('dashboard-fleet-feed-list');
+    if (dashboardFeed) {
+        const fleet = window.config.fleet || [];
+        const now = Date.now();
+        
+        // Filtra motoristas ativos (últimos 30 minutos)
+        const activeDrivers = fleet.filter(driver => {
+            const lastSeen = window.driverLastSeen[driver.phone] || 0;
+            return lastSeen && (now - lastSeen) < 30 * 60000;
+        });
+        
+        if (activeDrivers.length === 0) {
+            dashboardFeed.innerHTML = '<div class="fleet-feed-item"><span class="feed-item-icon">🟡</span><div class="feed-item-content">Nenhum entregador ativo no momento</div></div>';
+        } else {
+            dashboardFeed.innerHTML = '';
+            activeDrivers.slice(0, 5).forEach(driver => {
+                const lastSeen = window.driverLastSeen[driver.phone] || 0;
+                const minutesAgo = Math.floor((now - lastSeen) / 60000);
+                
+                const item = document.createElement('div');
+                item.className = 'fleet-feed-item';
+                item.innerHTML = `
+                    <span class="feed-item-icon">🛵</span>
+                    <div class="feed-item-content">
+                        <strong>${driver.name}</strong> (${driver.code}) está em rota
+                    </div>
+                    <div class="feed-item-time">${minutesAgo} min atrás</div>
+                `;
+                dashboardFeed.appendChild(item);
+            });
+        }
     }
     
-    feedList.innerHTML = '';
-    activeDrivers.slice(0, 5).forEach(driver => {
-        const lastSeen = window.driverLastSeen[driver.phone] || 0;
-        const minutesAgo = Math.floor((now - lastSeen) / 60000);
+    // Renderiza feed no painel de frota (se estiver visível)
+    const fleetPanelFeed = document.getElementById('fleet-feed-list');
+    if (fleetPanelFeed && document.getElementById('fleet-panel').classList.contains('active')) {
+        // Aqui você pode implementar um feed diferente para o painel de frota
+        // Por enquanto, vamos usar o mesmo conteúdo
+        const fleet = window.config.fleet || [];
+        const now = Date.now();
         
-        const item = document.createElement('div');
-        item.className = 'fleet-feed-item';
-        item.innerHTML = `
-            <span class="feed-item-icon">🛵</span>
-            <div class="feed-item-content">
-                <strong>${driver.name}</strong> (${driver.code}) está em rota
-            </div>
-            <div class="feed-item-time">${minutesAgo} min atrás</div>
-        `;
-        feedList.appendChild(item);
-    });
+        const activeDrivers = fleet.filter(driver => {
+            const lastSeen = window.driverLastSeen[driver.phone] || 0;
+            return lastSeen && (now - lastSeen) < 30 * 60000;
+        });
+        
+        if (activeDrivers.length === 0) {
+            fleetPanelFeed.innerHTML = '<div class="feed-item"><span class="feed-icon">🟡</span><span class="feed-text">Nenhum entregador ativo no momento</span></div>';
+        } else {
+            fleetPanelFeed.innerHTML = '';
+            activeDrivers.slice(0, 5).forEach(driver => {
+                const lastSeen = window.driverLastSeen[driver.phone] || 0;
+                const minutesAgo = Math.floor((now - lastSeen) / 60000);
+                
+                const item = document.createElement('div');
+                item.className = 'feed-item';
+                item.innerHTML = `
+                    <span class="feed-icon">🛵</span>
+                    <span class="feed-text">
+                        <strong>${driver.name}</strong> (${driver.code}) está em rota
+                    </span>
+                    <span class="feed-time">${minutesAgo} min atrás</span>
+                `;
+                fleetPanelFeed.appendChild(item);
+            });
+        }
+    }
 };
 
 window.renderDashboardLastOrders = function() {
@@ -712,18 +759,22 @@ window.renderDashboardOpportunities = function() {
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Mostrar que está carregando
+        console.log('Iniciando aplicativo...');
+        
         // Configurar navegação
         const navItems = document.querySelectorAll('.nav-item');
         if (navItems.length === 0) {
-            console.error('Nenhum item de navegação encontrado');
-        }
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const panelId = item.getAttribute('data-panel');
-                window.nav(panelId);
+            console.warn('Nenhum item de navegação encontrado');
+        } else {
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const panelId = item.getAttribute('data-panel');
+                    window.nav(panelId);
+                });
             });
-        });
+        }
 
         // Configurar botão de pausa
         const btnPause = document.getElementById('btn-pause');
@@ -735,6 +786,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Carregar configuração
         window.config = await window.electronAPI.loadConfig();
+        console.log('Configuração carregada:', window.config);
         
         // Preencher campos de configuração
         if (window.config) {
@@ -785,7 +837,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Inicializar componentes
         window.renderFleet();
-        // window.renderOrders() removido porque o painel de pedidos foi removido
         window.renderT();
         window.loadPrinters();
         window.initMap();
@@ -810,8 +861,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 30000); // Atualiza a cada 30 segundos
         
         console.log('Aplicativo inicializado com sucesso');
+        
+        // Mostrar toast de boas-vindas
+        setTimeout(() => {
+            window.showToast('Sistema Ceia carregado com sucesso!', 'success');
+        }, 1000);
+        
     } catch (error) {
         console.error('Erro durante a inicialização:', error);
+        // Mostrar erro na tela
+        const errorDiv = document.getElementById('app-error');
+        const errorMsg = document.getElementById('error-message');
+        if (errorDiv && errorMsg) {
+            errorMsg.textContent = error.message;
+            errorDiv.style.display = 'block';
+        }
         window.showToast('Erro ao inicializar: ' + error.message, 'error');
     }
 });

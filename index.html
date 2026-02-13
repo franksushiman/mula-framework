@@ -1015,7 +1015,7 @@
                             <h4><span class="feed-icone">📡</span> ATIVIDADE DA FROTA · AGORA</h4>
                             <span class="feed-timestamp">em tempo real</span>
                         </div>
-                        <div id="fleet-feed-list" class="feed-lista">
+                        <div id="dashboard-fleet-feed-list" class="feed-lista">
                             <!-- Populado via renderFleetFeed() -->
                             <!-- Fallback: "🟡 Nenhum entregador ativo no momento" -->
                         </div>
@@ -1149,13 +1149,13 @@
 
                     <!-- FILTROS: Fixos vs Freelancers (apenas visual, não CRUD) -->
                     <div class="fleet-tabs">
-                        <button class="fleet-tab active" data-team="fixos" onclick="window.selectFleetTeam('fixos')">
+                        <button class="fleet-tab active" data-team="fixos" onclick="window.selectFleetTeam('fixos', event)">
                             🏠 Fixos <span class="tab-count" id="count-fixos">0</span>
                         </button>
-                        <button class="fleet-tab" data-team="freelancers" onclick="window.selectFleetTeam('freelancers')">
+                        <button class="fleet-tab" data-team="freelancers" onclick="window.selectFleetTeam('freelancers', event)">
                             🔄 Freelancers <span class="tab-count" id="count-freelancers">0</span>
                         </button>
-                        <button class="fleet-tab" data-team="offline" onclick="window.selectFleetTeam('offline')">
+                        <button class="fleet-tab" data-team="offline" onclick="window.selectFleetTeam('offline', event)">
                             ⏳ Offline agora <span class="tab-count" id="count-offline">0</span>
                         </button>
                     </div>
@@ -1390,6 +1390,11 @@
     <input id="payment-test-cpf" type="hidden">
     <div id="payment-test-qr-wrap"></div>
 
+    <div id="app-error" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0f172a; z-index: 9999; padding: 40px; text-align: center; color: white;">
+        <h2>Erro ao carregar o aplicativo</h2>
+        <p id="error-message"></p>
+        <button onclick="location.reload()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; margin-top: 20px;">Recarregar</button>
+    </div>
     <script src="renderer.js"></script>
 </body>
 </html>
