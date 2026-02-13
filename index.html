@@ -128,6 +128,9 @@
                     <div class="card-header">
                         <h2 class="card-title">Cardápio Inteligente</h2>
                         <div>
+                            <button class="btn btn-secondary" onclick="window.addM()">
+                                <i class="fas fa-plus"></i> Adicionar Item
+                            </button>
                             <button class="btn btn-secondary" onclick="window.aiM()">
                                 <i class="fas fa-magic"></i> IA Mágica
                             </button>
@@ -192,8 +195,52 @@
                 </div>
             </div>
 
-            <!-- As outras seções (Rules, Printers, Config) serão similares -->
-            <!-- Por questões de espaço, vou incluir apenas placeholders -->
+            <!-- Rules Panel -->
+            <div id="rules-panel" class="panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Regras de Ouro</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Regras importantes para a operação</label>
+                        <textarea id="golden-rules-text" class="form-input" rows="12" placeholder="Digite as regras aqui..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.saveRules()">
+                        <i class="fas fa-save"></i> Salvar Regras
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printers Panel -->
+            <div id="printers-panel" class="panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Configuração de Impressoras</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Impressora Principal</label>
+                        <select id="printer-main" class="form-input">
+                            <option value="">Selecione uma impressora</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="auto-print"> Impressão Automática
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-secondary" onclick="window.loadPrinters()">
+                            <i class="fas fa-sync"></i> Atualizar Lista
+                        </button>
+                        <button class="btn btn-primary" onclick="window.savePrinterCfg()" style="margin-left: 10px;">
+                            <i class="fas fa-save"></i> Salvar Configuração
+                        </button>
+                        <button class="btn btn-success" onclick="window.testPrint()" style="margin-left: 10px;">
+                            <i class="fas fa-print"></i> Testar Impressão
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Config Panel -->
             <div id="config-panel" class="panel">

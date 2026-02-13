@@ -231,6 +231,33 @@ body {
   color: white;
 }
 
+/* Linha pausada no cardápio */
+.paused-row {
+  opacity: 0.6;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.paused-row td {
+  color: #888;
+}
+
+/* Estilos para inputs dentro da tabela */
+.table input,
+.table select {
+  width: 100%;
+  padding: 8px;
+  background-color: #3d3d3d;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.table input:focus,
+.table select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
 /* Toast notifications */
 .toast-container {
   position: fixed;

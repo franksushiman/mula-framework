@@ -5,9 +5,43 @@ window.pendingOrders = [];
 window.currentDrawMode = null;
 window.currentShape = null;
 
-// Funções obrigatórias (placeholders)
+// Funções obrigatórias
 window.renderFleet = function() {
-    console.log('renderFleet chamada');
+    const tbody = document.querySelector('#tb-fleet tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const fleet = window.config.fleet || [];
+    const now = Date.now();
+    
+    fleet.forEach((driver, index) => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        const minutesAgo = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
+        const isOnline = minutesAgo < 30;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${driver.name}</td>
+            <td>${driver.code}</td>
+            <td>${driver.phone}</td>
+            <td>${driver.vehicle || ''}</td>
+            <td><span class="badge ${isOnline ? 'badge-online' : 'badge-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span></td>
+            <td>
+                <button class="btn btn-error" onclick="window.delDriver('${driver.phone}')" style="padding: 5px 10px; font-size: 0.8rem;">
+                    <i class="fas fa-trash"></i> Remover
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // Atualizar contador de ativos
+    const activeCount = fleet.filter(driver => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        return lastSeen && (Date.now() - lastSeen) < 30 * 60000;
+    }).length;
+    document.getElementById('fleet-active').textContent = activeCount;
 };
 
 window.addDriver = function() {
@@ -16,18 +50,29 @@ window.addDriver = function() {
     const phone = prompt('Telefone:');
     const vehicle = prompt('Veículo/Placa:');
     if (name && code && phone) {
-        // Adicionar à frota
-        console.log('Motoboy adicionado:', { name, code, phone, vehicle });
-        window.showToast('Motoboy adicionado com sucesso!', 'success');
-        window.renderFleet();
+        const newDriver = { name, code, phone, vehicle };
+        
+        // Adicionar à frota no config
+        if (!window.config.fleet) window.config.fleet = [];
+        window.config.fleet.push(newDriver);
+        
+        // Salvar configuração
+        window.electronAPI.saveConfig(window.config).then(result => {
+            window.showToast('Motoboy adicionado com sucesso!', 'success');
+            window.renderFleet();
+        });
     }
 };
 
 window.delDriver = function(phone) {
     if (confirm('Tem certeza que deseja remover este motoboy?')) {
-        console.log('Remover motoboy com telefone:', phone);
-        window.showToast('Motoboy removido!', 'success');
-        window.renderFleet();
+        if (window.config.fleet) {
+            window.config.fleet = window.config.fleet.filter(driver => driver.phone !== phone);
+            window.electronAPI.saveConfig(window.config).then(result => {
+                window.showToast('Motoboy removido!', 'success');
+                window.renderFleet();
+            });
+        }
     }
 };
 
@@ -90,30 +135,84 @@ window.dispatchOrder = function(orderId) {
 };
 
 window.renderT = function() {
-    console.log('renderT chamada');
+    const tbody = document.querySelector('#tb tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const menu = window.config.menu || [];
+    
+    menu.forEach((item, index) => {
+        const row = document.createElement('tr');
+        if (item.paused) row.classList.add('paused-row');
+        
+        row.innerHTML = `
+            <td><input type="text" value="${item.category || ''}" onchange="window.updM(${index}, 'category', this.value)"></td>
+            <td><input type="text" value="${item.name || ''}" onchange="window.updM(${index}, 'name', this.value)"></td>
+            <td><input type="text" value="${item.ingredients || ''}" onchange="window.updM(${index}, 'ingredients', this.value)"></td>
+            <td><input type="number" step="0.01" value="${item.price || 0}" onchange="window.updM(${index}, 'price', parseFloat(this.value))"></td>
+            <td>
+                <select onchange="window.updM(${index}, 'printer', this.value)">
+                    <option value="Cozinha" ${item.printer === 'Cozinha' ? 'selected' : ''}>Cozinha</option>
+                    <option value="Bar" ${item.printer === 'Bar' ? 'selected' : ''}>Bar</option>
+                    <option value="Sobremesa" ${item.printer === 'Sobremesa' ? 'selected' : ''}>Sobremesa</option>
+                </select>
+            </td>
+            <td>
+                <button class="btn ${item.paused ? 'btn-success' : 'btn-secondary'}" onclick="window.toggleM(${index})" style="padding: 5px 10px; margin-right: 5px;">
+                    <i class="fas ${item.paused ? 'fa-play' : 'fa-pause'}"></i> ${item.paused ? 'Ativar' : 'Pausar'}
+                </button>
+                <button class="btn btn-error" onclick="window.delM(${index})" style="padding: 5px 10px;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 };
 
-window.updM = function(index) {
-    console.log('updM chamada para índice', index);
+window.updM = function(index, field, value) {
+    if (!window.config.menu) window.config.menu = [];
+    if (window.config.menu[index]) {
+        window.config.menu[index][field] = value;
+    }
 };
 
 window.toggleM = function(index) {
-    console.log('toggleM chamada para índice', index);
+    if (!window.config.menu) window.config.menu = [];
+    if (window.config.menu[index]) {
+        window.config.menu[index].paused = !window.config.menu[index].paused;
+        window.renderT();
+    }
 };
 
 window.delM = function(index) {
     if (confirm('Excluir este item do cardápio?')) {
-        console.log('delM para índice', index);
-        window.showToast('Item removido!', 'success');
+        if (window.config.menu) {
+            window.config.menu.splice(index, 1);
+            window.renderT();
+            window.showToast('Item removido!', 'success');
+        }
     }
 };
 
 window.addM = function() {
-    console.log('addM chamada');
+    if (!window.config.menu) window.config.menu = [];
+    window.config.menu.push({
+        category: 'Nova Categoria',
+        name: 'Novo Item',
+        ingredients: '',
+        price: 0,
+        printer: 'Cozinha',
+        paused: false
+    });
+    window.renderT();
 };
 
 window.saveM = function() {
-    window.showToast('Cardápio salvo!', 'success');
+    window.electronAPI.saveConfig(window.config).then(result => {
+        window.showToast('Cardápio salvo!', 'success');
+    });
 };
 
 window.aiM = function() {
@@ -123,15 +222,19 @@ window.aiM = function() {
         return;
     }
     window.electronAPI.aiParseMenu(text).then(items => {
-        console.log('Itens processados:', items);
+        if (!window.config.menu) window.config.menu = [];
+        window.config.menu.push(...items);
+        window.renderT();
         window.showToast('Cardápio processado com IA!', 'success');
     });
 };
 
 window.saveRules = function() {
-    const rules = document.getElementById('golden-rules').value;
+    const rules = document.getElementById('golden-rules-text').value;
     window.config.goldenRules = rules;
-    window.showToast('Regras salvas!', 'success');
+    window.electronAPI.saveConfig(window.config).then(result => {
+        window.showToast('Regras salvas!', 'success');
+    });
 };
 
 window.togglePause = function() {
@@ -210,16 +313,35 @@ window.doRestore = function() {
 
 window.loadPrinters = function() {
     window.electronAPI.getPrinters().then(printers => {
-        console.log('Impressoras:', printers);
+        const select = document.getElementById('printer-main');
+        select.innerHTML = '<option value="">Selecione uma impressora</option>';
+        printers.forEach(printer => {
+            const option = document.createElement('option');
+            option.value = printer;
+            option.textContent = printer;
+            select.appendChild(option);
+        });
+        window.showToast('Impressoras carregadas!', 'success');
     });
 };
 
 window.savePrinterCfg = function() {
-    console.log('savePrinterCfg chamada');
+    const printer = document.getElementById('printer-main').value;
+    const autoPrint = document.getElementById('auto-print').checked;
+    
+    window.config.printerConfig = {
+        mainPrinter: printer,
+        autoPrint: autoPrint
+    };
+    
+    window.electronAPI.saveConfig(window.config).then(result => {
+        window.showToast('Configuração de impressora salva!', 'success');
+    });
 };
 
 window.testPrint = function() {
-    window.electronAPI.printJob('Impressora Padrão', '<h1>Teste</h1>').then(result => {
+    const printer = document.getElementById('printer-main').value || 'Impressora Padrão';
+    window.electronAPI.printJob(printer, '<h1>Teste de Impressão</h1><p>Esta é uma impressão de teste do Delivery Manager.</p>').then(result => {
         window.showToast('Impressão enviada!', 'success');
     });
 };
@@ -261,6 +383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('addr').value = window.config.restaurantAddress || '';
         document.getElementById('k-adm').value = window.config.adminNumber || '';
         document.getElementById('golden-rules').value = window.config.goldenRules || '';
+        document.getElementById('golden-rules-text').value = window.config.goldenRules || '';
         
         // Atualizar botão de pausa
         const btn = document.getElementById('btn-pause');
@@ -294,6 +417,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicializar componentes
     window.renderFleet();
     window.renderOrders();
+    window.renderT();
     window.loadPrinters();
     window.initMap();
+    
+    // Carregar configuração de impressora se existir
+    if (window.config.printerConfig) {
+        document.getElementById('printer-main').value = window.config.printerConfig.mainPrinter || '';
+        document.getElementById('auto-print').checked = window.config.printerConfig.autoPrint || false;
+    }
 });
