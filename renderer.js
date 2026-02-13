@@ -346,6 +346,33 @@ window.testPrint = function() {
     });
 };
 
+// Funções adicionais
+window.inviteDriver = function() {
+    const phone = document.getElementById('fleet-invite-phone').value;
+    if (!phone) {
+        window.showToast('Digite um telefone!', 'error');
+        return;
+    }
+    window.electronAPI.fleetInviteCreate({ phone, slug: 'default' }).then(result => {
+        window.showToast(`Convite criado: ${result.inviteId}`, 'success');
+    });
+};
+
+window.saveConfig = function() {
+    window.saveC();
+};
+
+window.closeCashier = function() {
+    const countedCash = parseFloat(prompt('Dinheiro contado no caixa:'));
+    if (isNaN(countedCash)) return;
+    const operatorName = prompt('Nome do operador:');
+    if (!operatorName) return;
+    
+    window.electronAPI.cashierClose({ countedCash, operatorName, ordersFromRenderer: window.pendingOrders }).then(result => {
+        window.showToast(result.message, 'success');
+    });
+};
+
 // Sistema de notificações Toast
 window.showToast = function(message, type = 'success') {
     const container = document.getElementById('toast-notification');
