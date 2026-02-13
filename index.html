@@ -67,3 +67,229 @@ document.getElementById('save').onclick = () => {
 
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ceia - Sistema de Gestão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .panel {
+            display: none;
+        }
+        .panel.active {
+            display: block;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex flex-col">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold" id="store-name">Nome da Loja</h1>
+                <p class="text-gray-400 mt-2">Sistema de gestão integrada</p>
+            </div>
+            <nav class="flex-1 px-4">
+                <a href="#" class="nav-link" data-panel="home-panel">
+                    <i class="fas fa-home mr-3"></i> Início
+                </a>
+                <a href="#" class="nav-link" data-panel="menu-panel">
+                    <i class="fas fa-utensils mr-3"></i> Cardápio
+                </a>
+                <a href="#" class="nav-link" data-panel="config-panel">
+                    <i class="fas fa-cog mr-3"></i> Configurações
+                </a>
+                <a href="#" class="nav-link" data-panel="fleet-panel">
+                    <i class="fas fa-motorcycle mr-3"></i> Frota
+                </a>
+                <a href="#" class="nav-link" data-panel="tables-panel">
+                    <i class="fas fa-chair mr-3"></i> Mesas
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-800">
+                <button id="cashier-close-btn" class="w-full bg-red-600 hover:bg-red-700 py-2 rounded-lg font-semibold">
+                    <i class="fas fa-cash-register mr-2"></i> Fechar Caixa
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 overflow-y-auto p-8">
+            <!-- Home Panel -->
+            <div id="home-panel" class="panel active">
+                <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Pedidos Novos</h3>
+                        <div id="orders-new" class="mt-4 text-4xl font-bold text-blue-600">0</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Faturamento Hoje</h3>
+                        <div class="mt-4 text-4xl font-bold text-green-600">R$ 0,00</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">Entregadores Ativos</h3>
+                        <div id="fleet-active" class="mt-4 text-4xl font-bold text-purple-600">0</div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-xl font-bold mb-4">Mapa de Entregas</h3>
+                    <div id="map"></div>
+                </div>
+            </div>
+
+            <!-- Menu Panel -->
+            <div id="menu-panel" class="panel">
+                <h2 class="text-3xl font-bold mb-6">Gerenciar Cardápio</h2>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <p class="text-gray-600">Aqui você pode adicionar, editar e remover itens do cardápio.</p>
+                    <button id="publish-ceia-wp-btn" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+                        <i class="fas fa-upload mr-2"></i> Publicar no WordPress
+                    </button>
+                </div>
+            </div>
+
+            <!-- Config Panel -->
+            <div id="config-panel" class="panel">
+                <h2 class="text-3xl font-bold mb-6">Configurações da Loja</h2>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <form id="config-form">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Nome da Loja</label>
+                            <input type="text" id="config-store-name" class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Endereço</label>
+                            <input type="text" id="config-store-address" class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-medium mb-2">Telefone</label>
+                            <input type="text" id="config-store-phone" class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg">
+                            Salvar Configurações
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Fleet Panel -->
+            <div id="fleet-panel" class="panel">
+                <h2 class="text-3xl font-bold mb-6">Gerenciar Frota</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="fleet-cards">
+                    <!-- Cards de entregadores serão inseridos aqui via JS -->
+                </div>
+                <div class="mt-8 bg-white p-6 rounded-xl shadow">
+                    <h3 class="text-xl font-bold mb-4">Adicionar Entregador</h3>
+                    <div class="flex gap-4">
+                        <input type="text" id="fleet-driver-name" placeholder="Nome" class="flex-1 p-3 border border-gray-300 rounded-lg">
+                        <input type="text" id="fleet-driver-phone" placeholder="Telefone" class="flex-1 p-3 border border-gray-300 rounded-lg">
+                        <button id="fleet-add-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg">
+                            Adicionar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Panel -->
+            <div id="tables-panel" class="panel">
+                <h2 class="text-3xl font-bold mb-6">Layout das Mesas</h2>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="tables-container">
+                        <!-- Mesas serão geradas dinamicamente -->
+                    </div>
+                    <div class="flex gap-4">
+                        <input type="number" id="tables-count" placeholder="Número de mesas" class="p-3 border border-gray-300 rounded-lg" min="1" max="50">
+                        <button id="tables-generate-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg">
+                            Gerar Mesas
+                        </button>
+                        <button id="tables-save-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg">
+                            Salvar Layout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Navegação entre painéis
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const panelId = link.getAttribute('data-panel');
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                document.getElementById(panelId).classList.add('active');
+            });
+        });
+
+        // IPC para renderer (simulação)
+        const { ipcRenderer } = require('electron');
+
+        // Botão Publicar no WordPress
+        document.getElementById('publish-ceia-wp-btn').addEventListener('click', () => {
+            ipcRenderer.invoke('publish-ceia-wp').then(result => {
+                alert(result);
+            });
+        });
+
+        // Botão Fechar Caixa
+        document.getElementById('cashier-close-btn').addEventListener('click', () => {
+            ipcRenderer.invoke('cashier-close').then(result => {
+                alert(result);
+            });
+        });
+
+        // Botão Salvar Layout das Mesas
+        document.getElementById('tables-save-btn').addEventListener('click', () => {
+            const tablesData = []; // Coletar dados das mesas
+            ipcRenderer.invoke('tables-save', tablesData).then(result => {
+                alert(result);
+            });
+        });
+
+        // Carregar configurações ao abrir o painel
+        document.querySelector('a[data-panel="config-panel"]').addEventListener('click', () => {
+            ipcRenderer.invoke('get-store-config').then(config => {
+                if (config) {
+                    document.getElementById('config-store-name').value = config.storeName || '';
+                    document.getElementById('config-store-address').value = config.storeAddress || '';
+                    document.getElementById('config-store-phone').value = config.storePhone || '';
+                }
+            });
+        });
+
+        // Salvar configurações
+        document.getElementById('config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const config = {
+                storeName: document.getElementById('config-store-name').value,
+                storeAddress: document.getElementById('config-store-address').value,
+                storePhone: document.getElementById('config-store-phone').value
+            };
+            ipcRenderer.invoke('save-config', config).then(result => {
+                alert(result);
+                document.getElementById('store-name').textContent = config.storeName;
+            });
+        });
+
+        // Carregar configurações iniciais
+        window.addEventListener('DOMContentLoaded', () => {
+            ipcRenderer.invoke('load-config').then(config => {
+                if (config) {
+                    document.getElementById('store-name').textContent = config.storeName || 'Nome da Loja';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
