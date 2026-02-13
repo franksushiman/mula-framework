@@ -54,6 +54,27 @@ window.saveC = function() {
     window.config.restaurantAddress = document.getElementById('addr')?.value || '';
     window.config.adminNumber = document.getElementById('k-adm')?.value || '';
     window.config.goldenRules = document.getElementById('golden-rules')?.value || '';
+    
+    // Salvar configurações do Telegram
+    const botToken = document.getElementById('telegram-bot-token')?.value || '';
+    const chatId = document.getElementById('telegram-chat-id')?.value || '';
+    const motoboysChannel = document.getElementById('telegram-motoboys-channel')?.value || '';
+    
+    if (!window.config.telegram) window.config.telegram = {};
+    window.config.telegram.botToken = botToken;
+    window.config.telegram.chatId = chatId;
+    window.config.telegram.motoboysChannel = motoboysChannel;
+    
+    // Salvar configurações do WhatsApp via Bayleis
+    const bayleisApiKey = document.getElementById('bayleis-api-key')?.value || '';
+    const bayleisSecretKey = document.getElementById('bayleis-secret-key')?.value || '';
+    const whatsappNumber = document.getElementById('whatsapp-number')?.value || '';
+    
+    if (!window.config.bayleis) window.config.bayleis = {};
+    window.config.bayleis.apiKey = bayleisApiKey;
+    window.config.bayleis.secretKey = bayleisSecretKey;
+    window.config.bayleis.whatsappNumber = whatsappNumber;
+    
     // Salvar
     window.electronAPI.saveConfig(window.config).then(result => {
         window.showToast(result, 'success');
@@ -615,6 +636,51 @@ window.hideMotoboysChannel = function() {
     }
 };
 
+// Funções para WhatsApp via Bayleis
+window.testWhatsAppConnection = function() {
+    const apiKey = document.getElementById('bayleis-api-key').value;
+    const secretKey = document.getElementById('bayleis-secret-key').value;
+    
+    if (!apiKey || !secretKey) {
+        window.showToast('Preencha a API Key e Secret Key do Bayleis!', 'error');
+        return;
+    }
+    
+    // Simulação de teste de conexão
+    window.electronAPI.whatsappGetStatus().then(result => {
+        const statusDiv = document.getElementById('whatsapp-status');
+        const statusText = document.getElementById('whatsapp-status-text');
+        if (statusDiv && statusText) {
+            statusDiv.style.display = 'block';
+            if (result.online) {
+                statusText.textContent = `WhatsApp conectado via Bayleis (${result.phone})`;
+                statusText.style.color = 'var(--verde-esperanca)';
+                window.showToast('WhatsApp conectado!', 'success');
+            } else {
+                statusText.textContent = 'WhatsApp desconectado. Obtenha o QR Code.';
+                statusText.style.color = 'var(--vermelho-sobrio)';
+                window.showToast('WhatsApp desconectado', 'error');
+            }
+        }
+    });
+};
+
+window.getWhatsAppQR = function() {
+    window.electronAPI.whatsappGetQr().then(qrDataUrl => {
+        if (qrDataUrl) {
+            const qrContainer = document.getElementById('whatsapp-qr-container');
+            const qrImage = document.getElementById('whatsapp-qr-image');
+            if (qrContainer && qrImage) {
+                qrImage.src = qrDataUrl;
+                qrContainer.style.display = 'block';
+                window.showToast('QR Code gerado! Escaneie com o WhatsApp.', 'success');
+            }
+        } else {
+            window.showToast('Erro ao gerar QR Code', 'error');
+        }
+    });
+};
+
 // Funções adicionais (mantidas para compatibilidade)
 window.inviteDriver = function() {
     window.sendFleetInvite();
@@ -700,6 +766,27 @@ window.renderDashboardStats = async function() {
                 statusDot.className = 'status-dot online';
                 statusText.textContent = 'Loja aberta · pronta para receber pedidos';
             }
+        }
+        
+        // Atualiza status do WhatsApp
+        const whatsappDot = document.getElementById('whatsapp-status-dot');
+        const whatsappText = document.getElementById('whatsapp-status-text');
+        
+        if (whatsappDot && whatsappText) {
+            // Verificar status do WhatsApp
+            window.electronAPI.whatsappGetStatus().then(result => {
+                if (result.online) {
+                    whatsappDot.className = 'status-dot online';
+                    whatsappText.textContent = `WhatsApp · ${result.phone || 'conectado'}`;
+                } else {
+                    whatsappDot.className = 'status-dot offline';
+                    whatsappText.textContent = 'WhatsApp · desconectado';
+                }
+            }).catch(error => {
+                whatsappDot.className = 'status-dot offline';
+                whatsappText.textContent = 'WhatsApp · erro';
+                console.error('Erro ao verificar status WhatsApp:', error);
+            });
         }
         
         // Atualiza botão de pausa do dashboard
@@ -986,6 +1073,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setValue('telegram-bot-token', window.config.telegram.botToken);
                 setValue('telegram-chat-id', window.config.telegram.chatId);
                 setValue('telegram-motoboys-channel', window.config.telegram.motoboysChannel || 'bot_embutido_ceia_frota');
+            }
+            
+            // Preencher configurações do WhatsApp via Bayleis
+            if (window.config.bayleis) {
+                setValue('bayleis-api-key', window.config.bayleis.apiKey);
+                setValue('bayleis-secret-key', window.config.bayleis.secretKey);
+                setValue('whatsapp-number', window.config.bayleis.whatsappNumber);
             }
             
             // Atualizar botão de pausa

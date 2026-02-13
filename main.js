@@ -454,6 +454,25 @@ ipcMain.handle('get-telegram-updates', async (event, botToken) => {
   }
 });
 
+// Handler para testar conexão Bayleis (simulação)
+ipcMain.handle('test-bayleis-connection', async (event, { apiKey, secretKey }) => {
+  try {
+    // Simulação de conexão com Bayleis
+    console.log('Testando conexão Bayleis com API Key:', apiKey?.substring(0, 10) + '...');
+    
+    // Simular uma resposta bem-sucedida
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return {
+      success: true,
+      connected: true,
+      message: 'Conexão com Bayleis estabelecida'
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 
 // Event listeners
 ipcMain.on('save-config', (event, data) => {

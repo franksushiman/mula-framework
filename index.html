@@ -1240,7 +1240,6 @@
                 <a href="#" class="nav-item" data-panel="finance-panel"><i class="fas fa-chart-line"></i> Financeiro</a>
                 <a href="#" class="nav-item" data-panel="printers-panel"><i class="fas fa-print"></i> Impressoras</a>
                 <a href="#" class="nav-item" data-panel="config-panel"><i class="fas fa-cog"></i> Configurações</a>
-                <a href="#" class="nav-item" data-panel="telegram-panel"><i class="fab fa-telegram"></i> Telegram</a>
                 <a href="#" class="nav-item" data-panel="hub-panel"><i class="fas fa-store"></i> Hub</a>
             </nav>
             <div class="sidebar-footer">
@@ -1266,6 +1265,10 @@
                                 <div class="status-item">
                                     <span class="status-dot" id="system-status-dot"></span>
                                     <span class="status-text" id="system-status-text">Sistema</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-dot" id="whatsapp-status-dot"></span>
+                                    <span class="status-text" id="whatsapp-status-text">WhatsApp</span>
                                 </div>
                             </div>
                             <button class="btn-pause-grande" id="btn-pause-dashboard" onclick="window.togglePause()">
@@ -1623,6 +1626,98 @@
                             <textarea id="golden-rules" class="form-input" rows="6" placeholder="Regras importantes para a operação"></textarea>
                         </div>
                     </div>
+                    
+                    <!-- Seção de Mensageiros -->
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--borda-quente);">
+                        <h3 style="color: var(--terra); margin-bottom: 15px;">📱 Mensageiros</h3>
+                        
+                        <!-- Telegram -->
+                        <div style="background: var(--cinza-fundo); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="color: var(--texto-principal); margin-bottom: 10px;">
+                                <i class="fab fa-telegram"></i> Telegram
+                            </h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <label>Bot Token (lojista)</label>
+                                    <input type="text" id="telegram-bot-token" class="form-input" placeholder="Token do seu bot">
+                                    <small style="color: var(--texto-secundario); font-size: 12px;">
+                                        Crie um bot com @BotFather
+                                    </small>
+                                </div>
+                                <div>
+                                    <label>Chat ID do Admin</label>
+                                    <input type="text" id="telegram-chat-id" class="form-input" placeholder="Seu ID de chat">
+                                    <small style="color: var(--texto-secundario); font-size: 12px;">
+                                        Use @userinfobot para descobrir
+                                    </small>
+                                </div>
+                                <div id="motoboys-channel-section" style="grid-column: span 2;">
+                                    <label>Canal dos Motoboys (embutido)</label>
+                                    <input type="text" id="telegram-motoboys-channel" class="form-input" placeholder="Token do canal dos motoboys" value="bot_embutido_ceia_frota">
+                                    <small style="color: var(--texto-secundario); font-size: 12px;">
+                                        Este canal é gerenciado pelo sistema. Não altere.
+                                    </small>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label>Mensagem de Teste</label>
+                                    <textarea id="telegram-test-message" class="form-input" rows="2" placeholder="Digite uma mensagem para testar">Teste do sistema Ceia Delivery</textarea>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-primary" onclick="window.testTelegram()" style="padding: 8px 15px;">
+                                    <i class="fab fa-telegram"></i> Enviar Teste
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.hideMotoboysChannel()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fas fa-eye-slash"></i> Ocultar Canal
+                                </button>
+                            </div>
+                            <div id="telegram-status" style="margin-top: 10px; padding: 10px; background: var(--branco-quente); border-radius: 6px; display: none;">
+                                <p id="telegram-status-text" style="margin: 0; font-size: 13px;"></p>
+                            </div>
+                        </div>
+                        
+                        <!-- WhatsApp via Bayleis -->
+                        <div style="background: var(--cinza-fundo); padding: 15px; border-radius: 8px;">
+                            <h4 style="color: var(--texto-principal); margin-bottom: 10px;">
+                                <i class="fab fa-whatsapp"></i> WhatsApp (via Bayleis)
+                            </h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div>
+                                    <label>Bayleis API Key</label>
+                                    <input type="text" id="bayleis-api-key" class="form-input" placeholder="Chave da API Bayleis">
+                                </div>
+                                <div>
+                                    <label>Bayleis Secret Key</label>
+                                    <input type="text" id="bayleis-secret-key" class="form-input" placeholder="Chave secreta Bayleis">
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <label>Número do WhatsApp</label>
+                                    <input type="text" id="whatsapp-number" class="form-input" placeholder="+5511999999999">
+                                    <small style="color: var(--texto-secundario); font-size: 12px;">
+                                        Número conectado ao Bayleis
+                                    </small>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-primary" onclick="window.testWhatsAppConnection()" style="padding: 8px 15px;">
+                                    <i class="fas fa-plug"></i> Testar Conexão
+                                </button>
+                                <button class="btn btn-success" onclick="window.getWhatsAppQR()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fas fa-qrcode"></i> Obter QR Code
+                                </button>
+                            </div>
+                            <div id="whatsapp-status" style="margin-top: 10px; padding: 10px; background: var(--branco-quente); border-radius: 6px; display: none;">
+                                <p id="whatsapp-status-text" style="margin: 0; font-size: 13px;"></p>
+                            </div>
+                            <div id="whatsapp-qr-container" style="margin-top: 10px; text-align: center; display: none;">
+                                <img id="whatsapp-qr-image" src="" style="max-width: 200px; border: 1px solid var(--borda-quente); border-radius: 8px;">
+                                <p style="font-size: 12px; color: var(--texto-secundario); margin-top: 5px;">
+                                    Escaneie com o WhatsApp para conectar
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div style="margin-top: 20px;">
                         <button class="btn btn-primary" onclick="window.saveC()">
                             <i class="fas fa-save"></i> Salvar Configurações
@@ -1637,56 +1732,6 @@
                 </div>
             </div>
 
-            <div id="telegram-panel" class="panel">
-                <div class="card">
-                    <h2>Configuração do Telegram</h2>
-                    <p style="color: var(--texto-secundario); margin-bottom: 20px;">
-                        Configure seu bot do Telegram para receber notificações e gerenciar a frota.
-                    </p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div>
-                            <label>Seu Bot Token (lojista)</label>
-                            <input type="text" id="telegram-bot-token" class="form-input" placeholder="Token do seu bot">
-                            <small style="color: var(--texto-secundario); font-size: 12px;">
-                                Crie um bot com @BotFather e cole o token aqui.
-                            </small>
-                        </div>
-                        <div>
-                            <label>Chat ID do Admin</label>
-                            <input type="text" id="telegram-chat-id" class="form-input" placeholder="Seu ID de chat">
-                            <small style="color: var(--texto-secundario); font-size: 12px;">
-                                Use @userinfobot para descobrir seu ID.
-                            </small>
-                        </div>
-                        <div id="motoboys-channel-section">
-                            <label>Canal dos Motoboys (embutido)</label>
-                            <input type="text" id="telegram-motoboys-channel" class="form-input" placeholder="Token do canal dos motoboys" value="bot_embutido_ceia_frota">
-                            <small style="color: var(--texto-secundario); font-size: 12px;">
-                                Este canal é gerenciado pelo sistema. Não altere.
-                            </small>
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label>Mensagem de Teste</label>
-                            <textarea id="telegram-test-message" class="form-input" rows="3" placeholder="Digite uma mensagem para testar seu bot">Teste do sistema Ceia Delivery</textarea>
-                        </div>
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-primary" onclick="window.testTelegram()">
-                            <i class="fab fa-telegram"></i> Enviar Mensagem de Teste
-                        </button>
-                        <button class="btn btn-secondary" onclick="window.saveTelegramConfig()" style="margin-left: 10px;">
-                            <i class="fas fa-save"></i> Salvar Configuração
-                        </button>
-                        <button class="btn btn-success" onclick="window.hideMotoboysChannel()" style="margin-left: 10px;">
-                            <i class="fas fa-eye-slash"></i> Ocultar Canal Motoboys
-                        </button>
-                    </div>
-                    <div id="telegram-status" style="margin-top: 20px; padding: 15px; background: var(--cinza-fundo); border-radius: 8px; display: none;">
-                        <h4>Status do Bot</h4>
-                        <p id="telegram-status-text"></p>
-                    </div>
-                </div>
-            </div>
 
             <div id="hub-panel" class="panel">
                 <div class="card">
