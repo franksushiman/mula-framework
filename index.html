@@ -375,6 +375,587 @@
             margin-bottom: 12px;
             opacity: 0.5;
         }
+
+        /* FLEET PANEL - NOVA FILOSOFIA */
+        .fleet-container {
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .fleet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .fleet-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .fleet-status-global {
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 14px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Card de Convite */
+        .invite-section {
+            margin-bottom: 32px;
+        }
+
+        .invite-card {
+            background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+            border-radius: 24px;
+            padding: 28px;
+            border: 1px solid #404040;
+            display: flex;
+            gap: 24px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+        }
+
+        .invite-icon {
+            font-size: 48px;
+            background: rgba(255,196,0,0.1);
+            width: 80px;
+            height: 80px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .invite-content {
+            flex: 1;
+        }
+
+        .invite-content h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .invite-content p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .invite-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 500px;
+        }
+
+        .invite-input {
+            background: #2d2d2d;
+            border: 1px solid #404040;
+            border-radius: 40px;
+            padding: 14px 20px;
+            font-size: 16px;
+            color: white;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .invite-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255,196,0,0.2);
+        }
+
+        .invite-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-invite {
+            background: var(--primary);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 28px;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-invite:hover {
+            background: #ffd700;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(255,196,0,0.3);
+        }
+
+        .invite-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .invite-preview {
+            margin-top: 16px;
+            background: #2d2d2d;
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #404040;
+        }
+
+        .preview-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .preview-link {
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--primary);
+            flex: 1;
+        }
+
+        .btn-copy {
+            background: none;
+            border: 1px solid #404040;
+            color: white;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-copy:hover {
+            background: #404040;
+        }
+
+        /* Tabs */
+        .fleet-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .fleet-tab {
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            border-radius: 40px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fleet-tab.active {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .tab-count {
+            background: #2d2d2d;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+
+        /* Cards de Motoboy */
+        .fleet-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .fleet-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .fleet-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+            border-color: var(--primary);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .card-vulgo {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 40px;
+        }
+
+        .status-badge.online {
+            background: rgba(16,185,129,0.15);
+            color: #10b981;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+
+        .status-badge.offline {
+            background: rgba(239,68,68,0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.2);
+        }
+
+        .card-body {
+            margin-bottom: 16px;
+        }
+
+        .card-info {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .info-label {
+            color: var(--text-tertiary);
+            min-width: 50px;
+        }
+
+        .info-value {
+            color: var(--text-secondary);
+        }
+
+        .fixed-badge {
+            background: rgba(255,196,0,0.15);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 14px;
+        }
+
+        .last-seen {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        .btn-chamada {
+            background: none;
+            border: 1px solid #10b981;
+            color: #10b981;
+            border-radius: 40px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-chamada:hover {
+            background: #10b981;
+            color: white;
+        }
+
+        /* Feed */
+        .feed-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .feed-header h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .feed-update {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            background: rgba(255,255,255,0.05);
+            padding: 4px 10px;
+            border-radius: 40px;
+        }
+
+        .feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .feed-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .feed-item.offline {
+            opacity: 0.6;
+        }
+
+        .feed-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,196,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .feed-text {
+            flex: 1;
+            color: var(--text-secondary);
+        }
+
+        .feed-text strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .feed-time {
+            font-size: 10px;
+            color: var(--text-tertiary);
+        }
+
+        /* Convocação Offline */
+        .convocacao-section {
+            background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid #404040;
+            margin-top: 16px;
+        }
+
+        .convocacao-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .convocacao-header h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .convocacao-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .offline-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .offline-item {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #404040;
+        }
+
+        .offline-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .offline-vulgo {
+            font-weight: 800;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .offline-nome {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .offline-tipo {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+
+        .offline-tipo.fixed {
+            background: rgba(255,196,0,0.15);
+            color: var(--primary);
+            border: 1px solid rgba(255,196,0,0.3);
+        }
+
+        .offline-tipo.freelancer {
+            background: rgba(16,185,129,0.15);
+            color: #10b981;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+
+        .offline-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .offline-tempo {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .btn-convocar {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-convocar:hover {
+            background: #0f9e6e;
+            transform: translateY(-2px);
+        }
+
+        .convocacao-massiva {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #404040;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-convocar-todos {
+            background: rgba(255,196,0,0.1);
+            color: var(--primary);
+            border: 1px solid rgba(255,196,0,0.3);
+            border-radius: 40px;
+            padding: 14px 32px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: fit-content;
+        }
+
+        .btn-convocar-todos:hover {
+            background: rgba(255,196,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        .massiva-hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* Estado Vazio */
+        .fleet-empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .fleet-empty-state h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .fleet-empty-state p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .empty-hint {
+            font-size: 12px !important;
+            color: var(--text-tertiary) !important;
+            margin-top: 16px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -519,28 +1100,137 @@
 
 
             <div id="fleet-panel" class="panel">
-                <div class="card">
-                    <h2>Frota</h2>
-                    <input id="fleet-invite-phone" class="form-input" placeholder="Telefone do motoboy">
-                    <button class="btn btn-primary" onclick="window.inviteDriver()">Convidar</button>
-                    <div style="margin-top: 20px;">
-                        <table class="table" id="tb-fleet">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Vulgo</th>
-                                    <th>Telefone</th>
-                                    <th>Veículo</th>
-                                    <th>Status</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Dados da frota serão inseridos aqui -->
-                            </tbody>
-                        </table>
+                <div class="fleet-container">
+                    
+                    <!-- HEADER: Título e status -->
+                    <div class="fleet-header">
+                        <h2>🛵 Frota Mula Logistics</h2>
+                        <div class="fleet-status-global">
+                            <span class="status-dot online"></span>
+                            <span id="fleet-global-count">0</span> entregadores na rede
+                        </div>
                     </div>
-                    <div id="fleet-cards" style="margin-top: 20px;"></div>
+
+                    <!-- ÁREA DE CONVITE: Única ação do lojista -->
+                    <div class="invite-section">
+                        <div class="invite-card">
+                            <div class="invite-icon">📱</div>
+                            <div class="invite-content">
+                                <h3>Convidar motoboy para a rede</h3>
+                                <p>Digite o WhatsApp e envie o link de cadastro. O motoboy se cadastra pelo celular.</p>
+                                
+                                <div class="invite-form">
+                                    <input type="text" 
+                                           id="fleet-invite-phone" 
+                                           placeholder="(11) 99999-9999" 
+                                           class="invite-input"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                    
+                                    <div class="invite-actions">
+                                        <button class="btn-invite" onclick="window.sendFleetInvite()">
+                                            <span class="btn-icon">📨</span>
+                                            Enviar convite
+                                        </button>
+                                        <span class="invite-hint" id="fleet-invite-link-hint">
+                                            Configure o bot do Telegram primeiro
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Preview do link (aparece após enviar) -->
+                                <div id="invite-preview" class="invite-preview hidden">
+                                    <span class="preview-label">Link enviado:</span>
+                                    <code class="preview-link">https://ceia.ia.br/cadastro/abc123</code>
+                                    <button class="btn-copy" onclick="window.copyInviteLink()">📋 Copiar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FILTROS: Fixos vs Freelancers (apenas visual, não CRUD) -->
+                    <div class="fleet-tabs">
+                        <button class="fleet-tab active" data-team="fixos" onclick="window.selectFleetTeam('fixos')">
+                            🏠 Fixos <span class="tab-count" id="count-fixos">0</span>
+                        </button>
+                        <button class="fleet-tab" data-team="freelancers" onclick="window.selectFleetTeam('freelancers')">
+                            🔄 Freelancers <span class="tab-count" id="count-freelancers">0</span>
+                        </button>
+                        <button class="fleet-tab" data-team="offline" onclick="window.selectFleetTeam('offline')">
+                            ⏳ Offline agora <span class="tab-count" id="count-offline">0</span>
+                        </button>
+                    </div>
+
+                    <!-- LISTA DE MOTOBOYS (SÓ VISUALIZAÇÃO) -->
+                    <div id="fleet-cards" class="fleet-cards">
+                        <!-- Populado via renderFleet() -->
+                    </div>
+
+                    <!-- FEED DA FROTA (TEXTO PURO) -->
+                    <div class="feed-section">
+                        <div class="feed-header">
+                            <h4>📡 Atividade da frota · agora</h4>
+                            <span class="feed-update">em tempo real</span>
+                        </div>
+                        <div id="fleet-feed-list" class="feed-list">
+                            <!-- Populado via renderFleetFeed() -->
+                            <div class="feed-item">
+                                <span class="feed-icon">📍</span>
+                                <span class="feed-text">
+                                    <strong>João</strong> compartilhou localização · entrou em serviço
+                                </span>
+                                <span class="feed-time">há 2 min</span>
+                            </div>
+                            <div class="feed-item">
+                                <span class="feed-icon">🛵</span>
+                                <span class="feed-text">
+                                    <strong>Maria</strong> aceitou corrida #183
+                                </span>
+                                <span class="feed-time">há 5 min</span>
+                            </div>
+                            <div class="feed-item">
+                                <span class="feed-icon">✅</span>
+                                <span class="feed-text">
+                                    <strong>Carlos</strong> finalizou entrega · 18 min
+                                </span>
+                                <span class="feed-time">há 12 min</span>
+                            </div>
+                            <div class="feed-item offline">
+                                <span class="feed-icon">⏳</span>
+                                <span class="feed-text">
+                                    <strong>Ana</strong> saiu de serviço (parou de compartilhar)
+                                </span>
+                                <span class="feed-time">há 25 min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO DE CONVOCAÇÃO: CHAMAR OFFLINE (apenas vinculados à loja) -->
+                    <div class="convocacao-section">
+                        <div class="convocacao-header">
+                            <h4>📢 Convocar offline</h4>
+                            <span class="convocacao-hint">apenas entregadores vinculados à sua loja</span>
+                        </div>
+                        
+                        <div class="offline-list" id="offline-convocacao-list">
+                            <!-- Lista de motoboys OFFLINE que pertencem a esta loja -->
+                        </div>
+
+                        <!-- Botão de convocação em massa (apenas offline da loja) -->
+                        <div class="convocacao-massiva">
+                            <button class="btn-convocar-todos" onclick="window.convocarTodosOffline()">
+                                📢 Convocar todos os offline da loja
+                            </button>
+                            <span class="massiva-hint">envia WhatsApp para todos os fixos e freelancers offline</span>
+                        </div>
+                    </div>
+
+                    <!-- ESTADO VAZIO (quando não há motoboys) -->
+                    <div id="fleet-empty-state" class="fleet-empty-state hidden">
+                        <div class="empty-icon">🛵</div>
+                        <h3>Nenhum motoboy na rede ainda</h3>
+                        <p>Convide o primeiro entregador usando o campo acima.</p>
+                        <p class="empty-hint">O motoboy recebe um link e se cadastra pelo celular.</p>
+                    </div>
                 </div>
             </div>
 

@@ -7,41 +7,11 @@ window.currentShape = null;
 
 // Funções obrigatórias
 window.renderFleet = function() {
-    const tbody = document.querySelector('#tb-fleet tbody');
-    if (!tbody) return;
+    // Renderiza a frota no novo formato
+    window.renderFleetNew();
     
-    tbody.innerHTML = '';
-    
-    const fleet = window.config.fleet || [];
-    const now = Date.now();
-    
-    fleet.forEach((driver, index) => {
-        const lastSeen = window.driverLastSeen[driver.phone] || 0;
-        const minutesAgo = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
-        const isOnline = minutesAgo < 30;
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${driver.name}</td>
-            <td>${driver.code}</td>
-            <td>${driver.phone}</td>
-            <td>${driver.vehicle || ''}</td>
-            <td><span class="badge ${isOnline ? 'badge-online' : 'badge-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span></td>
-            <td>
-                <button class="btn btn-error" onclick="window.delDriver('${driver.phone}')" style="padding: 5px 10px; font-size: 0.8rem;">
-                    <i class="fas fa-trash"></i> Remover
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-    
-    // Atualizar contador de ativos
-    const activeCount = fleet.filter(driver => {
-        const lastSeen = window.driverLastSeen[driver.phone] || 0;
-        return lastSeen && (Date.now() - lastSeen) < 30 * 60000;
-    }).length;
-    document.getElementById('fleet-active').textContent = activeCount;
+    // Também atualiza o feed da frota
+    window.renderFleetFeed();
 };
 
 window.addDriver = function() {
@@ -349,8 +319,8 @@ window.testPrint = function() {
     });
 };
 
-// Funções adicionais
-window.inviteDriver = function() {
+// Funções auxiliares para o novo componente de frota
+window.sendFleetInvite = function() {
     const phone = document.getElementById('fleet-invite-phone').value;
     if (!phone) {
         window.showToast('Digite um telefone!', 'error');
@@ -358,7 +328,174 @@ window.inviteDriver = function() {
     }
     window.electronAPI.fleetInviteCreate({ phone, slug: 'default' }).then(result => {
         window.showToast(`Convite criado: ${result.inviteId}`, 'success');
+        // Mostrar preview do link
+        const preview = document.getElementById('invite-preview');
+        const linkEl = preview.querySelector('.preview-link');
+        if (preview && linkEl) {
+            linkEl.textContent = `https://ceia.ia.br/cadastro/${result.inviteId}`;
+            preview.classList.remove('hidden');
+        }
     });
+};
+
+window.copyInviteLink = function() {
+    const linkEl = document.querySelector('.preview-link');
+    if (!linkEl) return;
+    
+    navigator.clipboard.writeText(linkEl.textContent);
+    window.showToast('Link copiado!', 'success');
+};
+
+window.selectFleetTeam = function(team) {
+    // Atualizar tabs
+    document.querySelectorAll('.fleet-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Filtrar cards (implementação básica)
+    const cards = document.querySelectorAll('.fleet-card');
+    cards.forEach(card => {
+        const cardTeam = card.dataset.team || 'fixos';
+        if (team === 'offline') {
+            const isOnline = card.querySelector('.status-badge.online');
+            card.style.display = isOnline ? 'none' : 'block';
+        } else if (team === 'fixos' || team === 'freelancers') {
+            card.style.display = cardTeam === team ? 'block' : 'none';
+        }
+    });
+};
+
+window.convocarOffline = function(vulgo) {
+    const driver = window.config.fleet.find(d => d.code === vulgo);
+    if (!driver || !driver.phone) return;
+    
+    const mensagem = `Olá ${driver.name || driver.code}! 👋\n\nTemos corridas agora. Se quiser rodar, é só compartilhar sua localização no Telegram que você já entra no radar.`;
+    
+    window.electronAPI.whatsappBroadcast({ 
+        phones: [driver.phone], 
+        msg: mensagem 
+    });
+    
+    window.showToast(`Convocação enviada para ${driver.code}`, 'success');
+};
+
+window.convocarTodosOffline = function() {
+    const fleet = window.config.fleet || [];
+    const now = Date.now();
+    const offlineDaCasa = fleet.filter(driver => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        const isOnline = lastSeen && (now - lastSeen) < 30 * 60000;
+        const pertenceALoja = driver.team === 'fixos' || driver.team === 'freelancers';
+        return !isOnline && pertenceALoja && driver.phone;
+    });
+    
+    if (offlineDaCasa.length === 0) {
+        window.showToast('Nenhum entregador offline da sua loja', 'info');
+        return;
+    }
+    
+    const mensagem = `🚨 CORRIDAS AGORA!\n\nSe estiver disponível, compartilhe sua localização no Telegram para entrar no radar.`;
+    
+    offlineDaCasa.forEach(d => {
+        window.electronAPI.whatsappBroadcast({ 
+            phones: [d.phone], 
+            msg: mensagem 
+        });
+    });
+    
+    window.showToast(`Convocação enviada para ${offlineDaCasa.length} entregadores`, 'success');
+};
+
+window.abrirChamada = function(vulgo) {
+    const driver = window.config.fleet.find(d => d.code === vulgo);
+    if (!driver || !driver.phone) return;
+    
+    const mensagem = `🛵 Chamada para corrida!\n\nTem um pedido pronto. Compartilhe sua localização se estiver disponível.`;
+    
+    window.electronAPI.whatsappBroadcast({ 
+        phones: [driver.phone], 
+        msg: mensagem 
+    });
+    
+    window.showToast(`Chamada enviada para ${driver.code}`, 'success');
+};
+
+// Função para renderizar a frota no novo formato
+window.renderFleetNew = function() {
+    const fleetCards = document.getElementById('fleet-cards');
+    const emptyState = document.getElementById('fleet-empty-state');
+    const fleet = window.config.fleet || [];
+    
+    if (fleet.length === 0) {
+        if (fleetCards) fleetCards.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+    
+    if (emptyState) emptyState.classList.add('hidden');
+    if (!fleetCards) return;
+    
+    const now = Date.now();
+    let html = '';
+    
+    fleet.forEach(driver => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        const minutesAgo = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
+        const isOnline = minutesAgo < 30;
+        const team = driver.team || 'freelancers';
+        
+        html += `
+            <div class="fleet-card" data-team="${team}" data-vulgo="${driver.code}">
+                <div class="card-header">
+                    <span class="card-vulgo">${driver.code}</span>
+                    <span class="status-badge ${isOnline ? 'online' : 'offline'}">
+                        ${isOnline ? '📡 ONLINE' : '⏳ OFFLINE'}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="card-info">
+                        <span class="info-label">Nome:</span>
+                        <span class="info-value">${driver.name}</span>
+                    </div>
+                    <div class="card-info">
+                        <span class="info-label">Veículo:</span>
+                        <span class="info-value">${driver.vehicle || 'Não informado'}</span>
+                    </div>
+                    <div class="card-info">
+                        <span class="info-label">Vínculo:</span>
+                        <span class="info-value fixed-badge">${team === 'fixos' ? 'FIXO da casa' : 'FREELANCER'}</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="last-seen">${isOnline ? `📍 há ${minutesAgo} min` : '⏳ offline'}</span>
+                    <button class="btn-chamada" onclick="window.abrirChamada('${driver.code}')">
+                        ⚡ Chamar
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    fleetCards.innerHTML = html;
+    
+    // Atualizar contadores
+    const fixosCount = fleet.filter(d => d.team === 'fixos').length;
+    const freelancersCount = fleet.filter(d => d.team === 'freelancers').length;
+    const offlineCount = fleet.filter(driver => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        return !(lastSeen && (now - lastSeen) < 30 * 60000);
+    }).length;
+    
+    document.getElementById('count-fixos').textContent = fixosCount;
+    document.getElementById('count-freelancers').textContent = freelancersCount;
+    document.getElementById('count-offline').textContent = offlineCount;
+    document.getElementById('fleet-global-count').textContent = fleet.length;
+};
+
+// Funções adicionais (mantidas para compatibilidade)
+window.inviteDriver = function() {
+    window.sendFleetInvite();
 };
 
 window.saveConfig = function() {
