@@ -77,18 +77,16 @@ window.delDriver = function(phone) {
 };
 
 window.saveC = function() {
-    const config = {
-        googleMapsKey: document.getElementById('k-goo').value,
-        openAIKey: document.getElementById('k-ope').value,
-        telegramToken: document.getElementById('k-tel').value,
-        restaurantAddress: document.getElementById('addr').value,
-        adminNumber: document.getElementById('k-adm').value,
-        goldenRules: document.getElementById('golden-rules').value,
-        botPaused: window.config.botPaused || false
-    };
-    window.electronAPI.saveConfig(config).then(result => {
+    // Atualizar window.config com os valores atuais
+    window.config.googleMapsKey = document.getElementById('k-goo').value;
+    window.config.openAIKey = document.getElementById('k-ope').value;
+    window.config.telegramToken = document.getElementById('k-tel').value;
+    window.config.restaurantAddress = document.getElementById('addr').value;
+    window.config.adminNumber = document.getElementById('k-adm').value;
+    window.config.goldenRules = document.getElementById('golden-rules').value;
+    // Salvar
+    window.electronAPI.saveConfig(window.config).then(result => {
         window.showToast(result, 'success');
-        window.config = config;
     });
 };
 
@@ -292,23 +290,16 @@ window.doBackup = function() {
 };
 
 window.doRestore = function() {
-    // Simulação de importação
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const data = JSON.parse(event.target.result);
-            window.electronAPI.importBackup(data).then(() => {
-                window.showToast('Backup importado com sucesso!', 'success');
-                location.reload();
-            });
-        };
-        reader.readAsText(file);
-    };
-    input.click();
+    window.electronAPI.importBackup().then(result => {
+        if (result.success) {
+            window.showToast('Backup importado com sucesso!', 'success');
+            location.reload();
+        } else {
+            window.showToast('Importação cancelada ou falhou', 'error');
+        }
+    }).catch(error => {
+        window.showToast('Erro ao importar backup: ' + error.message, 'error');
+    });
 };
 
 window.loadPrinters = function() {
@@ -404,17 +395,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Preencher campos de configuração
     if (window.config) {
-        document.getElementById('k-goo').value = window.config.googleMapsKey || '';
-        document.getElementById('k-ope').value = window.config.openAIKey || '';
-        document.getElementById('k-tel').value = window.config.telegramToken || '';
-        document.getElementById('addr').value = window.config.restaurantAddress || '';
-        document.getElementById('k-adm').value = window.config.adminNumber || '';
-        document.getElementById('golden-rules').value = window.config.goldenRules || '';
-        document.getElementById('golden-rules-text').value = window.config.goldenRules || '';
+        const setValue = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) element.value = value || '';
+        };
+        setValue('k-goo', window.config.googleMapsKey);
+        setValue('k-ope', window.config.openAIKey);
+        setValue('k-tel', window.config.telegramToken);
+        setValue('addr', window.config.restaurantAddress);
+        setValue('k-adm', window.config.adminNumber);
+        setValue('golden-rules', window.config.goldenRules);
+        setValue('golden-rules-text', window.config.goldenRules);
         
         // Atualizar botão de pausa
         const btn = document.getElementById('btn-pause');
-        if (window.config.botPaused) {
+        if (btn && window.config.botPaused) {
             btn.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
             btn.className = 'btn btn-success';
         }

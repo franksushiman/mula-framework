@@ -479,10 +479,8 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   
-  // Abrir DevTools em desenvolvimento
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools();
-  }
+  // Abrir DevTools para depuração
+  mainWindow.webContents.openDevTools();
 
   // Simular atualizações periódicas de status
   setInterval(() => {
