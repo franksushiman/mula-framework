@@ -399,6 +399,190 @@ window.showToast = function(message, type = 'success') {
     }, 3000);
 };
 
+// Dashboard functions
+window.renderDashboardStats = async function() {
+    // Atualiza status do sistema
+    const systemDot = document.getElementById('system-status-dot');
+    if (systemDot) {
+        systemDot.className = 'status-dot online';
+    }
+    
+    // Busca dados do dashboard
+    let summary = { 
+        today_sales: 0, 
+        orders_in_kitchen: 0, 
+        orders_delivering: 0, 
+        active_drivers: 0, 
+        today_orders_count: 0 
+    };
+    
+    try {
+        summary = await window.electronAPI.getDashboardSummary(window.pendingOrders) || summary;
+    } catch (e) {
+        console.warn('Erro ao buscar dashboard summary:', e);
+    }
+    
+    // Atualiza cards
+    const safeSet = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    
+    safeSet('orders-today', String(summary.today_orders_count || 0));
+    safeSet('orders-in-kitchen', String(summary.orders_in_kitchen || 0));
+    safeSet('fleet-online', String(summary.active_drivers || 0));
+    
+    const financeEl = document.getElementById('finance-total-hoje');
+    if (financeEl) {
+        const valor = (summary.today_sales || 0).toFixed(2).replace('.', ',');
+        financeEl.textContent = `R$ ${valor}`;
+    }
+    
+    // Atualiza status da loja
+    const isPaused = window.config.botPaused === true;
+    const statusDot = document.getElementById('store-status-dot');
+    const statusText = document.getElementById('store-status-text');
+    
+    if (statusDot && statusText) {
+        if (isPaused) {
+            statusDot.className = 'status-dot paused';
+            statusText.textContent = 'Loja pausada · sem receber pedidos';
+        } else {
+            statusDot.className = 'status-dot online';
+            statusText.textContent = 'Loja aberta · sistema pronto';
+        }
+    }
+    
+    // Atualiza botão de pausa do dashboard
+    const pauseBtn = document.getElementById('btn-pause-dashboard');
+    if (pauseBtn) {
+        if (isPaused) {
+            pauseBtn.classList.add('paused');
+            pauseBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
+        } else {
+            pauseBtn.classList.remove('paused');
+            pauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
+        }
+    }
+    
+    // Renderiza feed da frota
+    window.renderFleetFeed();
+    
+    // Renderiza últimos pedidos
+    window.renderDashboardLastOrders();
+    
+    // Renderiza oportunidades
+    window.renderDashboardOpportunities();
+};
+
+window.renderFleetFeed = function() {
+    const feedList = document.getElementById('fleet-feed-list');
+    if (!feedList) return;
+    
+    const fleet = window.config.fleet || [];
+    const now = Date.now();
+    
+    // Filtra motoristas ativos (últimos 30 minutos)
+    const activeDrivers = fleet.filter(driver => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        return lastSeen && (now - lastSeen) < 30 * 60000;
+    });
+    
+    if (activeDrivers.length === 0) {
+        feedList.innerHTML = '<div class="fleet-feed-item"><span class="feed-item-icon">🟡</span><div class="feed-item-content">Nenhum entregador ativo no momento</div></div>';
+        return;
+    }
+    
+    feedList.innerHTML = '';
+    activeDrivers.slice(0, 5).forEach(driver => {
+        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        const minutesAgo = Math.floor((now - lastSeen) / 60000);
+        
+        const item = document.createElement('div');
+        item.className = 'fleet-feed-item';
+        item.innerHTML = `
+            <span class="feed-item-icon">🛵</span>
+            <div class="feed-item-content">
+                <strong>${driver.name}</strong> (${driver.code}) está em rota
+            </div>
+            <div class="feed-item-time">${minutesAgo} min atrás</div>
+        `;
+        feedList.appendChild(item);
+    });
+};
+
+window.renderDashboardLastOrders = function() {
+    const tbody = document.getElementById('dashboard-last-orders-body');
+    if (!tbody) return;
+    
+    const orders = window.pendingOrders || [];
+    const recentOrders = orders.slice(-5).reverse(); // Últimos 5 pedidos
+    
+    if (recentOrders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+                    Nenhum pedido recente
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    recentOrders.forEach(order => {
+        const row = document.createElement('tr');
+        const timeAgo = 'há pouco';
+        
+        row.innerHTML = `
+            <td>#${order.id}</td>
+            <td>${order.cliente || 'Cliente'}</td>
+            <td><span style="color: #f59e0b;">${order.status || 'pendente'}</span></td>
+            <td>${timeAgo}</td>
+            <td>R$ ${(order.total || 0).toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+};
+
+window.renderDashboardOpportunities = function() {
+    const opportunitiesList = document.getElementById('dashboard-opportunities-list');
+    const countEl = document.getElementById('dashboard-opportunities-count');
+    
+    if (!opportunitiesList || !countEl) return;
+    
+    // Simulação: pedidos pendentes há mais de 15 minutos
+    const now = Date.now();
+    const opportunities = (window.pendingOrders || []).filter(order => {
+        // Se o pedido não tem timestamp, consideramos como oportunidade
+        return !order.timestamp || (now - order.timestamp) > 15 * 60000;
+    });
+    
+    countEl.textContent = opportunities.length;
+    
+    if (opportunities.length === 0) {
+        opportunitiesList.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: var(--text-tertiary);">
+                🎉 Tudo em dia! Nenhum pedido pendente há mais de 15 minutos.
+            </div>
+        `;
+        return;
+    }
+    
+    opportunitiesList.innerHTML = '';
+    opportunities.slice(0, 3).forEach(order => {
+        const item = document.createElement('div');
+        item.className = 'fleet-feed-item';
+        item.innerHTML = `
+            <span class="feed-item-icon">⏰</span>
+            <div class="feed-item-content">
+                <strong>Pedido #${order.id}</strong> de ${order.cliente || 'Cliente'} está pendente há mais de 15 minutos
+            </div>
+        `;
+        opportunitiesList.appendChild(item);
+    });
+};
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -456,6 +640,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Driver position updated:', data);
             window.driverLastSeen[data.phone] = Date.now();
             window.renderFleet();
+            window.renderDashboardStats(); // Atualiza dashboard também
         });
 
         window.electronAPI.onDriverAccepted((event, data) => {
@@ -479,6 +664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.loadPrinters();
         window.initMap();
         window.updateDashboard();
+        window.renderDashboardStats(); // Novo dashboard
         
         // Carregar configuração de impressora se existir
         if (window.config.printerConfig) {
@@ -491,6 +677,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 autoPrintCheck.checked = window.config.printerConfig.autoPrint || false;
             }
         }
+        
+        // Configurar atualização periódica do dashboard
+        setInterval(() => {
+            window.renderDashboardStats();
+        }, 30000); // Atualiza a cada 30 segundos
         
         console.log('Aplicativo inicializado com sucesso');
     } catch (error) {
