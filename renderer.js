@@ -573,7 +573,7 @@ window.renderDashboardStats = async function() {
             financeEl.textContent = `R$ ${valor}`;
         }
         
-        // Atualiza status da loja
+        // Atualiza status da loja - Mensagens mais humanas
         const isPaused = window.config.botPaused === true;
         const statusDot = document.getElementById('store-status-dot');
         const statusText = document.getElementById('store-status-text');
@@ -581,10 +581,10 @@ window.renderDashboardStats = async function() {
         if (statusDot && statusText) {
             if (isPaused) {
                 statusDot.className = 'status-dot paused';
-                statusText.textContent = 'Loja pausada · sem receber pedidos';
+                statusText.textContent = 'Loja pausada · não recebe pedidos';
             } else {
                 statusDot.className = 'status-dot online';
-                statusText.textContent = 'Loja aberta · sistema pronto';
+                statusText.textContent = 'Loja aberta · pronta para receber pedidos';
             }
         }
         
@@ -627,21 +627,39 @@ window.renderFleetFeed = function() {
         });
         
         if (activeDrivers.length === 0) {
-            dashboardFeed.innerHTML = '<div class="fleet-feed-item"><span class="feed-item-icon">🟡</span><div class="feed-item-content">Nenhum entregador ativo no momento</div></div>';
+            dashboardFeed.innerHTML = `
+                <div class="fleet-feed-item">
+                    <span class="feed-item-icon">👋</span>
+                    <div class="feed-item-content">
+                        <strong>Sistema pronto</strong> · Aguardando atividade da frota
+                    </div>
+                    <div class="feed-item-time">agora</div>
+                </div>
+            `;
         } else {
             dashboardFeed.innerHTML = '';
             activeDrivers.slice(0, 5).forEach(driver => {
                 const lastSeen = window.driverLastSeen[driver.phone] || 0;
                 const minutesAgo = Math.floor((now - lastSeen) / 60000);
                 
+                // Mensagens mais humanas
+                let activityText = '';
+                if (minutesAgo < 5) {
+                    activityText = `está em serviço agora`;
+                } else if (minutesAgo < 15) {
+                    activityText = `está em rota há ${minutesAgo} minutos`;
+                } else {
+                    activityText = `está trabalhando`;
+                }
+                
                 const item = document.createElement('div');
                 item.className = 'fleet-feed-item';
                 item.innerHTML = `
                     <span class="feed-item-icon">🛵</span>
                     <div class="feed-item-content">
-                        <strong>${driver.name}</strong> (${driver.code}) está em rota
+                        <strong>${driver.name}</strong> ${activityText}
                     </div>
-                    <div class="feed-item-time">${minutesAgo} min atrás</div>
+                    <div class="feed-item-time">${minutesAgo} min</div>
                 `;
                 dashboardFeed.appendChild(item);
             });
@@ -651,8 +669,6 @@ window.renderFleetFeed = function() {
     // Renderiza feed no painel de frota (se estiver visível)
     const fleetPanelFeed = document.getElementById('fleet-feed-list');
     if (fleetPanelFeed && document.getElementById('fleet-panel').classList.contains('active')) {
-        // Aqui você pode implementar um feed diferente para o painel de frota
-        // Por enquanto, vamos usar o mesmo conteúdo
         const fleet = window.config.fleet || [];
         const now = Date.now();
         
@@ -662,21 +678,35 @@ window.renderFleetFeed = function() {
         });
         
         if (activeDrivers.length === 0) {
-            fleetPanelFeed.innerHTML = '<div class="feed-item"><span class="feed-icon">🟡</span><span class="feed-text">Nenhum entregador ativo no momento</span></div>';
+            fleetPanelFeed.innerHTML = `
+                <div class="feed-item">
+                    <span class="feed-icon">👋</span>
+                    <span class="feed-text">
+                        Aguardando entregadores compartilharem localização
+                    </span>
+                </div>
+            `;
         } else {
             fleetPanelFeed.innerHTML = '';
             activeDrivers.slice(0, 5).forEach(driver => {
                 const lastSeen = window.driverLastSeen[driver.phone] || 0;
                 const minutesAgo = Math.floor((now - lastSeen) / 60000);
                 
+                let activityText = '';
+                if (minutesAgo < 5) {
+                    activityText = `em serviço agora`;
+                } else {
+                    activityText = `em rota há ${minutesAgo} minutos`;
+                }
+                
                 const item = document.createElement('div');
                 item.className = 'feed-item';
                 item.innerHTML = `
                     <span class="feed-icon">🛵</span>
                     <span class="feed-text">
-                        <strong>${driver.name}</strong> (${driver.code}) está em rota
+                        <strong>${driver.name}</strong> ${activityText}
                     </span>
-                    <span class="feed-time">${minutesAgo} min atrás</span>
+                    <span class="feed-time">${minutesAgo} min</span>
                 `;
                 fleetPanelFeed.appendChild(item);
             });

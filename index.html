@@ -6,33 +6,171 @@
     <title>Ceia Delivery Manager</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Estilos básicos para funcionamento */
+        /* Estilos básicos para funcionamento - Filosofia Ceia */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: #0f172a; color: #f8fafc; }
-        .app-container { display: flex; min-height: 100vh; }
-        .sidebar { width: 250px; background: #1e293b; padding: 20px; }
-        .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; 
+            background: var(--branco-quente); 
+            color: var(--texto-principal); 
+            line-height: 1.5;
+        }
+        .app-container { 
+            display: flex; 
+            min-height: 100vh; 
+            background: var(--cinza-fundo);
+        }
+        .sidebar { 
+            width: 250px; 
+            background: var(--terra); 
+            padding: 20px; 
+            border-right: 1px solid var(--terra-clara);
+        }
+        .main-content { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            background: var(--branco-quente);
+        }
         .panel { display: none; }
         .panel.active { display: block; }
         #home-panel { display: block; }
-        .card { background: #334155; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: #3b82f6; color: white; }
-        .btn-secondary { background: #64748b; color: white; }
-        .btn-success { background: #10b981; color: white; }
-        .btn-error { background: #ef4444; color: white; }
-        .form-input { width: 100%; padding: 10px; background: #475569; border: 1px solid #64748b; border-radius: 5px; color: white; }
-        .table { width: 100%; border-collapse: collapse; }
-        .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #475569; }
-        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
-        .toast { background: #10b981; color: white; padding: 15px 20px; border-radius: 5px; margin-top: 10px; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .modal { background: #334155; padding: 30px; border-radius: 10px; min-width: 400px; }
-        .nav-item { display: block; padding: 15px; color: #cbd5e1; text-decoration: none; border-radius: 5px; margin-bottom: 5px; }
-        .nav-item:hover, .nav-item.active { background: #3b82f6; color: white; }
-        .badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .badge-online { background: #10b981; color: white; }
-        .badge-offline { background: #64748b; color: white; }
+        .card { 
+            background: var(--branco-quente); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border: 1px solid var(--borda-quente);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .btn { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-primary { 
+            background: var(--verde-esperanca); 
+            color: var(--branco-quente); 
+        }
+        .btn-primary:hover {
+            background: var(--verde-claro);
+        }
+        .btn-secondary { 
+            background: var(--cinza-quente); 
+            color: var(--branco-quente); 
+        }
+        .btn-secondary:hover {
+            background: #7a6f64;
+        }
+        .btn-success { 
+            background: var(--verde-esperanca); 
+            color: var(--branco-quente); 
+        }
+        .btn-error { 
+            background: var(--vermelho-sobrio); 
+            color: var(--branco-quente); 
+        }
+        .form-input { 
+            width: 100%; 
+            padding: 10px; 
+            background: var(--branco-quente); 
+            border: 1px solid var(--borda-quente); 
+            border-radius: 6px; 
+            color: var(--texto-principal); 
+            font-size: 14px;
+        }
+        .form-input:focus {
+            border-color: var(--verde-esperanca);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(45,106,79,0.1);
+        }
+        .table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        .table th, .table td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--borda-quente); 
+        }
+        .table th {
+            color: var(--texto-secundario);
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .table td {
+            color: var(--texto-principal);
+            font-size: 14px;
+        }
+        .toast-container { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            z-index: 1000; 
+        }
+        .toast { 
+            background: var(--verde-esperanca); 
+            color: var(--branco-quente); 
+            padding: 15px 20px; 
+            border-radius: 6px; 
+            margin-top: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(0,0,0,0.5); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 2000; 
+        }
+        .modal { 
+            background: var(--branco-quente); 
+            padding: 30px; 
+            border-radius: 12px; 
+            min-width: 400px; 
+            border: 1px solid var(--borda-quente);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .nav-item { 
+            display: block; 
+            padding: 15px; 
+            color: var(--texto-sobre-terra); 
+            text-decoration: none; 
+            border-radius: 6px; 
+            margin-bottom: 5px; 
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .nav-item:hover { 
+            background: rgba(250,247,242,0.1); 
+            color: var(--branco-quente); 
+        }
+        .nav-item.active { 
+            background: var(--vinho); 
+            color: var(--branco-quente); 
+        }
+        .badge { 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+        }
+        .badge-online { 
+            background: var(--verde-esperanca); 
+            color: var(--branco-quente); 
+        }
+        .badge-offline { 
+            background: var(--cinza-quente); 
+            color: var(--branco-quente); 
+        }
         
         /* CEIA Design Tokens - Cores com significado */
         :root {
@@ -135,12 +273,12 @@
         .status-dot.offline { background: var(--vermelho-sobrio); }
         .status-dot.paused { background: var(--ambar); }
 
-        /* Botão Pausar Grande */
+        /* Botão Pausar Grande - Ação crítica */
         .btn-pause-grande {
             background: var(--vermelho-sobrio);
             color: var(--branco-quente);
-            border: 1px solid var(--vermelho-claro);
-            padding: 12px 24px;
+            border: 2px solid var(--vermelho-claro);
+            padding: 14px 28px;
             border-radius: 40px;
             font-weight: 700;
             font-size: 16px;
@@ -149,17 +287,24 @@
             gap: 12px;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(127,29,29,0.2);
         }
 
         .btn-pause-grande:hover {
             background: var(--vermelho-claro);
             transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(127,29,29,0.3);
         }
 
         .btn-pause-grande.paused {
             background: var(--verde-esperanca);
             border-color: var(--verde-claro);
+            box-shadow: 0 4px 12px rgba(45,106,79,0.2);
+        }
+
+        .btn-pause-grande.paused:hover {
+            background: var(--verde-claro);
+            box-shadow: 0 6px 16px rgba(45,106,79,0.3);
         }
 
         .pause-icone {
@@ -254,6 +399,14 @@
             color: var(--texto-secundario);
             opacity: 0.7;
         }
+        .feed-footer {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--borda-quente);
+            font-size: 12px;
+            color: var(--texto-secundario);
+            text-align: center;
+        }
 
         /* Cards Operacionais */
         .cards-grid {
@@ -277,10 +430,31 @@
             border-color: var(--verde-esperanca);
         }
 
-        .card-alta { border-left: 4px solid var(--vermelho-sobrio); }
-        .card-media { border-left: 4px solid var(--ambar); }
-        .card-baixa { border-left: 4px solid var(--cinza-quente); cursor: default; }
-        .card-baixa:hover { transform: none; border-color: var(--borda-quente); }
+        .card-operacional {
+            background: var(--branco-quente);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--borda-quente);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid var(--borda-quente);
+        }
+
+        .card-operacional:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            border-color: var(--verde-esperanca);
+        }
+
+        .card-operacional.card-alta:hover {
+            border-left-color: var(--vermelho-sobrio);
+        }
+        .card-operacional.card-media:hover {
+            border-left-color: var(--ambar);
+        }
+        .card-operacional.card-baixa:hover {
+            border-left-color: var(--cinza-quente);
+        }
 
         .card-header {
             display: flex;
@@ -291,11 +465,12 @@
 
         .card-icone {
             font-size: 24px;
+            color: var(--texto-secundario);
         }
 
-        .card-alta .card-icone { color: var(--vermelho-sobrio); }
-        .card-media .card-icone { color: var(--ambar); }
-        .card-baixa .card-icone { color: var(--cinza-quente); }
+        .card-operacional:hover .card-icone {
+            color: var(--terra);
+        }
 
         .card-titulo {
             font-size: 14px;
@@ -1047,8 +1222,8 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h1 id="store-name">Ceia Delivery</h1>
-                <p>ERP de Restaurante</p>
+                <h1 id="store-name" style="color: var(--branco-quente); margin-bottom: 8px;">Ceia</h1>
+                <p style="color: rgba(250,247,242,0.8); font-size: 14px;">Sistema de gestão</p>
             </div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active" data-panel="home-panel"><i class="fas fa-home"></i> Dashboard</a>
@@ -1093,15 +1268,25 @@
                         </div>
                     </div>
 
-                    <!-- FEED DA FROTA EM TEMPO REAL (OBRIGATÓRIO) -->
+                    <!-- FEED TEXTUAL DA FROTA - VIDA DA COMUNIDADE -->
                     <div class="feed-frota-card">
                         <div class="feed-header">
-                            <h4><span class="feed-icone">📡</span> ATIVIDADE DA FROTA · AGORA</h4>
+                            <h4><span class="feed-icone">📡</span> Vida da frota · agora</h4>
                             <span class="feed-timestamp">em tempo real</span>
                         </div>
                         <div id="dashboard-fleet-feed-list" class="feed-lista">
                             <!-- Populado via renderFleetFeed() -->
-                            <!-- Fallback: "🟡 Nenhum entregador ativo no momento" -->
+                            <!-- Estado inicial: mensagem acolhedora -->
+                            <div class="fleet-feed-item">
+                                <span class="feed-item-icon">👋</span>
+                                <div class="feed-item-content">
+                                    <strong>Sistema pronto</strong> · Aguardando atividade da frota
+                                </div>
+                                <div class="feed-item-time">agora</div>
+                            </div>
+                        </div>
+                        <div class="feed-footer">
+                            <small>Os entregadores aparecem aqui quando compartilham localização</small>
                         </div>
                     </div>
 
