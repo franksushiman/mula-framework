@@ -14,6 +14,13 @@
             color: var(--texto-principal); 
             line-height: 1.5;
         }
+        /* Garantir que painéis estejam ocultos por padrão */
+        .panel { 
+            display: none; 
+        }
+        .panel.active { 
+            display: block; 
+        }
         .app-container { 
             display: flex; 
             min-height: 100vh; 
@@ -33,7 +40,7 @@
         }
         .panel { display: none; }
         .panel.active { display: block; }
-        #home-panel { display: block; }
+        /* Remover #home-panel { display: block; } - agora controlado por JS */
         .card { 
             background: var(--branco-quente); 
             border-radius: 12px; 
@@ -1247,7 +1254,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Painéis com IDs obrigatórios -->
-            <div id="home-panel" class="panel active">
+            <div id="home-panel" class="panel">
                 <div class="dashboard-container">
                     <!-- CABEÇALHO DE ESTADO DA LOJA -->
                     <div class="dashboard-header">
@@ -1686,6 +1693,8 @@
                 <div class="card">
                     <h2>Hub</h2>
                     <p>Configurações do hub</p>
+                    <button onclick="window.nav('home-panel')" class="btn btn-primary">Ir para Home (Teste)</button>
+                    <button onclick="window.nav('fleet-panel')" class="btn btn-secondary">Ir para Frota (Teste)</button>
                 </div>
             </div>
         </main>

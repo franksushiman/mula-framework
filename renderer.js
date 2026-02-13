@@ -276,25 +276,57 @@ window.delS = function() {
 };
 
 window.nav = function(panelId) {
+    console.log('=== NAVEGAÇÃO INICIADA ===');
+    console.log('Painel alvo:', panelId);
+    
+    // Listar todos os painéis antes
+    console.log('Painéis antes:');
+    document.querySelectorAll('.panel').forEach(p => {
+        console.log(`  ${p.id}: ${p.classList.contains('active') ? 'ativo' : 'inativo'}`);
+    });
+    
     // Remover classe active de todos os itens de navegação
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
+    
     // Remover classe active de todos os painéis
     document.querySelectorAll('.panel').forEach(panel => {
         panel.classList.remove('active');
     });
+    
     // Ativar o item de navegação correspondente
     const navItem = document.querySelector(`[data-panel="${panelId}"]`);
     if (navItem) {
         navItem.classList.add('active');
+        console.log('Item de navegação ativado:', navItem.textContent);
+    } else {
+        console.warn('Item de navegação não encontrado para:', panelId);
     }
+    
     // Ativar o painel correspondente
     const panel = document.getElementById(panelId);
     if (panel) {
         panel.classList.add('active');
+        console.log('Painel ativado:', panelId);
     } else {
         console.error(`Painel ${panelId} não encontrado`);
+    }
+    
+    // Listar todos os painéis depois
+    console.log('Painéis depois:');
+    document.querySelectorAll('.panel').forEach(p => {
+        console.log(`  ${p.id}: ${p.classList.contains('active') ? 'ativo' : 'inativo'}`);
+    });
+    console.log('=== NAVEGAÇÃO FINALIZADA ===');
+    
+    // Atualizar componentes específicos do painel
+    if (panelId === 'fleet-panel') {
+        window.renderFleet();
+    } else if (panelId === 'menu-panel') {
+        window.renderT();
+    } else if (panelId === 'home-panel') {
+        window.renderDashboardStats();
     }
 };
 
@@ -874,19 +906,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Mostrar que está carregando
         console.log('Iniciando aplicativo...');
         
-        // Configurar navegação
+        // Configurar navegação - garantir que os eventos sejam adicionados corretamente
         const navItems = document.querySelectorAll('.nav-item');
+        console.log('Itens de navegação encontrados:', navItems.length);
+        
         if (navItems.length === 0) {
             console.warn('Nenhum item de navegação encontrado');
         } else {
-            navItems.forEach(item => {
-                item.addEventListener('click', (e) => {
+            navItems.forEach((item, index) => {
+                // Remover event listeners antigos para evitar duplicação
+                const newItem = item.cloneNode(true);
+                item.parentNode.replaceChild(newItem, item);
+                
+                newItem.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const panelId = item.getAttribute('data-panel');
+                    e.stopPropagation();
+                    const panelId = newItem.getAttribute('data-panel');
+                    console.log(`Navegação ${index}: ${panelId}`);
                     window.nav(panelId);
                 });
+                console.log(`Evento adicionado ao item ${index}: ${newItem.getAttribute('data-panel')}`);
             });
         }
+        
+        // Garantir que o painel home esteja ativo inicialmente
+        setTimeout(() => {
+            // Remover active de todos os painéis primeiro
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Ativar home-panel e seu item de navegação
+            const homePanel = document.getElementById('home-panel');
+            const homeNavItem = document.querySelector('[data-panel="home-panel"]');
+            if (homePanel && homeNavItem) {
+                homePanel.classList.add('active');
+                homeNavItem.classList.add('active');
+                console.log('Painel home ativado na inicialização');
+            } else {
+                console.error('Elementos do painel home não encontrados');
+            }
+        }, 100);
 
         // Configurar botão de pausa
         const btnPause = document.getElementById('btn-pause');
