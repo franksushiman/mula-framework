@@ -1234,6 +1234,8 @@
                 <a href="#" class="nav-item" data-panel="finance-panel"><i class="fas fa-chart-line"></i> Financeiro</a>
                 <a href="#" class="nav-item" data-panel="printers-panel"><i class="fas fa-print"></i> Impressoras</a>
                 <a href="#" class="nav-item" data-panel="config-panel"><i class="fas fa-cog"></i> Configurações</a>
+                <a href="#" class="nav-item" data-panel="telegram-panel"><i class="fab fa-telegram"></i> Telegram</a>
+                <a href="#" class="nav-item" data-panel="bayleis-panel"><i class="fas fa-credit-card"></i> Bayleis</a>
                 <a href="#" class="nav-item" data-panel="hub-panel"><i class="fas fa-store"></i> Hub</a>
             </nav>
             <div class="sidebar-footer">
@@ -1626,6 +1628,87 @@
                         <button class="btn btn-secondary" onclick="window.doRestore()" style="margin-left: 10px;">
                             <i class="fas fa-upload"></i> Importar Backup
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="telegram-panel" class="panel">
+                <div class="card">
+                    <h2>Configuração do Telegram</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label>Bot Token</label>
+                            <input type="text" id="telegram-bot-token" class="form-input" placeholder="Token do bot">
+                        </div>
+                        <div>
+                            <label>Chat ID do Admin</label>
+                            <input type="text" id="telegram-chat-id" class="form-input" placeholder="ID do chat">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label>Mensagem de Teste</label>
+                            <textarea id="telegram-test-message" class="form-input" rows="3" placeholder="Digite uma mensagem para testar"></textarea>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="window.testTelegram()">
+                            <i class="fab fa-telegram"></i> Enviar Mensagem de Teste
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.saveTelegramConfig()" style="margin-left: 10px;">
+                            <i class="fas fa-save"></i> Salvar Configuração
+                        </button>
+                        <button class="btn btn-success" onclick="window.getTelegramUpdates()" style="margin-left: 10px;">
+                            <i class="fas fa-sync"></i> Verificar Atualizações
+                        </button>
+                    </div>
+                    <div id="telegram-status" style="margin-top: 20px; padding: 15px; background: var(--cinza-fundo); border-radius: 8px; display: none;">
+                        <h4>Status do Bot</h4>
+                        <p id="telegram-status-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bayleis-panel" class="panel">
+                <div class="card">
+                    <h2>Configuração do Bayleis</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label>API Key</label>
+                            <input type="text" id="bayleis-api-key" class="form-input" placeholder="Chave da API">
+                        </div>
+                        <div>
+                            <label>Secret Key</label>
+                            <input type="text" id="bayleis-secret-key" class="form-input" placeholder="Chave secreta">
+                        </div>
+                        <div>
+                            <label>Webhook URL</label>
+                            <input type="text" id="bayleis-webhook-url" class="form-input" placeholder="URL do webhook">
+                        </div>
+                        <div>
+                            <label>Modo Sandbox</label>
+                            <select id="bayleis-sandbox" class="form-input">
+                                <option value="true">Sim</option>
+                                <option value="false">Não</option>
+                            </select>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label>Configurações Adicionais</label>
+                            <textarea id="bayleis-extra-config" class="form-input" rows="4" placeholder="Configurações extras em JSON"></textarea>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="window.testBayleisConnection()">
+                            <i class="fas fa-plug"></i> Testar Conexão
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.saveBayleisConfig()" style="margin-left: 10px;">
+                            <i class="fas fa-save"></i> Salvar Configuração
+                        </button>
+                        <button class="btn btn-success" onclick="window.createBayleisPayment()" style="margin-left: 10px;">
+                            <i class="fas fa-plus-circle"></i> Criar Pagamento de Teste
+                        </button>
+                    </div>
+                    <div id="bayleis-status" style="margin-top: 20px; padding: 15px; background: var(--cinza-fundo); border-radius: 8px; display: none;">
+                        <h4>Status da Conexão</h4>
+                        <p id="bayleis-status-text"></p>
                     </div>
                 </div>
             </div>

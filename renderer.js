@@ -518,6 +518,157 @@ window.renderFleetNew = function() {
     document.getElementById('fleet-global-count').textContent = fleet.length;
 };
 
+// Funções para Telegram
+window.saveTelegramConfig = function() {
+    const botToken = document.getElementById('telegram-bot-token').value;
+    const chatId = document.getElementById('telegram-chat-id').value;
+    
+    if (!window.config.telegram) window.config.telegram = {};
+    window.config.telegram.botToken = botToken;
+    window.config.telegram.chatId = chatId;
+    
+    window.electronAPI.saveConfig(window.config).then(result => {
+        window.showToast('Configuração do Telegram salva!', 'success');
+    });
+};
+
+window.testTelegram = function() {
+    const message = document.getElementById('telegram-test-message').value || 'Mensagem de teste do Ceia Delivery Manager';
+    const botToken = document.getElementById('telegram-bot-token').value;
+    const chatId = document.getElementById('telegram-chat-id').value;
+    
+    if (!botToken || !chatId) {
+        window.showToast('Preencha o token e o chat ID primeiro!', 'error');
+        return;
+    }
+    
+    window.electronAPI.sendTelegramMessage({ botToken, chatId, message }).then(result => {
+        if (result.success) {
+            window.showToast('Mensagem enviada com sucesso!', 'success');
+            const statusDiv = document.getElementById('telegram-status');
+            const statusText = document.getElementById('telegram-status-text');
+            if (statusDiv && statusText) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = `Mensagem enviada em ${new Date().toLocaleTimeString()}`;
+            }
+        } else {
+            window.showToast('Erro ao enviar mensagem: ' + result.error, 'error');
+        }
+    });
+};
+
+window.getTelegramUpdates = function() {
+    const botToken = document.getElementById('telegram-bot-token').value;
+    if (!botToken) {
+        window.showToast('Insira o token do bot primeiro!', 'error');
+        return;
+    }
+    
+    window.electronAPI.getTelegramUpdates(botToken).then(result => {
+        if (result.success) {
+            window.showToast(`Recebidas ${result.updates?.length || 0} atualizações`, 'success');
+            const statusDiv = document.getElementById('telegram-status');
+            const statusText = document.getElementById('telegram-status-text');
+            if (statusDiv && statusText) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = `Última atualização: ${new Date().toLocaleTimeString()}. ${result.updates?.length || 0} mensagens recebidas.`;
+            }
+        } else {
+            window.showToast('Erro ao buscar atualizações: ' + result.error, 'error');
+        }
+    });
+};
+
+// Funções para Bayleis
+window.saveBayleisConfig = function() {
+    const apiKey = document.getElementById('bayleis-api-key').value;
+    const secretKey = document.getElementById('bayleis-secret-key').value;
+    const webhookUrl = document.getElementById('bayleis-webhook-url').value;
+    const sandbox = document.getElementById('bayleis-sandbox').value === 'true';
+    const extraConfig = document.getElementById('bayleis-extra-config').value;
+    
+    if (!window.config.bayleis) window.config.bayleis = {};
+    window.config.bayleis.apiKey = apiKey;
+    window.config.bayleis.secretKey = secretKey;
+    window.config.bayleis.webhookUrl = webhookUrl;
+    window.config.bayleis.sandbox = sandbox;
+    
+    try {
+        if (extraConfig) {
+            window.config.bayleis.extraConfig = JSON.parse(extraConfig);
+        }
+    } catch (e) {
+        window.showToast('JSON inválido nas configurações extras', 'error');
+        return;
+    }
+    
+    window.electronAPI.saveConfig(window.config).then(result => {
+        window.showToast('Configuração do Bayleis salva!', 'success');
+    });
+};
+
+window.testBayleisConnection = function() {
+    const apiKey = document.getElementById('bayleis-api-key').value;
+    const secretKey = document.getElementById('bayleis-secret-key').value;
+    
+    if (!apiKey || !secretKey) {
+        window.showToast('Preencha a API Key e Secret Key primeiro!', 'error');
+        return;
+    }
+    
+    window.electronAPI.testBayleisConnection({ apiKey, secretKey }).then(result => {
+        const statusDiv = document.getElementById('bayleis-status');
+        const statusText = document.getElementById('bayleis-status-text');
+        if (statusDiv && statusText) {
+            statusDiv.style.display = 'block';
+            if (result.success) {
+                statusText.textContent = `Conexão bem-sucedida! Saldo: R$ ${result.balance?.toFixed(2) || '0.00'}`;
+                window.showToast('Conexão com Bayleis estabelecida!', 'success');
+            } else {
+                statusText.textContent = `Erro: ${result.error}`;
+                window.showToast('Erro na conexão: ' + result.error, 'error');
+            }
+        }
+    });
+};
+
+window.createBayleisPayment = function() {
+    const apiKey = document.getElementById('bayleis-api-key').value;
+    const secretKey = document.getElementById('bayleis-secret-key').value;
+    
+    if (!apiKey || !secretKey) {
+        window.showToast('Configure as chaves do Bayleis primeiro!', 'error');
+        return;
+    }
+    
+    const amount = parseFloat(prompt('Valor do pagamento (R$):', '10.00'));
+    if (isNaN(amount) || amount <= 0) {
+        window.showToast('Valor inválido!', 'error');
+        return;
+    }
+    
+    const description = prompt('Descrição do pagamento:', 'Pagamento de teste Ceia');
+    
+    window.electronAPI.createBayleisPayment({ 
+        apiKey, 
+        secretKey, 
+        amount, 
+        description 
+    }).then(result => {
+        if (result.success) {
+            window.showToast(`Pagamento criado! ID: ${result.paymentId}`, 'success');
+            const statusDiv = document.getElementById('bayleis-status');
+            const statusText = document.getElementById('bayleis-status-text');
+            if (statusDiv && statusText) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = `Pagamento ${result.paymentId} criado. QR Code: ${result.qrCodeUrl || 'N/A'}`;
+            }
+        } else {
+            window.showToast('Erro ao criar pagamento: ' + result.error, 'error');
+        }
+    });
+};
+
 // Funções adicionais (mantidas para compatibilidade)
 window.inviteDriver = function() {
     window.sendFleetInvite();
@@ -852,6 +1003,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             setValue('k-adm', window.config.adminNumber);
             setValue('golden-rules', window.config.goldenRules);
             setValue('golden-rules-text', window.config.goldenRules);
+            
+            // Preencher configurações do Telegram
+            if (window.config.telegram) {
+                setValue('telegram-bot-token', window.config.telegram.botToken);
+                setValue('telegram-chat-id', window.config.telegram.chatId);
+            }
+            
+            // Preencher configurações do Bayleis
+            if (window.config.bayleis) {
+                setValue('bayleis-api-key', window.config.bayleis.apiKey);
+                setValue('bayleis-secret-key', window.config.bayleis.secretKey);
+                setValue('bayleis-webhook-url', window.config.bayleis.webhookUrl);
+                setValue('bayleis-sandbox', window.config.bayleis.sandbox ? 'true' : 'false');
+                if (window.config.bayleis.extraConfig) {
+                    setValue('bayleis-extra-config', JSON.stringify(window.config.bayleis.extraConfig, null, 2));
+                }
+            }
             
             // Atualizar botão de pausa
             if (btnPause && window.config.botPaused) {
