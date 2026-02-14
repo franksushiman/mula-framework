@@ -46,10 +46,10 @@ window.delDriver = function(phone) {
     }
 };
 
-// Função canônica para salvar configurações gerais
-window.saveConfigGeneral = function() {
-    // Coletar dados do formulário
-    const configData = {
+// Função centralizada para salvar configurações
+window.saveConfig = function() {
+    // Coletar todos os valores dos campos de configuração
+    const configUpdates = {
         googleMapsKey: document.getElementById('k-goo')?.value || '',
         openAIKey: document.getElementById('k-ope')?.value || '',
         telegramToken: document.getElementById('k-tel')?.value || '',
@@ -57,28 +57,30 @@ window.saveConfigGeneral = function() {
         adminNumber: document.getElementById('k-adm')?.value || ''
     };
     
-    // Coletar configurações do Telegram
+    // Atualizar window.config com os valores coletados
+    Object.assign(window.config, configUpdates);
+    
+    // Coletar e atualizar configurações do Telegram
     const botToken = document.getElementById('telegram-bot-token')?.value || '';
     const chatId = document.getElementById('telegram-chat-id')?.value || '';
     const motoboysChannel = document.getElementById('telegram-motoboys-channel')?.value || '';
     
-    if (botToken || chatId || motoboysChannel) {
-        configData.telegram = {
-            botToken: botToken,
-            chatId: chatId,
-            motoboysChannel: motoboysChannel
-        };
-    }
+    if (!window.config.telegram) window.config.telegram = {};
+    window.config.telegram.botToken = botToken;
+    window.config.telegram.chatId = chatId;
+    window.config.telegram.motoboysChannel = motoboysChannel;
     
-    // Salvar via IPC
-    return window.electronAPI.saveConfig(configData).then(result => {
-        window.showToast(result, 'success');
+    // Salvar via API
+    return window.electronAPI.saveConfig(window.config).then(result => {
+        window.showToast('Configurações salvas com sucesso!', 'success');
         return result;
     });
 };
 
-// Alias para compatibilidade
-window.saveC = window.saveConfigGeneral;
+// Alias para compatibilidade com código existente
+window.saveC = window.saveConfig;
+window.saveConfigGeneral = window.saveConfig;
+window.saveTelegramConfig = window.saveConfig;
 
 window.manualOrder = function() {
     window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info');
@@ -494,6 +496,13 @@ window.saveProduct = function() {
         endTime: document.getElementById('product-end-time').value,
         addonGroups: selectedAddonGroups
     };
+    
+    // Validar dados
+    const validation = window.validateProductData(productData);
+    if (!validation.isValid) {
+        window.showToast(validation.errors.join(', '), 'error');
+        return;
+    }
     
     if (window.currentEditingProductId !== null && window.currentEditingCategoryId !== null) {
         // Editar produto existente
@@ -1761,6 +1770,33 @@ window.renderDashboardOpportunities = function() {
         `;
         opportunitiesList.appendChild(item);
     });
+};
+
+// Função centralizada para validar dados do produto
+window.validateProductData = function(productData) {
+    const errors = [];
+    
+    if (!productData.name || productData.name.trim() === '') {
+        errors.push('Nome do produto é obrigatório');
+    }
+    
+    if (isNaN(productData.price) || productData.price < 0) {
+        errors.push('Preço deve ser um número válido maior ou igual a zero');
+    }
+    
+    if (productData.promoPrice !== null && productData.promoPrice !== undefined) {
+        if (isNaN(productData.promoPrice) || productData.promoPrice < 0) {
+            errors.push('Preço promocional deve ser um número válido maior ou igual a zero');
+        }
+        if (productData.promoPrice >= productData.price) {
+            errors.push('Preço promocional deve ser menor que o preço original');
+        }
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
 };
 
 // Função para verificar status do WhatsApp quando a aba de configurações é aberta

@@ -539,25 +539,38 @@ ipcMain.handle('whatsapp-clear-session', async () => {
 // Handler para obter QR Code do WhatsApp
 let currentQrCode = null;
 
-// Ouvir evento 'qr' do WhatsApp e armazenar o QR Code
-// A variável whatsappService já foi importada acima, então usamos ela
-whatsappService.client.on('qr', (qr) => {
+// Função centralizada para processar QR Code do WhatsApp
+function processWhatsAppQr(qr) {
   console.log('QR Code recebido, convertendo para imagem...');
-  // Converter QR Code para data URL
-  QRCode.toDataURL(qr, (err, url) => {
-    if (err) {
-      console.error('Erro ao converter QR Code:', err);
-      return;
-    }
-    currentQrCode = url;
-    console.log('QR Code convertido para imagem');
-    
-    // Enviar para todas as janelas
-    BrowserWindow.getAllWindows().forEach(win => {
-      win.webContents.send('whatsapp-qr-updated', { qrImage: url });
+  
+  return new Promise((resolve, reject) => {
+    QRCode.toDataURL(qr, (err, url) => {
+      if (err) {
+        console.error('Erro ao converter QR Code:', err);
+        reject(err);
+        return;
+      }
+      
+      currentQrCode = url;
+      console.log('QR Code convertido para imagem');
+      
+      // Enviar para todas as janelas
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('whatsapp-qr-updated', { qrImage: url });
+      });
+      
+      resolve(url);
     });
   });
-});
+}
+
+// Ouvir evento 'qr' do WhatsApp e armazenar o QR Code
+// A variável whatsappService já foi importada acima, então usamos ela
+if (whatsappService && whatsappService.client) {
+  whatsappService.client.on('qr', (qr) => {
+    processWhatsAppQr(qr).catch(console.error);
+  });
+}
 
 ipcMain.handle('whatsapp-get-qr', async () => {
   const service = getWhatsAppService();
