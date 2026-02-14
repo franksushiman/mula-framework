@@ -58,6 +58,18 @@ client.on('disconnected', (reason) => {
 // Evento: Mensagem recebida (configurado apenas uma vez em setupClientListeners)
 // Removido para evitar duplicação
 
+// Importar o serviço de IA
+let aiService = null;
+try {
+    aiService = require('./ai_service');
+    console.log('✅ Serviço de IA carregado com sucesso');
+} catch (error) {
+    console.warn('⚠️  Serviço de IA não disponível:', error.message);
+    aiService = {
+        gerarRespostaIA: async () => 'Desculpe, o serviço de IA não está disponível no momento.'
+    };
+}
+
 // Função para enviar mensagem
 async function sendWhatsAppMessage(phone, message) {
     try {
