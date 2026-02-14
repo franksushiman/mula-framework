@@ -1642,6 +1642,132 @@ window.checkWhatsAppStatus = function() {
     });
 };
 
+// Função para verificar status da chave OpenAI
+window.checkOpenAIKeyStatus = function() {
+    const openAIKeyInput = document.getElementById('k-ope');
+    const statusIndicator = document.getElementById('openai-key-status');
+    
+    if (!openAIKeyInput || !statusIndicator) return;
+    
+    const key = openAIKeyInput.value.trim();
+    
+    if (key.length === 0) {
+        statusIndicator.innerHTML = '<i class="fas fa-times-circle" style="color: var(--vermelho-sobrio);"></i> Não configurada';
+        statusIndicator.title = 'Chave OpenAI não configurada';
+    } else if (key.length < 20) {
+        statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
+        statusIndicator.title = 'Chave OpenAI parece muito curta';
+    } else if (key.startsWith('sk-')) {
+        statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
+        statusIndicator.title = 'Chave OpenAI configurada e válida';
+    } else {
+        statusIndicator.innerHTML = '<i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Desconhecida';
+        statusIndicator.title = 'Formato de chave OpenAI não reconhecido';
+    }
+};
+
+// Função para testar a chave OpenAI
+window.testOpenAIKey = function() {
+    const openAIKeyInput = document.getElementById('k-ope');
+    const key = openAIKeyInput?.value.trim();
+    
+    if (!key) {
+        window.showToast('Digite uma chave OpenAI primeiro!', 'error');
+        return;
+    }
+    
+    if (!key.startsWith('sk-')) {
+        window.showToast('Formato de chave inválido. Deve começar com "sk-"', 'error');
+        return;
+    }
+    
+    window.showToast('Testando chave OpenAI...', 'info');
+    
+    // Usar a API do OpenAI para testar a chave
+    fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+    })
+    .then(data => {
+        console.log('Resposta da OpenAI:', data);
+        window.showToast('✅ Chave OpenAI válida! Conectado com sucesso.', 'success');
+        
+        // Atualizar status
+        const statusIndicator = document.getElementById('openai-key-status');
+        if (statusIndicator) {
+            statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Válida e testada';
+            statusIndicator.title = 'Chave OpenAI testada e funcionando';
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao testar chave OpenAI:', error);
+        window.showToast(`❌ Erro ao testar chave: ${error.message}`, 'error');
+        
+        const statusIndicator = document.getElementById('openai-key-status');
+        if (statusIndicator) {
+            statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--vermelho-sobrio);"></i> Erro no teste';
+            statusIndicator.title = `Erro ao testar chave: ${error.message}`;
+        }
+    });
+};
+
+// Função para mostrar ajuda sobre a chave OpenAI
+window.showOpenAIHelp = function() {
+    const helpMessage = `
+        <div style="padding: 20px;">
+            <h3 style="color: var(--terra); margin-bottom: 15px;">Como obter sua chave OpenAI</h3>
+            <ol style="margin-left: 20px; margin-bottom: 15px;">
+                <li>Acesse <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--verde-esperanca);">platform.openai.com/api-keys</a></li>
+                <li>Faça login ou crie uma conta</li>
+                <li>Clique em "Create new secret key"</li>
+                <li>Dê um nome à chave (ex: "Ceia Delivery")</li>
+                <li>Copie a chave gerada (começa com "sk-")</li>
+                <li>Cole no campo acima e clique em "Testar Chave"</li>
+            </ol>
+            <p style="color: var(--texto-secundario); font-size: 14px;">
+                <strong>Nota:</strong> A chave é necessária para funcionalidades de IA, como importação de cardápio e processamento de texto.
+            </p>
+        </div>
+    `;
+    
+    // Criar modal de ajuda
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;';
+    
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px; background: var(--branco-quente); padding: 25px; border-radius: 12px; border: 1px solid var(--borda-quente);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: var(--terra); margin: 0;">Ajuda - Chave OpenAI</h3>
+                <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; font-size: 20px; color: var(--texto-secundario); cursor: pointer;">×</button>
+            </div>
+            ${helpMessage}
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Fechar ao clicar fora
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+};
+
 window.generateWhatsAppQR = function() {
     // Primeiro inicializa o WhatsApp
     window.electronAPI.whatsappInitialize().then(initResult => {
