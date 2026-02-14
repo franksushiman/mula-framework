@@ -2565,12 +2565,12 @@ Exemplo:
             const googleMapsKeyInput = document.getElementById('k-goo');
             
             if (openAIKeyInput) {
-                openAIKeyInput.addEventListener('input', checkOpenAIKeyStatus);
-                openAIKeyInput.addEventListener('change', checkOpenAIKeyStatus);
+                openAIKeyInput.addEventListener('input', window.checkOpenAIKeyStatus);
+                openAIKeyInput.addEventListener('change', window.checkOpenAIKeyStatus);
             }
             if (googleMapsKeyInput) {
-                googleMapsKeyInput.addEventListener('input', checkGoogleMapsKeyStatus);
-                googleMapsKeyInput.addEventListener('change', checkGoogleMapsKeyStatus);
+                googleMapsKeyInput.addEventListener('input', window.checkGoogleMapsKeyStatus);
+                googleMapsKeyInput.addEventListener('change', window.checkGoogleMapsKeyStatus);
             }
 
             // Observar mudanças no config

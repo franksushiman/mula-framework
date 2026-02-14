@@ -1638,6 +1638,7 @@ window.checkOpenAIKeyStatus = function() {
     }
 };
 
+
 // Função para verificar status da chave Google Maps
 window.checkGoogleMapsKeyStatus = function() {
     const googleMapsKeyInput = document.getElementById('k-goo');
