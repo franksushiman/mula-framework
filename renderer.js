@@ -844,6 +844,16 @@ window.dropProduct = function(event, targetCategoryIndex, targetProductIndex) {
     });
 };
 
+// Função para abrir a janela de importação do cardápio via IA
+window.openMenuImport = function() {
+    window.electronAPI.openMenuImport().then(result => {
+        console.log('Janela de importação aberta');
+    }).catch(error => {
+        console.error('Erro ao abrir janela de importação:', error);
+        window.showToast('Erro ao abrir importador de cardápio', 'error');
+    });
+};
+
 // Funções para Complementos
 window.openAddonGroupModal = function() {
     document.getElementById('addon-group-modal').style.display = 'flex';
