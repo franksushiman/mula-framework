@@ -1651,12 +1651,12 @@ window.checkGoogleMapsKeyStatus = function() {
     if (key.length === 0) {
         statusIndicator.innerHTML = '<i class="fas fa-times-circle" style="color: var(--vermelho-sobrio);"></i> Não configurada';
         statusIndicator.title = 'Chave Google Maps não configurada';
-    } else if (key.length < 20) {
-        statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
-        statusIndicator.title = 'Chave Google Maps parece muito curta';
-    } else if (key.startsWith('AIza')) {
+    } else if (key.startsWith('AIza') && key.length > 30) {
         statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
         statusIndicator.title = 'Chave Google Maps configurada e válida';
+    } else if (key.length < 30) {
+        statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
+        statusIndicator.title = 'Chave Google Maps parece muito curta';
     } else {
         statusIndicator.innerHTML = '<i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Desconhecida';
         statusIndicator.title = 'Formato de chave Google Maps não reconhecido';
@@ -1670,6 +1670,12 @@ window.testGoogleMapsKey = function() {
     
     if (!key) {
         window.showToast('Digite uma chave Google Maps primeiro!', 'error');
+        return;
+    }
+    
+    // Verificação básica do formato
+    if (!key.startsWith('AIza') || key.length <= 30) {
+        window.showToast('Formato de chave inválido. Deve começar com "AIza" e ter mais de 30 caracteres.', 'error');
         return;
     }
     
