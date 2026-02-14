@@ -1210,6 +1210,115 @@ ipcMain.on('driver-pos', (event, { phone, lat, lng, vulgo }) => {
   });
 });
 
+// Listener para processar áudio recebido do WhatsApp
+ipcMain.on('whatsapp-audio-to-process', async (event, data) => {
+  console.log(`Processando áudio recebido via evento: ${data.messageId}`);
+  
+  try {
+    // Processar o áudio diretamente
+    const result = await processAudioDirectly(data.audioData, data.mimeType);
+    
+    // Enviar resultado para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('audio-processed', {
+        messageId: data.messageId,
+        result
+      });
+    });
+    
+    console.log('Áudio processado via evento:', result?.success ? 'Sucesso' : 'Falha');
+  } catch (error) {
+    console.error('Erro ao processar áudio via evento:', error);
+  }
+});
+
+// Função auxiliar para processar áudio diretamente
+async function processAudioDirectly(audioData, mimeType) {
+  try {
+    const config = loadConfig();
+    const openAIKey = config.openAIKey || config.openaiKey;
+    
+    if (!openAIKey) {
+      throw new Error('Chave OpenAI não configurada. Configure na aba de Configurações.');
+    }
+    
+    console.log('Processando áudio com OpenAI...');
+    
+    // 1. Primeiro, transcrever o áudio usando Whisper
+    const transcription = await transcribeAudioWithWhisper(openAIKey, audioData, mimeType);
+    
+    // 2. Analisar semanticamente a transcrição usando GPT
+    const semanticAnalysis = await analyzeTranscriptionWithGPT(openAIKey, transcription);
+    
+    return {
+      success: true,
+      transcription: transcription,
+      analysis: semanticAnalysis
+    };
+    
+  } catch (error) {
+    console.error('Erro ao processar áudio:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      note: 'Verifique se a chave OpenAI está configurada e tem créditos suficientes.'
+    };
+  }
+}
+
+// Listener para processar localização recebida do WhatsApp
+ipcMain.on('whatsapp-location-to-process', async (event, data) => {
+  console.log(`Processando localização recebida via evento: ${data.messageId}`);
+  
+  try {
+    // Processar a localização diretamente
+    const result = await processLocationDirectly(data.latitude, data.longitude, data.contextMessage);
+    
+    // Enviar resultado para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('location-processed', {
+        messageId: data.messageId,
+        result
+      });
+    });
+    
+    console.log('Localização processada via evento:', result?.success ? 'Sucesso' : 'Falha');
+  } catch (error) {
+    console.error('Erro ao processar localização via evento:', error);
+  }
+});
+
+// Função auxiliar para processar localização diretamente
+async function processLocationDirectly(latitude, longitude, contextMessage) {
+  try {
+    const config = loadConfig();
+    const openAIKey = config.openAIKey || config.openaiKey;
+    
+    if (!openAIKey) {
+      throw new Error('Chave OpenAI não configurada. Configure na aba de Configurações.');
+    }
+    
+    console.log('Processando localização com OpenAI...');
+    
+    // Analisar semanticamente a localização usando GPT
+    const semanticAnalysis = await analyzeLocationWithGPT(openAIKey, latitude, longitude, contextMessage);
+    
+    return {
+      success: true,
+      location: { latitude, longitude },
+      analysis: semanticAnalysis
+    };
+    
+  } catch (error) {
+    console.error('Erro ao processar localização:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      note: 'Verifique se a chave OpenAI está configurada e tem créditos suficientes.'
+    };
+  }
+}
+
 // Criar janela principal
 let mainWindow = null;
 
