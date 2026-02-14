@@ -1,12 +1,52 @@
-/* Estilos Dark Mode para o Delivery Manager */
+/* Sistema Operacional Ceia - Cockpit */
 :root {
-  --bg-primary: #1a1a1a;
-  --bg-card: #2d2d2d;
-  --primary: #FFC400;
+  /* Física Unificada */
+  --speed-instant: 100ms;
+  --speed-action: 200ms;
+  --speed-exit: 150ms;
+  --ease-ceia: cubic-bezier(0.2, 0, 0, 1);
+  
+  /* Cores de Status - 4 Vozes */
+  /* Voz do Registro (✔️) */
+  --status-success-bg: #1a1a1a; /* Stone 900 */
+  --status-success-text: #fafaf9; /* Stone 50 */
+  --status-success-border: #44403c; /* Stone 700 */
+  
+  /* Voz do Aviso Operacional (⚠️) */
+  --status-warning-bg: #fffbeb; /* Amber 50 */
+  --status-warning-text: #92400e; /* Amber 800 */
+  --status-warning-border: #fbbf24; /* Amber 300 */
+  
+  /* Voz do Erro Real (⛔) */
+  --status-error-bg: #fef2f2; /* Red 50 */
+  --status-error-text: #991b1b; /* Red 800 */
+  --status-error-border: #dc2626; /* Red 600 */
+  
+  /* Paleta Stone/Enterprise */
+  --stone-50: #fafaf9;
+  --stone-100: #f5f5f4;
+  --stone-200: #e7e5e4;
+  --stone-300: #d6d3d1;
+  --stone-400: #a8a29e;
+  --stone-500: #78716c;
+  --stone-600: #57534e;
+  --stone-700: #44403c;
+  --stone-800: #292524;
+  --stone-900: #1c1917;
+  --stone-950: #0c0a09;
+  
+  /* Cores de ação */
+  --action-primary: #1a1a1a;
+  --action-primary-hover: #292524;
+  
+  /* Compatibilidade */
+  --bg-primary: var(--stone-950);
+  --bg-card: var(--stone-900);
+  --primary: var(--stone-400);
   --success: #10b981;
-  --error: #ef4444;
-  --text-primary: #ffffff;
-  --text-secondary: #aaaaaa;
+  --error: #dc2626;
+  --text-primary: var(--stone-100);
+  --text-secondary: var(--stone-400);
 }
 
 * {
@@ -258,33 +298,230 @@ body {
   border-color: var(--primary);
 }
 
-/* Toast notifications */
+/* Voz do Registro (✔️) - Toast no canto inferior esquerdo */
 .toast-container {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .toast {
-  padding: 15px 20px;
-  margin-top: 10px;
-  border-radius: 6px;
-  color: white;
-  animation: fadeIn 0.3s;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background-color: var(--status-success-bg);
+  color: var(--status-success-text);
+  border: 1px solid var(--status-success-border);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: toastSlideIn var(--speed-action) var(--ease-ceia);
+  transition: opacity var(--speed-exit) ease;
+  cursor: pointer;
 }
 
-.toast-success {
+.toast:hover {
+  opacity: 0.9;
+}
+
+.toast i {
+  font-size: 16px;
+}
+
+@keyframes toastSlideIn {
+  from { 
+    opacity: 0; 
+    transform: translateX(-20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+/* Voz do Aviso Operacional (⚠️) - Callout embutido */
+.ceia-callout-warning {
+  background-color: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border: 1px solid var(--status-warning-border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ceia-callout-warning i {
+  color: var(--status-warning-text);
+  font-size: 16px;
+  margin-top: 1px;
+}
+
+/* Voz do Erro Real (⛔) - Input com erro */
+.ceia-input-error {
+  border-color: var(--status-error-border) !important;
+  background-color: var(--status-error-bg) !important;
+}
+
+.ceia-input-message {
+  color: var(--status-error-text);
+  font-size: 13px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Física Unificada - Elementos interativos */
+.ceia-interactive {
+  transition: all var(--speed-action) var(--ease-ceia);
+}
+
+.interactive-element {
+  transition: all var(--speed-action) var(--ease-ceia);
+}
+
+/* Cardápio - Tabela com edição inline */
+.menu-table-container {
+  background: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--stone-700);
+}
+
+.menu-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.menu-table th {
+  background-color: var(--stone-800);
+  color: var(--stone-300);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--stone-700);
+}
+
+.menu-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--stone-800);
+  color: var(--stone-200);
+}
+
+.menu-table tr:last-child td {
+  border-bottom: none;
+}
+
+.menu-table tr:hover {
+  background-color: var(--stone-800);
+}
+
+/* Linha pausada no cardápio */
+.paused-row {
+  opacity: 0.6;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.paused-row td {
+  color: var(--stone-500);
+}
+
+.paused-row .product-name {
+  text-decoration: line-through;
+}
+
+/* Toggle do cardápio - Interruptor operacional */
+.menu-toggle {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.menu-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.menu-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--stone-600);
+  transition: var(--speed-action);
+  border-radius: 34px;
+}
+
+.menu-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: var(--stone-100);
+  transition: var(--speed-action);
+  border-radius: 50%;
+}
+
+input:checked + .menu-toggle-slider {
   background-color: var(--success);
 }
 
-.toast-error {
-  background-color: var(--error);
+input:checked + .menu-toggle-slider:before {
+  transform: translateX(24px);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Edição inline no cardápio */
+.menu-editable {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+  transition: all var(--speed-action) var(--ease-ceia);
+}
+
+.menu-editable:focus {
+  border-color: var(--stone-500);
+  background: var(--stone-900);
+  outline: none;
+}
+
+.menu-editable:hover:not(:focus) {
+  background: var(--stone-800);
+}
+
+/* Marca CEIA OS */
+.ceia-os-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.ceia-os-brand .os-tag {
+  font-size: 11px;
+  color: var(--stone-500);
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 /* Modal */

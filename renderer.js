@@ -156,23 +156,251 @@ window.dispatchOrder = function(orderId) {
     }
 };
 
-// Sistema de Cardápio Moderno
-window.currentEditingCategoryId = null;
-window.currentEditingProductId = null;
-window.currentEditingAddonGroupId = null;
-window.daysOfWeek = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+// Sistema de Cardápio Ceia OS - Tabela com edição inline
+window.currentEditingMenuItemId = null;
+window.menuItems = [];
 
 // Inicializar o cardápio
 window.initMenu = function() {
-    if (!window.config.menuData) {
-        window.config.menuData = {
-            categories: [],
-            addonGroups: []
-        };
+    if (!window.config.menuItems) {
+        window.config.menuItems = [];
     }
-    window.renderMenuCategories();
-    window.renderAddonGroups();
+    window.menuItems = window.config.menuItems;
+    window.renderMenuTable();
+    
+    // Mostrar aviso se houver itens com estoque baixo
+    const lowStockItems = window.menuItems.filter(item => item.stock && item.stock < 5);
+    if (lowStockItems.length > 0) {
+        const warningCallout = document.getElementById('menu-warning-callout');
+        if (warningCallout) {
+            warningCallout.querySelector('strong').textContent = `Estoque baixo · ${lowStockItems.length} itens com menos de 5 unidades`;
+            warningCallout.style.display = 'flex';
+        }
+    }
 };
+
+// Renderizar tabela do cardápio
+window.renderMenuTable = function() {
+    const tbody = document.getElementById('menu-table-body');
+    if (!tbody) return;
+    
+    if (window.menuItems.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <div style="margin-bottom: 16px;">
+                        <i class="fas fa-utensils" style="font-size: 32px; opacity: 0.3;"></i>
+                    </div>
+                    Nenhum item no cardápio
+                    <div style="font-size: 14px; margin-top: 8px; color: var(--text-secondary);">
+                        Comece adicionando seu primeiro item
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    window.menuItems.forEach((item, index) => {
+        const isPaused = item.paused === true;
+        const rowClass = isPaused ? 'paused-row' : '';
+        
+        html += `
+            <tr class="${rowClass} ceia-interactive" data-item-id="${item.id || index}">
+                <td>
+                    <label class="menu-toggle">
+                        <input type="checkbox" ${!isPaused ? 'checked' : ''} 
+                               onchange="window.toggleMenuItem(${index})">
+                        <span class="menu-toggle-slider"></span>
+                    </label>
+                </td>
+                <td>
+                    <div class="product-name" style="font-weight: 600; color: ${isPaused ? 'var(--stone-500)' : 'var(--stone-200)'}">
+                        ${item.name || 'Sem nome'}
+                    </div>
+                    ${item.description ? `<div style="font-size: 13px; color: var(--stone-400); margin-top: 4px;">${item.description}</div>` : ''}
+                </td>
+                <td>
+                    <span style="background: var(--stone-800); color: var(--stone-300); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
+                        ${item.category || 'Geral'}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 700; color: var(--stone-100);">
+                            R$ ${(item.price || 0).toFixed(2)}
+                        </span>
+                        ${item.promoPrice ? `<span style="font-size: 13px; color: var(--stone-500); text-decoration: line-through;">R$ ${item.promoPrice.toFixed(2)}</span>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="window.editMenuItemInline(${index})" style="padding: 6px 12px; font-size: 13px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-error" onclick="window.deleteMenuItem(${index})" style="padding: 6px 12px; font-size: 13px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+};
+
+// Adicionar novo item
+window.addMenuItem = function() {
+    const newItem = {
+        id: Date.now(),
+        name: 'Novo Item',
+        description: '',
+        category: 'Geral',
+        price: 0,
+        promoPrice: null,
+        paused: false,
+        stock: null
+    };
+    
+    window.menuItems.push(newItem);
+    window.config.menuItems = window.menuItems;
+    window.renderMenuTable();
+    
+    // Focar na edição do nome
+    setTimeout(() => {
+        window.editMenuItemInline(window.menuItems.length - 1);
+    }, 100);
+};
+
+// Alternar status do item
+window.toggleMenuItem = function(index) {
+    const item = window.menuItems[index];
+    item.paused = !item.paused;
+    
+    window.config.menuItems = window.menuItems;
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast(`Item ${item.paused ? 'pausado' : 'ativado'}`, 'success');
+        window.renderMenuTable();
+    });
+};
+
+// Editar item inline
+window.editMenuItemInline = function(index) {
+    const item = window.menuItems[index];
+    const row = document.querySelector(`tr[data-item-id="${item.id || index}"]`);
+    if (!row) return;
+    
+    // Se já está editando, salvar primeiro
+    if (window.currentEditingMenuItemId !== null && window.currentEditingMenuItemId !== item.id) {
+        window.saveMenuItemEdit();
+    }
+    
+    window.currentEditingMenuItemId = item.id;
+    
+    // Substituir células por inputs
+    const cells = row.cells;
+    
+    // Nome e descrição
+    cells[1].innerHTML = `
+        <input type="text" class="menu-editable" value="${item.name || ''}" 
+               placeholder="Nome do produto" data-field="name" style="margin-bottom: 8px;">
+        <textarea class="menu-editable" placeholder="Descrição (opcional)" 
+                  data-field="description" rows="2" style="resize: vertical;">${item.description || ''}</textarea>
+    `;
+    
+    // Categoria
+    cells[2].innerHTML = `
+        <select class="menu-editable" data-field="category" style="width: 100%;">
+            <option value="Geral" ${item.category === 'Geral' ? 'selected' : ''}>Geral</option>
+            <option value="Entradas" ${item.category === 'Entradas' ? 'selected' : ''}>Entradas</option>
+            <option value="Pratos Principais" ${item.category === 'Pratos Principais' ? 'selected' : ''}>Pratos Principais</option>
+            <option value="Sobremesas" ${item.category === 'Sobremesas' ? 'selected' : ''}>Sobremesas</option>
+            <option value="Bebidas" ${item.category === 'Bebidas' ? 'selected' : ''}>Bebidas</option>
+            <option value="Promoções" ${item.category === 'Promoções' ? 'selected' : ''}>Promoções</option>
+        </select>
+    `;
+    
+    // Preço
+    cells[3].innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <input type="number" class="menu-editable" value="${item.price || 0}" 
+                   step="0.01" min="0" placeholder="Preço" data-field="price">
+            <input type="number" class="menu-editable" value="${item.promoPrice || ''}" 
+                   step="0.01" min="0" placeholder="Preço promocional (opcional)" data-field="promoPrice">
+        </div>
+    `;
+    
+    // Ações
+    cells[4].innerHTML = `
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-success" onclick="window.saveMenuItemEdit()" style="padding: 6px 12px; font-size: 13px;">
+                <i class="fas fa-check"></i> Salvar
+            </button>
+            <button class="btn btn-secondary" onclick="window.cancelMenuItemEdit()" style="padding: 6px 12px; font-size: 13px;">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+        </div>
+    `;
+    
+    // Focar no primeiro input
+    const firstInput = cells[1].querySelector('input');
+    if (firstInput) firstInput.focus();
+};
+
+// Salvar edição do item
+window.saveMenuItemEdit = function() {
+    if (window.currentEditingMenuItemId === null) return;
+    
+    const index = window.menuItems.findIndex(item => item.id === window.currentEditingMenuItemId);
+    if (index === -1) return;
+    
+    const item = window.menuItems[index];
+    const row = document.querySelector(`tr[data-item-id="${window.currentEditingMenuItemId}"]`);
+    if (!row) return;
+    
+    // Coletar valores dos inputs
+    const inputs = row.querySelectorAll('.menu-editable');
+    inputs.forEach(input => {
+        const field = input.getAttribute('data-field');
+        if (field === 'price' || field === 'promoPrice') {
+            const value = parseFloat(input.value);
+            item[field] = isNaN(value) ? (field === 'price' ? 0 : null) : value;
+        } else {
+            item[field] = input.value.trim();
+        }
+    });
+    
+    window.config.menuItems = window.menuItems;
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Item salvo', 'success');
+        window.currentEditingMenuItemId = null;
+        window.renderMenuTable();
+    });
+};
+
+// Cancelar edição
+window.cancelMenuItemEdit = function() {
+    window.currentEditingMenuItemId = null;
+    window.renderMenuTable();
+};
+
+// Excluir item
+window.deleteMenuItem = function(index) {
+    if (confirm('Tem certeza que deseja excluir este item do cardápio?')) {
+        window.menuItems.splice(index, 1);
+        window.config.menuItems = window.menuItems;
+        window.electronAPI.saveConfig(window.config).then(() => {
+            window.showToast('Item removido', 'success');
+            window.renderMenuTable();
+        });
+    }
+};
+
+// Sistema de Complementos (mantido para compatibilidade)
+window.currentEditingAddonGroupId = null;
+window.daysOfWeek = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
 // Renderizar categorias
 window.renderMenuCategories = function() {
@@ -308,12 +536,11 @@ window.closeCategoryModal = function() {
 };
 
 window.saveCategory = function() {
-    const name = document.getElementById('category-name').value.trim();
+    const nameInput = document.getElementById('category-name');
+    const name = nameInput.value.trim();
+    
     if (!name) {
-        window.showErrorWithInstruction(
-            'Nome da categoria não pode estar vazio.',
-            'Digite um nome para identificar esta categoria no cardápio.'
-        );
+        window.showInputError('category-name', 'Digite um nome para identificar esta categoria no cardápio.');
         return;
     }
     
@@ -333,14 +560,11 @@ window.saveCategory = function() {
     }
     
     window.electronAPI.saveConfig(window.config).then(() => {
-        window.showToast('Categoria salva com sucesso!', 'success');
+        window.showToast('Categoria salva', 'success');
         window.closeCategoryModal();
         window.renderMenuCategories();
     }).catch(error => {
-        window.showErrorWithInstruction(
-            'Erro ao salvar categoria.',
-            'Verifique sua conexão e tente novamente.'
-        );
+        window.showToast('Erro ao salvar categoria. Verifique sua conexão.', 'error');
     });
 };
 
@@ -1529,16 +1753,80 @@ window.closeCashier = function() {
     });
 };
 
-// Sistema de notificações Toast
+// Voz do Registro (✔️) - Toast no canto inferior esquerdo
 window.showToast = function(message, type = 'success') {
     const container = document.getElementById('toast-notification');
+    if (!container) return;
+    
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
+    toast.className = 'toast ceia-interactive';
+    
+    // Ícone baseado no tipo
+    let icon = 'fas fa-check';
+    if (type === 'error') icon = 'fas fa-exclamation-circle';
+    if (type === 'warning') icon = 'fas fa-exclamation-triangle';
+    if (type === 'info') icon = 'fas fa-info-circle';
+    
+    toast.innerHTML = `
+        <i class="${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Remover toasts antigos se houver muitos
+    const existingToasts = container.querySelectorAll('.toast');
+    if (existingToasts.length > 3) {
+        existingToasts[0].remove();
+    }
+    
     container.appendChild(toast);
+    
+    // Remover após 2.5s (conforme manifesto)
     setTimeout(() => {
-        toast.remove();
-    }, 3000);
+        if (toast.parentNode) {
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 150);
+        }
+    }, 2500);
+    
+    // Clique para remover imediatamente
+    toast.addEventListener('click', () => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 150);
+    });
+};
+
+// Função para mostrar erro em input (Voz do Erro Real)
+window.showInputError = function(inputId, message) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    input.classList.add('ceia-input-error');
+    
+    // Remover mensagem anterior
+    const existingMessage = input.parentNode.querySelector('.ceia-input-message');
+    if (existingMessage) existingMessage.remove();
+    
+    // Adicionar nova mensagem
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'ceia-input-message';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    
+    input.parentNode.appendChild(errorDiv);
+    
+    // Remover erro quando o input for alterado
+    const removeError = () => {
+        input.classList.remove('ceia-input-error');
+        if (errorDiv.parentNode) errorDiv.remove();
+        input.removeEventListener('input', removeError);
+        input.removeEventListener('change', removeError);
+    };
+    
+    input.addEventListener('input', removeError);
+    input.addEventListener('change', removeError);
 };
 
 // Dashboard functions
