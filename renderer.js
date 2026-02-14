@@ -1570,32 +1570,6 @@ window.renderFleetNew = function() {
 
 // Funções para Telegram - Removida duplicação, usando window.saveConfig
 
-window.testTelegram = function() {
-    const botToken = document.getElementById('telegram-bot-token').value;
-    const chatId = document.getElementById('telegram-chat-id').value;
-    
-    if (!botToken) {
-        window.showToast('Preencha o token do bot primeiro!', 'error');
-        return;
-    }
-    
-    // Usar uma mensagem padrão
-    const message = '✅ Teste do sistema Ceia Delivery - Configuração de Telegram funcionando!';
-    
-    window.electronAPI.sendTelegramMessage({ botToken, chatId, message }).then(result => {
-        if (result.success) {
-            window.showToast('Mensagem de teste enviada com sucesso!', 'success');
-            const statusDiv = document.getElementById('telegram-status');
-            const statusText = document.getElementById('telegram-status-text');
-            if (statusDiv && statusText) {
-                statusDiv.style.display = 'block';
-                statusText.textContent = `Mensagem de teste enviada em ${new Date().toLocaleTimeString()}`;
-            }
-        } else {
-            window.showToast('Erro ao enviar mensagem: ' + result.error, 'error');
-        }
-    });
-};
 
 window.hideMotoboysChannel = function() {
     const section = document.getElementById('motoboys-channel-section');
