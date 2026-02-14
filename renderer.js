@@ -243,11 +243,22 @@ window.saveConfig = function() {
     Object.assign(window.config, configUpdates);
     
     // Salvar via API
+    console.log('Enviando configuração para main.js:', {
+        googleMapsKey: configUpdates.googleMapsKey?.substring(0, 5) + '...',
+        openAIKey: configUpdates.openAIKey?.substring(0, 5) + '...',
+        telegramToken: configUpdates.telegramToken?.substring(0, 5) + '...'
+    });
+    
     return window.electronAPI.saveConfig(window.config).then(result => {
-        console.log('Resultado do salvamento:', result);
+        console.log('Resultado do salvamento do main.js:', result);
         window.showToast('Configurações salvas com sucesso!', 'success');
         // Forçar recarregamento da configuração após salvar
         window.electronAPI.loadConfig().then(newConfig => {
+            console.log('Configuração recarregada após salvar:', {
+                googleMapsKey: newConfig.googleMapsKey?.substring(0, 5) + '...',
+                openAIKey: newConfig.openAIKey?.substring(0, 5) + '...',
+                telegramToken: newConfig.telegramToken?.substring(0, 5) + '...'
+            });
             Object.assign(window.config, newConfig);
         });
         return result;

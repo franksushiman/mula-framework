@@ -114,6 +114,19 @@ function loadConfig() {
 function saveConfig(data) {
   const current = loadConfig();
   const merged = { ...current, ...data };
+  
+  // Garantir que as chaves de API sejam salvas mesmo se estiverem vazias
+  // (para permitir limpar as chaves)
+  if (data.googleMapsKey !== undefined) {
+    merged.googleMapsKey = data.googleMapsKey;
+  }
+  if (data.openAIKey !== undefined) {
+    merged.openAIKey = data.openAIKey;
+  }
+  if (data.telegramToken !== undefined) {
+    merged.telegramToken = data.telegramToken;
+  }
+  
   return writeJSON(configPath, merged);
 }
 
@@ -147,8 +160,28 @@ ipcMain.handle('load-config', async () => {
 });
 
 ipcMain.handle('save-config', async (event, config) => {
+  console.log('Salvando configuração recebida do frontend:', {
+    hasGoogleMapsKey: config.googleMapsKey !== undefined,
+    hasOpenAIKey: config.openAIKey !== undefined,
+    hasTelegramToken: config.telegramToken !== undefined,
+    googleMapsKeyLength: config.googleMapsKey?.length || 0,
+    openAIKeyLength: config.openAIKey?.length || 0,
+    telegramTokenLength: config.telegramToken?.length || 0
+  });
+  
   // Salvar sem validação rigorosa para permitir salvar configurações parciais
   const success = saveConfig(config);
+  
+  // Ler o arquivo salvo para verificação
+  if (success) {
+    const savedConfig = loadConfig();
+    console.log('Configuração salva no disco:', {
+      savedGoogleMapsKey: savedConfig.googleMapsKey?.substring(0, 10) + '...',
+      savedOpenAIKey: savedConfig.openAIKey?.substring(0, 10) + '...',
+      savedTelegramToken: savedConfig.telegramToken?.substring(0, 10) + '...'
+    });
+  }
+  
   return success ? { success: true, message: 'Configurações salvas!' } : { success: false, message: 'Erro ao salvar configurações.' };
 });
 
