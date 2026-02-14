@@ -1681,19 +1681,33 @@ ipcMain.on('print-job', (event, { printer, html }) => {
   console.log(`Imprimindo em ${printer}: ${html.substring(0, 100)}...`);
 });
 
-ipcMain.on('driver-pos', (event, { phone, lat, lng, vulgo }) => {
+ipcMain.on('driver-pos', (event, { phone, lat, lng, vulgo, liveTracking, timestamp }) => {
+  const now = timestamp || Date.now();
   activeDrivers.set(phone, {
     phone,
     lat,
     lng,
     vulgo,
-    timestamp: Date.now()
+    timestamp: now,
+    liveTracking: liveTracking || false
   });
   
   // Broadcast para todas as janelas
   BrowserWindow.getAllWindows().forEach(win => {
-    win.webContents.send('telegram-location', { phone, lat, lng, vulgo });
+    win.webContents.send('telegram-location', { 
+      phone, 
+      lat, 
+      lng, 
+      vulgo,
+      liveTracking: liveTracking || false,
+      timestamp: now
+    });
   });
+  
+  // Log para depuração
+  if (liveTracking) {
+    console.log(`[RASTREAMENTO] Entregador ${vulgo} (${phone}) moveu-se para ${lat}, ${lng}`);
+  }
 });
 
 // Listener para processar áudio recebido do WhatsApp
@@ -1794,6 +1808,40 @@ ipcMain.on('whatsapp-location-to-process', async (event, data) => {
     console.log('Localização processada via evento:', result?.success ? 'Sucesso' : 'Falha');
   } catch (error) {
     console.error('Erro ao processar localização via evento:', error);
+  }
+});
+
+// Handler para atualizar localização em tempo real do entregador (Live Location)
+ipcMain.handle('update-driver-live-location', async (event, { phone, lat, lng, vulgo, timestamp }) => {
+  try {
+    console.log(`[RASTREAMENTO] Atualizando localização em tempo real para ${vulgo} (${phone}): ${lat}, ${lng}`);
+    
+    // Atualizar no mapa de drivers ativos
+    activeDrivers.set(phone, {
+      phone,
+      lat,
+      lng,
+      vulgo,
+      timestamp: timestamp || Date.now(),
+      liveTracking: true
+    });
+    
+    // Broadcast para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('driver-pos', { 
+        phone,
+        lat,
+        lng,
+        vulgo,
+        liveTracking: true,
+        timestamp: timestamp || Date.now()
+      });
+    });
+    
+    return { success: true, message: 'Localização em tempo real atualizada' };
+  } catch (error) {
+    console.error('Erro ao atualizar localização em tempo real:', error);
+    return { success: false, error: error.message };
   }
 });
 
