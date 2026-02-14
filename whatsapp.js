@@ -291,144 +291,179 @@ function setupClientListeners() {
         });
         
         client.on('message', async (msg) => {
-            if (!msg.fromMe) {
-                console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 50) || 'sem corpo'}...`);
+            // 1. Filtro de Segurança: Ignorar mensagens de grupos e do próprio bot
+            if (msg.from.includes('@g.us') || msg.fromMe) return;
+            
+            console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 100) || 'sem corpo'}...`);
+            
+            try {
+                // 2. Simular "Digitando..." para parecer humano
+                const chat = await msg.getChat();
+                await chat.sendStateTyping();
                 
-                // Verificar se é uma mensagem de áudio
-                if (msg.hasMedia) {
-                    try {
-                        console.log(`🎵 Mensagem de áudio detectada de ${msg.from}`);
-                        
-                        // Baixar a mídia
-                        const media = await msg.downloadMedia();
-                        
-                        if (media) {
-                            console.log(`Áudio baixado: ${media.mimetype}, ${media.data.length} bytes`);
-                            
-                            // Preparar dados para processamento
-                            const audioData = media.data; // Base64
-                            const mimeType = media.mimetype;
-                            
-                            // Enviar para processamento via IPC (se estiver no contexto do Electron)
-                            if (typeof require !== 'undefined') {
-                                try {
-                                    const { ipcMain } = require('electron');
-                                    
-                                    // Notificar o frontend sobre o áudio recebido
-                                    const { BrowserWindow } = require('electron');
-                                    BrowserWindow.getAllWindows().forEach(win => {
-                                        win.webContents.send('whatsapp-audio-received', {
-                                            from: msg.from,
-                                            messageId: msg.id.id,
-                                            timestamp: msg.timestamp,
-                                            mimeType: mimeType,
-                                            dataSize: audioData.length
-                                        });
-                                    });
-                                    
-                                    // Processar o áudio em segundo plano
-                                    setTimeout(async () => {
-                                        try {
-                                            // Chamar o handler de processamento de áudio
-                                            const result = await ipcMain.handle('whatsapp-process-audio-message', 
-                                                { messageId: msg.id.id, audioData, mimeType });
-                                            
-                                            console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
-                                            
-                                            // Se for um pedido, notificar o sistema
-                                            if (result.success && result.analysis && result.analysis.intent === 'pedido') {
-                                                console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
-                                                
-                                                // Notificar o frontend sobre o pedido detectado
-                                                BrowserWindow.getAllWindows().forEach(win => {
-                                                    win.webContents.send('whatsapp-order-detected', {
-                                                        from: msg.from,
-                                                        messageId: msg.id.id,
-                                                        analysis: result.analysis,
-                                                        transcription: result.transcription
-                                                    });
-                                                });
-                                            }
-                                            
-                                        } catch (processError) {
-                                            console.error('Erro ao processar áudio em segundo plano:', processError);
-                                        }
-                                    }, 1000);
-                                    
-                                } catch (ipcError) {
-                                    console.error('Erro ao enviar áudio para processamento IPC:', ipcError);
-                                }
-                            }
-                        }
-                    } catch (mediaError) {
-                        console.error('Erro ao processar mídia de áudio:', mediaError);
-                    }
+                // 3. Contexto da loja (placeholder - pode ser melhorado)
+                const contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+                
+                // 4. Chamar a OpenAI para gerar resposta
+                let respostaIA;
+                if (aiService && aiService.gerarRespostaIA) {
+                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja);
+                } else {
+                    respostaIA = "Olá! Sou o assistente virtual do Ceia Delivery. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.";
                 }
                 
-                // Verificar se é uma mensagem de localização
-                if (msg.type === 'location') {
-                    try {
-                        console.log(`📍 Mensagem de localização detectada de ${msg.from}`);
+                // 5. Responder
+                await msg.reply(respostaIA);
+                await chat.clearState(); // Para de digitar
+                
+                console.log(`✅ Resposta enviada para ${msg.from}: ${respostaIA.substring(0, 50)}...`);
+                
+            } catch (erro) {
+                console.error('❌ Erro ao processar mensagem com IA:', erro);
+                
+                // Tentar enviar uma mensagem de fallback
+                try {
+                    await msg.reply("Desculpe, tive um problema ao processar sua mensagem. Por favor, tente novamente ou ligue para nosso restaurante.");
+                } catch (fallbackError) {
+                    console.error('❌ Erro ao enviar mensagem de fallback:', fallbackError);
+                }
+            }
+            
+            // Processamento de mídia (áudio, localização) continua funcionando em paralelo
+            // Verificar se é uma mensagem de áudio
+            if (msg.hasMedia) {
+                try {
+                    console.log(`🎵 Mensagem de áudio detectada de ${msg.from}`);
+                    
+                    // Baixar a mídia
+                    const media = await msg.downloadMedia();
+                    
+                    if (media) {
+                        console.log(`Áudio baixado: ${media.mimetype}, ${media.data.length} bytes`);
                         
-                        // Extrair coordenadas
-                        const location = msg.location;
-                        if (location) {
-                            const latitude = location.latitude;
-                            const longitude = location.longitude;
-                            const contextMessage = msg.body || '';
-                            
-                            console.log(`Coordenadas: ${latitude}, ${longitude}`);
-                            
-                            // Enviar para processamento via IPC (se estiver no contexto do Electron)
-                            if (typeof require !== 'undefined') {
+                        // Preparar dados para processamento
+                        const audioData = media.data; // Base64
+                        const mimeType = media.mimetype;
+                        
+                        // Enviar para processamento via IPC (se estiver no contexto do Electron)
+                        if (typeof require !== 'undefined') {
+                            try {
                                 const { ipcMain } = require('electron');
                                 
-                                // Notificar o frontend sobre a localização recebida
+                                // Notificar o frontend sobre o áudio recebido
                                 const { BrowserWindow } = require('electron');
                                 BrowserWindow.getAllWindows().forEach(win => {
-                                    win.webContents.send('whatsapp-location-received', {
+                                    win.webContents.send('whatsapp-audio-received', {
                                         from: msg.from,
                                         messageId: msg.id.id,
                                         timestamp: msg.timestamp,
-                                        latitude: latitude,
-                                        longitude: longitude,
-                                        contextMessage: contextMessage
+                                        mimeType: mimeType,
+                                        dataSize: audioData.length
                                     });
                                 });
                                 
-                                // Processar a localização em segundo plano
+                                // Processar o áudio em segundo plano
                                 setTimeout(async () => {
                                     try {
-                                        // Chamar o handler de processamento de localização
-                                        const result = await ipcMain.handle('whatsapp-process-location-message', 
-                                            { messageId: msg.id.id, latitude, longitude, contextMessage });
+                                        // Chamar o handler de processamento de áudio
+                                        const result = await ipcMain.handle('whatsapp-process-audio-message', 
+                                            { messageId: msg.id.id, audioData, mimeType });
                                         
-                                        console.log(`Resultado do processamento de localização: ${result.success ? 'Sucesso' : 'Falha'}`);
+                                        console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
                                         
-                                        // Se for um endereço de entrega, notificar o sistema
-                                        if (result.success && result.analysis && result.analysis.interpreted_as === 'endereco_entrega') {
-                                            console.log(`🎯 Endereço de entrega detectado: ${result.analysis.address_guess || 'sem endereço'}`);
+                                        // Se for um pedido, notificar o sistema
+                                        if (result.success && result.analysis && result.analysis.intent === 'pedido') {
+                                            console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
                                             
-                                            // Notificar o frontend sobre o endereço detectado
+                                            // Notificar o frontend sobre o pedido detectado
                                             BrowserWindow.getAllWindows().forEach(win => {
-                                                win.webContents.send('whatsapp-delivery-address-detected', {
+                                                win.webContents.send('whatsapp-order-detected', {
                                                     from: msg.from,
                                                     messageId: msg.id.id,
                                                     analysis: result.analysis,
-                                                    coordinates: { latitude, longitude }
+                                                    transcription: result.transcription
                                                 });
                                             });
                                         }
                                         
                                     } catch (processError) {
-                                        console.error('Erro ao processar localização em segundo plano:', processError);
+                                        console.error('Erro ao processar áudio em segundo plano:', processError);
                                     }
                                 }, 1000);
+                                
+                            } catch (ipcError) {
+                                console.error('Erro ao enviar áudio para processamento IPC:', ipcError);
                             }
                         }
-                    } catch (locationError) {
-                        console.error('Erro ao processar localização:', locationError);
                     }
+                } catch (mediaError) {
+                    console.error('Erro ao processar mídia de áudio:', mediaError);
+                }
+            }
+            
+            // Verificar se é uma mensagem de localização
+            if (msg.type === 'location') {
+                try {
+                    console.log(`📍 Mensagem de localização detectada de ${msg.from}`);
+                    
+                    // Extrair coordenadas
+                    const location = msg.location;
+                    if (location) {
+                        const latitude = location.latitude;
+                        const longitude = location.longitude;
+                        const contextMessage = msg.body || '';
+                        
+                        console.log(`Coordenadas: ${latitude}, ${longitude}`);
+                        
+                        // Enviar para processamento via IPC (se estiver no contexto do Electron)
+                        if (typeof require !== 'undefined') {
+                            const { ipcMain } = require('electron');
+                            
+                            // Notificar o frontend sobre a localização recebida
+                            const { BrowserWindow } = require('electron');
+                            BrowserWindow.getAllWindows().forEach(win => {
+                                win.webContents.send('whatsapp-location-received', {
+                                    from: msg.from,
+                                    messageId: msg.id.id,
+                                    timestamp: msg.timestamp,
+                                    latitude: latitude,
+                                    longitude: longitude,
+                                    contextMessage: contextMessage
+                                });
+                            });
+                            
+                            // Processar a localização em segundo plano
+                            setTimeout(async () => {
+                                try {
+                                    // Chamar o handler de processamento de localização
+                                    const result = await ipcMain.handle('whatsapp-process-location-message', 
+                                        { messageId: msg.id.id, latitude, longitude, contextMessage });
+                                    
+                                    console.log(`Resultado do processamento de localização: ${result.success ? 'Sucesso' : 'Falha'}`);
+                                    
+                                    // Se for um endereço de entrega, notificar o sistema
+                                    if (result.success && result.analysis && result.analysis.interpreted_as === 'endereco_entrega') {
+                                        console.log(`🎯 Endereço de entrega detectado: ${result.analysis.address_guess || 'sem endereço'}`);
+                                        
+                                        // Notificar o frontend sobre o endereço detectado
+                                        BrowserWindow.getAllWindows().forEach(win => {
+                                            win.webContents.send('whatsapp-delivery-address-detected', {
+                                                from: msg.from,
+                                                messageId: msg.id.id,
+                                                analysis: result.analysis,
+                                                coordinates: { latitude, longitude }
+                                            });
+                                        });
+                                    }
+                                    
+                                } catch (processError) {
+                                    console.error('Erro ao processar localização em segundo plano:', processError);
+                                }
+                            }, 1000);
+                        }
+                    }
+                } catch (locationError) {
+                    console.error('Erro ao processar localização:', locationError);
                 }
             }
         });

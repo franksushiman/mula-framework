@@ -4,6 +4,9 @@ const fs = require('fs-extra');
 const axios = require('axios');
 const QRCode = require('qrcode');
 
+// Carregar variáveis de ambiente
+require('dotenv').config();
+
 // Caminhos de persistência
 const dataDir = path.join(app.getPath('userData'), 'data');
 const configPath = path.join(dataDir, 'config.json');
