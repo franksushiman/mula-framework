@@ -536,9 +536,6 @@ ipcMain.handle('whatsapp-clear-session', async () => {
   }
 });
 
-// Handler para obter QR Code do WhatsApp
-let currentQrCode = null;
-
 // Função centralizada para processar QR Code do WhatsApp
 function processWhatsAppQr(qr) {
   console.log('QR Code recebido, convertendo para imagem...');
