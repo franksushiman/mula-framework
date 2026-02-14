@@ -2144,7 +2144,11 @@
                         <!-- Configurações Básicas -->
                         <div class="ceia-surface-flow-title">Configurações Básicas</div>
                         <div class="ceia-surface-card">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div style="margin-bottom: 10px; padding: 10px; background: var(--cinza-fundo); border-radius: 8px; border-left: 4px solid var(--verde-esperanca);">
+                                <i class="fas fa-shield-alt" style="color: var(--verde-esperanca); margin-right: 8px;"></i>
+                                <span style="font-size: 14px; color: var(--texto-secundario);">Todas as chaves estão mascaradas por segurança. Use o ícone de olho para visualizar.</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
                                 <div>
                                     <label>Google Maps API Key</label>
                                     <div style="position: relative; width: 100%;">
@@ -2611,6 +2615,7 @@ Exemplo:
                 updateMenuCount();
                 updateGoldenRulesCount();
                 checkOpenAIKeyStatus();
+                ensurePasswordFields();
                 
                 // Verificar se há uma chave OpenAI já configurada
                 if (window.config && window.config.openAIKey) {
