@@ -2553,6 +2553,24 @@ Exemplo:
                 }
             }
 
+            // Função para garantir que todos os campos de senha estejam mascarados por padrão
+            function ensurePasswordFields() {
+                const passwordFields = [
+                    'k-goo',
+                    'k-ope',
+                    'k-tel',
+                    'telegram-bot-token',
+                    'bayleis-api-key',
+                    'bayleis-secret-key'
+                ];
+                passwordFields.forEach(id => {
+                    const field = document.getElementById(id);
+                    if (field && field.type !== 'password') {
+                        field.type = 'password';
+                    }
+                });
+            }
+
             // Função para verificar status da chave OpenAI
             function checkOpenAIKeyStatus() {
                 const openAIKeyInput = document.getElementById('k-ope');
