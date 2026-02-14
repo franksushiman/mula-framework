@@ -289,56 +289,8 @@ ipcMain.handle('get-printers', async () => {
   return ['Impressora Térmica 80mm', 'Impressora Laser Sala', 'Impressora Cozinha'];
 });
 
-ipcMain.handle('payment-create-pix', async (event, { amount, payerData, meta }) => {
-  // Simulação de criação de PIX
-  const paymentId = `PIX-${Date.now()}`;
-  const qrCodePayload = `00020126580014BR.GOV.BCB.PIX0136${paymentId}520400005303986540${amount.toFixed(2)}5802BR5900${payerData.name}6008SAO PAULO62070503***6304`;
-  
-  const qrCodeBase64 = await QRCode.toDataURL(qrCodePayload);
-  
-  return {
-    qrCodeBase64,
-    qrCodePayload,
-    invoiceUrl: `https://asaas.com/invoice/${paymentId}`,
-    paymentId
-  };
-});
-
-ipcMain.handle('payment-create-card', async (event, { amount, payerData, meta }) => {
-  const paymentId = `CARD-${Date.now()}`;
-  return {
-    invoiceUrl: `https://asaas.com/card/${paymentId}`,
-    paymentId
-  };
-});
-
-ipcMain.handle('payment-check-status', async (event, paymentId) => {
-  // Status simulados
-  const statuses = ['RECEIVED', 'CONFIRMED', 'PENDING'];
-  const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-  return { status: randomStatus };
-});
-
-ipcMain.handle('payment-configs-list', async () => {
-  const config = loadConfig();
-  return config.paymentConfigs || {};
-});
-
-ipcMain.handle('payment-validate-and-save', async (event, { apiKey, sandbox }) => {
-  // Validação simulada
-  const isValid = apiKey && apiKey.startsWith('asaas_');
-  
-  if (isValid) {
-    const config = loadConfig();
-    config.paymentConfigs.asaas = {
-      is_active: true,
-      credentials: { apiKey, sandbox }
-    };
-    saveConfig(config);
-  }
-  
-  return { success: isValid, message: isValid ? 'Chave validada e salva' : 'Chave inválida' };
-});
+// Nota: Handlers de pagamento removidos da interface do restaurante
+// Essas funcionalidades são gerenciadas apenas no painel administrativo
 
 ipcMain.handle('ai-parse-menu', async (event, text) => {
   // Simulação de parsing com IA

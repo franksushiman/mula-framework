@@ -1237,7 +1237,7 @@
                 <a href="#" class="nav-item" data-panel="menu-panel"><i class="fas fa-utensils"></i> Cardápio</a>
                 <a href="#" class="nav-item" data-panel="tables-panel"><i class="fas fa-chair"></i> Mesas</a>
                 <a href="#" class="nav-item" data-panel="map-panel"><i class="fas fa-map"></i> Mapa</a>
-                <a href="#" class="nav-item" data-panel="finance-panel"><i class="fas fa-chart-line"></i> Financeiro</a>
+                <!-- Nota: Painel Financeiro removido - Configurações financeiras não são acessíveis na interface do restaurante -->
                 <a href="#" class="nav-item" data-panel="printers-panel"><i class="fas fa-print"></i> Impressoras</a>
                 <a href="#" class="nav-item" data-panel="config-panel"><i class="fas fa-cog"></i> Configurações</a>
                 <a href="#" class="nav-item" data-panel="hub-panel"><i class="fas fa-store"></i> Hub</a>
@@ -1372,6 +1372,14 @@
                         </div>
                         <div id="dashboard-opportunities-list" class="oportunidades-lista">
                             <!-- Populado via renderDashboardOpportunities() -->
+                        </div>
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--borda-quente);">
+                            <button class="btn btn-secondary" onclick="window.closeCashier()" style="width: 100%; padding: 10px;">
+                                <i class="fas fa-cash-register"></i> Fechar Caixa
+                            </button>
+                            <small style="color: var(--texto-secundario); font-size: 11px; display: block; margin-top: 8px; text-align: center;">
+                                Encerre o dia e gere o relatório de vendas
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -1558,12 +1566,7 @@
                 </div>
             </div>
 
-            <div id="finance-panel" class="panel">
-                <div class="card">
-                    <h2>Financeiro</h2>
-                    <button class="btn btn-primary" onclick="window.closeCashier()">Fechar Caixa</button>
-                </div>
-            </div>
+            <!-- Nota: Painel Financeiro removido - Configurações financeiras não são acessíveis na interface do restaurante -->
 
             <div id="printers-panel" class="panel">
                 <div class="card">
