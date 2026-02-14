@@ -1353,13 +1353,16 @@ window.testPrint = function() {
 // Funções auxiliares para o novo componente de frota
 // Função para enviar convite do Telegram via WhatsApp (única função de convite)
 window.sendTelegramInviteToWhatsApp = function() {
+    console.log('sendTelegramInviteToWhatsApp chamada');
     const phoneInput = document.getElementById('fleet-invite-phone');
     if (!phoneInput) {
+        console.error('Campo de telefone não encontrado');
         window.showToast('Campo de telefone não encontrado!', 'error');
         return;
     }
     
     const phone = phoneInput.value.trim();
+    console.log('Número digitado:', phone);
     if (!phone) {
         window.showToast('Digite um número de WhatsApp!', 'error');
         return;
@@ -1367,6 +1370,7 @@ window.sendTelegramInviteToWhatsApp = function() {
     
     // Validar formato do telefone (mínimo 10 dígitos)
     const cleanPhone = phone.replace(/\D/g, '');
+    console.log('Número limpo:', cleanPhone);
     if (cleanPhone.length < 10) {
         window.showToast('Número de telefone inválido!', 'error');
         return;
@@ -1374,7 +1378,9 @@ window.sendTelegramInviteToWhatsApp = function() {
     
     window.showToast('Enviando convite via WhatsApp...', 'info');
     
+    console.log('Chamando electronAPI.sendTelegramInviteToWhatsApp com:', cleanPhone);
     window.electronAPI.sendTelegramInviteToWhatsApp(cleanPhone).then(result => {
+        console.log('Resultado do envio:', result);
         if (result.success) {
             window.showToast('✅ Convite enviado com sucesso!', 'success');
             
@@ -1392,6 +1398,7 @@ window.sendTelegramInviteToWhatsApp = function() {
             window.showToast(`❌ Erro: ${result.error}`, 'error');
         }
     }).catch(error => {
+        console.error('Erro ao enviar convite:', error);
         window.showToast(`❌ Erro ao enviar: ${error.message}`, 'error');
     });
 };

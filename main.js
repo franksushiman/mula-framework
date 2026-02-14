@@ -584,6 +584,75 @@ ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
   }
 });
 
+// Handler para enviar convite do Telegram via WhatsApp
+ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
+  try {
+    const config = loadConfig();
+    const service = getWhatsAppService();
+    
+    // Verificar se o WhatsApp está conectado
+    const status = service.getWhatsAppStatus();
+    if (!status.connected) {
+      return { 
+        success: false, 
+        error: 'WhatsApp não está conectado. Aguarde a inicialização completa.' 
+      };
+    }
+    
+    // Gerar ID único para o convite
+    const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // ID da loja (usar slug ou nome)
+    const storeId = config.hubPagesSlug || 'ceia-delivery';
+    
+    // Link do Telegram com ID da loja
+    const telegramLink = `https://t.me/ceia_frota_bot?start=${storeId}_${inviteId}`;
+    
+    // Mensagem personalizada
+    const message = `🚀 *CONVITE PARA FAZER PARTE DA FROTA CEIA DELIVERY* 🚀\n\n` +
+                   `Olá! Você foi convidado(a) para fazer parte da frota de entregadores do ${config.storeName || 'Ceia Delivery'}.\n\n` +
+                   `📲 *Clique no link abaixo para se cadastrar:*\n` +
+                   `${telegramLink}\n\n` +
+                   `_\"Esse motoboy é meu\"_ 👊\n\n` +
+                   `Após clicar no link, o bot do Telegram irá solicitar:\n` +
+                   `• Seu PIX para pagamentos\n` +
+                   `• Placa do veículo (se tiver)\n` +
+                   `• Tipo de veículo\n` +
+                   `• CPF\n` +
+                   `• Número do WhatsApp\n\n` +
+                   `Assim que cadastrado, você poderá compartilhar sua localização em tempo real e ficar online para receber corridas!`;
+    
+    console.log(`Enviando convite Telegram para ${phone} via WhatsApp...`);
+    
+    // Enviar via WhatsApp
+    const response = await service.sendWhatsAppMessage(phone, message);
+    
+    // Salvar o convite pendente
+    if (!config.pendingMotoboys) {
+      config.pendingMotoboys = [];
+    }
+    config.pendingMotoboys.push({
+      phone,
+      inviteId,
+      storeId,
+      telegramLink,
+      sentAt: Date.now(),
+      status: 'sent'
+    });
+    saveConfig(config);
+    
+    return { 
+      success: true, 
+      message: 'Convite enviado com sucesso!',
+      inviteId,
+      telegramLink 
+    };
+  } catch (error) {
+    console.error('Erro ao enviar convite Telegram via WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handler para processar áudio com OpenAI (transcrição + análise semântica)
 ipcMain.handle('process-audio', async (event, { audioData, mimeType }) => {
   try {

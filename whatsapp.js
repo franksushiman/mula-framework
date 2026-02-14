@@ -79,7 +79,7 @@ try {
 // Função para enviar mensagem
 async function sendWhatsAppMessage(phone, message) {
     try {
-        // Formatar número: remover caracteres não numéricos e adicionar @c.us
+        // Formatar número: remover caracteres não numéricos
         const formattedPhone = phone.replace(/\D/g, '');
         
         // Verificar se o número tem código do país
@@ -91,7 +91,12 @@ async function sendWhatsAppMessage(phone, message) {
         
         const chatId = `${finalPhone}@c.us`;
         
-        console.log(`📤 Enviando WhatsApp para ${chatId}: ${message.substring(0, 50)}...`);
+        console.log(`📤 Enviando WhatsApp para ${chatId} (original: ${phone}): ${message.substring(0, 50)}...`);
+        
+        // Verificar se o cliente está pronto
+        if (!client.info) {
+            throw new Error('Cliente WhatsApp não está pronto');
+        }
         
         // Enviar mensagem
         const response = await client.sendMessage(chatId, message);
