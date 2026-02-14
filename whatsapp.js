@@ -388,74 +388,74 @@ function setupClientListeners() {
                 try {
                     // Baixar a mídia corretamente
                     const media = await msg.downloadMedia();
-                    
+                                
                     if (!media) {
                         throw new Error('Falha ao baixar mídia');
                     }
-                    
+                                
                     console.log(`Áudio baixado: ${media.mimetype}, ${media.data.length} bytes`);
-                    
+                                
                     // Converter Base64 para Buffer
                     const buffer = Buffer.from(media.data, 'base64');
-                    
+                                
                     // Criar nome único para o arquivo temporário
                     const tempFileName = path.join(__dirname, `temp_${msg.id.id}.ogg`);
-                    
+                                
                     // Salvar o arquivo temporário no disco
                     fs.writeFileSync(tempFileName, buffer);
                     console.log(`Arquivo salvo em: ${tempFileName}`);
-                    
+                                
                     try {
                         // Transcrever áudio usando o serviço de IA
                         if (aiService && aiService.transcreverAudio) {
                             console.log('🎤 Enviando para Whisper...');
-                            
+                                        
                             // Transcrever o áudio
                             const transcricao = await aiService.transcreverAudio(buffer, media.mimetype);
-                            
+                                        
                             if (transcricao && transcricao.trim()) {
                                 console.log(`📝 Transcrição: ${transcricao.substring(0, 100)}...`);
-                                
+                                            
                                 // Simular "Digitando..." para parecer humano
                                 const chat = await msg.getChat();
                                 await chat.sendStateTyping();
-                                
+                                            
                                 // Contexto da loja - tentar obter do config
                                 let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
-                                
+                                            
                                 try {
                                     // Tentar obter informações reais do config
                                     if (typeof require !== 'undefined') {
                                         const { app } = require('electron');
-                                        
+                                                    
                                         const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
                                         if (fs.existsSync(configPath)) {
                                             const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                                            
+                                                        
                                             // Verificar se há informações reais configuradas
                                             const hasRealInfo = configData.restaurantAddress || 
                                                                (configData.menuItems && configData.menuItems.length > 0) ||
                                                                configData.storeName;
-                                            
+                                                        
                                             if (hasRealInfo) {
                                                 // Construir contexto com informações reais
                                                 let contextParts = [];
-                                                
+                                                            
                                                 if (configData.storeName && configData.storeName !== 'Delivery Manager') {
                                                     contextParts.push(`Estabelecimento: ${configData.storeName}`);
                                                 }
-                                                
+                                                            
                                                 if (configData.restaurantAddress) {
                                                     contextParts.push(`Endereço: ${configData.restaurantAddress}`);
                                                 }
-                                                
+                                                            
                                                 if (configData.menuItems && configData.menuItems.length > 0) {
                                                     const sampleItems = configData.menuItems.slice(0, 3).map(item => 
                                                         `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
                                                     ).join(', ');
                                                     contextParts.push(`Cardápio: ${sampleItems}${configData.menuItems.length > 3 ? '...' : ''}`);
                                                 }
-                                                
+                                                            
                                                 if (contextParts.length > 0) {
                                                     contextoLoja = contextParts.join('. ');
                                                 }
@@ -465,7 +465,7 @@ function setupClientListeners() {
                                 } catch (configError) {
                                     console.warn('⚠️  Não foi possível ler contexto do config:', configError.message);
                                 }
-                                
+                                            
                                 // Chamar a OpenAI para gerar resposta baseada na transcrição
                                 let respostaIA;
                                 if (aiService && aiService.gerarRespostaIA) {
@@ -475,7 +475,7 @@ function setupClientListeners() {
                                         // Se estivermos no contexto do Electron, podemos acessar o config
                                         if (typeof require !== 'undefined') {
                                             const { app } = require('electron');
-                                            
+                                                        
                                             const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
                                             if (fs.existsSync(configPath)) {
                                                 const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -485,17 +485,17 @@ function setupClientListeners() {
                                     } catch (configError) {
                                         console.warn('⚠️  Não foi possível ler a chave OpenAI do config:', configError.message);
                                     }
-                                    
+                                                
                                     // Chamar a função com a chave (se encontrada)
                                     respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, openAIKey);
                                 } else {
                                     respostaIA = "Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.";
                                 }
-                                
+                                            
                                 // Responder
                                 await msg.reply(respostaIA);
                                 await chat.clearState(); // Para de digitar
-                                
+                                            
                                 console.log(`✅ Resposta enviada para ${msg.from}: ${respostaIA.substring(0, 50)}...`);
                             } else {
                                 console.log('⚠️  Transcrição vazia ou inválida');

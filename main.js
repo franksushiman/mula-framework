@@ -586,13 +586,20 @@ ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
 
 // Handler para enviar convite do Telegram via WhatsApp
 ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
+  console.log(`📱 IPC send-telegram-invite-to-whatsapp chamado com phone: ${phone}`);
   try {
     const config = loadConfig();
+    console.log('Config carregada');
+    
     const service = getWhatsAppService();
+    console.log('Serviço WhatsApp obtido');
     
     // Verificar se o WhatsApp está conectado
     const status = service.getWhatsAppStatus();
+    console.log('Status WhatsApp:', status);
+    
     if (!status.connected) {
+      console.log('WhatsApp não está conectado');
       return { 
         success: false, 
         error: 'WhatsApp não está conectado. Aguarde a inicialização completa.' 
@@ -601,12 +608,15 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
     
     // Gerar ID único para o convite
     const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Invite ID gerado:', inviteId);
     
     // ID da loja (usar slug ou nome)
     const storeId = config.hubPagesSlug || 'ceia-delivery';
+    console.log('Store ID:', storeId);
     
     // Link do Telegram com ID da loja
     const telegramLink = `https://t.me/ceia_frota_bot?start=${storeId}_${inviteId}`;
+    console.log('Telegram link:', telegramLink);
     
     // Mensagem personalizada
     const message = `🚀 *CONVITE PARA FAZER PARTE DA FROTA CEIA DELIVERY* 🚀\n\n` +
@@ -625,7 +635,9 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
     console.log(`Enviando convite Telegram para ${phone} via WhatsApp...`);
     
     // Enviar via WhatsApp
+    console.log('Chamando service.sendWhatsAppMessage...');
     const response = await service.sendWhatsAppMessage(phone, message);
+    console.log('Resposta do WhatsApp:', response);
     
     // Salvar o convite pendente
     if (!config.pendingMotoboys) {
@@ -640,6 +652,7 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
       status: 'sent'
     });
     saveConfig(config);
+    console.log('Convite salvo no config');
     
     return { 
       success: true, 
@@ -649,6 +662,7 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
     };
   } catch (error) {
     console.error('Erro ao enviar convite Telegram via WhatsApp:', error);
+    console.error('Stack trace:', error.stack);
     return { success: false, error: error.message };
   }
 });
