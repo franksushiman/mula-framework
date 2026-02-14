@@ -67,6 +67,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // WhatsApp - Limpar sessão
   whatsappClearSession: () => ipcRenderer.invoke('whatsapp-clear-session'),
   
+  // Importação de cardápio via IA
+  openMenuImport: () => ipcRenderer.invoke('open-menu-import'),
+  
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
