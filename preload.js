@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Pagamentos
   getPaymentStatus: () => ipcRenderer.invoke('get-payment-status'),
+  getNetworkStatus: () => ipcRenderer.invoke('get-network-status'),
   
   // WhatsApp
   whatsappSend: (data) => ipcRenderer.invoke('whatsapp-send', data),
