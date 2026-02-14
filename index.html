@@ -1651,7 +1651,7 @@
                                         Use @userinfobot para descobrir
                                     </small>
                                 </div>
-                                <div id="motoboys-channel-section" style="grid-column: span 2;">
+                                <div id="motoboys-channel-section" style="grid-column: span 2; display: none;">
                                     <label>Canal dos Motoboys (embutido)</label>
                                     <input type="text" id="telegram-motoboys-channel" class="form-input" placeholder="Token do canal dos motoboys" value="bot_embutido_ceia_frota">
                                     <small style="color: var(--texto-secundario); font-size: 12px;">
@@ -1676,45 +1676,61 @@
                             </div>
                         </div>
                         
-                        <!-- Status Financeiro (Apenas Resultado) -->
+                        <!-- Conexão WhatsApp -->
                         <div style="background: var(--cinza-fundo); padding: 15px; border-radius: 8px;">
                             <h4 style="color: var(--texto-principal); margin-bottom: 10px;">
-                                <i class="fas fa-credit-card"></i> Status Financeiro
+                                <i class="fab fa-whatsapp"></i> WhatsApp
                             </h4>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div>
-                                    <label>Pagamentos</label>
+                                    <label>Status</label>
                                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                                        <span class="status-dot online" style="margin: 0;"></span>
-                                        <span style="color: var(--verde-esperanca); font-weight: 600;">Ativo</span>
+                                        <span class="status-dot" id="whatsapp-config-status-dot"></span>
+                                        <span id="whatsapp-config-status-text" style="font-weight: 600;">Verificando...</span>
                                     </div>
                                     <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        PIX e Cartão disponíveis
+                                        Conexão com WhatsApp Web
                                     </small>
                                 </div>
                                 <div>
-                                    <label>Última Transação</label>
-                                    <div style="margin-top: 8px; font-size: 14px; color: var(--texto-principal);">
-                                        Hoje, 14:30
+                                    <label>Última Atividade</label>
+                                    <div style="margin-top: 8px; font-size: 14px; color: var(--texto-principal);" id="whatsapp-last-activity">
+                                        Verificando...
                                     </div>
                                     <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        R$ 89,90 · PIX
+                                        Tempo desde a última conexão
                                     </small>
                                 </div>
                             </div>
                             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--borda-quente);">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-size: 12px; color: var(--texto-secundario);">Saldo Disponível</div>
-                                        <div style="font-size: 20px; font-weight: 700; color: var(--verde-esperanca);">R$ 1.245,80</div>
-                                    </div>
-                                    <button class="btn btn-secondary" onclick="window.showFinancialReport()" style="padding: 8px 15px;">
-                                        <i class="fas fa-chart-bar"></i> Ver Relatório
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button class="btn btn-secondary" onclick="window.checkWhatsAppStatus()" style="padding: 8px 15px;">
+                                        <i class="fas fa-sync"></i> Verificar Status
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="window.generateWhatsAppQR()" style="padding: 8px 15px;">
+                                        <i class="fas fa-qrcode"></i> Gerar QR Code
+                                    </button>
+                                    <button class="btn btn-error" onclick="window.restartWhatsAppConnection()" style="padding: 8px 15px;">
+                                        <i class="fas fa-power-off"></i> Reiniciar Conexão
                                     </button>
                                 </div>
                                 <small style="color: var(--texto-secundario); font-size: 11px; display: block; margin-top: 8px;">
-                                    Próximo repasse: 15/02 · R$ 1.245,80
+                                    Use o QR Code para conectar uma nova sessão do WhatsApp
                                 </small>
+                            </div>
+                            <div id="whatsapp-qr-container-config" style="margin-top: 15px; text-align: center; display: none;">
+                                <div style="background: white; padding: 15px; border-radius: 12px; display: inline-block; border: 2px solid var(--verde-esperanca);">
+                                    <img id="whatsapp-qr-image-config" src="" style="max-width: 250px; height: auto;">
+                                </div>
+                                <p style="font-size: 13px; color: var(--texto-secundario); margin-top: 10px; line-height: 1.4;">
+                                    <strong>Como escanear:</strong><br>
+                                    1. Abra o WhatsApp no celular da loja<br>
+                                    2. Toque em <strong>Menu → Aparelhos conectados → Conectar um aparelho</strong><br>
+                                    3. Aponte a câmera para este código
+                                </p>
+                                <button class="btn btn-secondary" onclick="window.generateWhatsAppQR()" style="margin-top: 10px; padding: 8px 16px;">
+                                    <i class="fas fa-sync"></i> Atualizar QR Code
+                                </button>
                             </div>
                         </div>
                     </div>

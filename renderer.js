@@ -629,17 +629,90 @@ window.hideMotoboysChannel = function() {
     }
 };
 
-// Funções para Relatório Financeiro (apenas resultado)
-window.showFinancialReport = function() {
-    window.showToast('Relatório financeiro disponível no painel administrativo.', 'info');
-    // Em uma implementação real, isso abriria um modal ou navegaria para um painel de relatórios
-    // que mostra apenas dados consolidados, sem configurações técnicas
+// Funções para WhatsApp na configuração
+window.checkWhatsAppStatus = function() {
+    window.electronAPI.whatsappGetStatus().then(status => {
+        const statusDot = document.getElementById('whatsapp-config-status-dot');
+        const statusText = document.getElementById('whatsapp-config-status-text');
+        const lastActivity = document.getElementById('whatsapp-last-activity');
+        
+        if (statusDot && statusText && lastActivity) {
+            if (status.connected) {
+                statusDot.className = 'status-dot online';
+                statusText.textContent = 'Conectado';
+                statusText.style.color = 'var(--verde-esperanca)';
+                
+                if (status.readyAt) {
+                    const readyDate = new Date(status.readyAt);
+                    const now = new Date();
+                    const diffMs = now - readyDate;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMins / 60);
+                    
+                    if (diffHours > 0) {
+                        lastActivity.textContent = `Há ${diffHours}h ${diffMins % 60}min`;
+                    } else {
+                        lastActivity.textContent = `Há ${diffMins}min`;
+                    }
+                } else {
+                    lastActivity.textContent = 'Ativo';
+                }
+                window.showToast('WhatsApp conectado!', 'success');
+            } else {
+                statusDot.className = 'status-dot offline';
+                statusText.textContent = 'Desconectado';
+                statusText.style.color = 'var(--vermelho-sobrio)';
+                lastActivity.textContent = 'Não conectado';
+                window.showToast('WhatsApp desconectado.', 'error');
+            }
+        }
+    }).catch(error => {
+        console.error('Erro ao verificar status WhatsApp:', error);
+        window.showToast('Erro ao verificar status WhatsApp', 'error');
+    });
+};
+
+window.generateWhatsAppQR = function() {
+    window.electronAPI.whatsappGetQr().then(result => {
+        if (result.success && result.qrImage) {
+            const qrContainer = document.getElementById('whatsapp-qr-container-config');
+            const qrImage = document.getElementById('whatsapp-qr-image-config');
+            
+            if (qrContainer && qrImage) {
+                qrImage.src = result.qrImage;
+                qrContainer.style.display = 'block';
+                window.showToast('QR Code gerado! Escaneie com o WhatsApp.', 'success');
+            }
+        } else {
+            window.showToast(result.message || 'Aguardando QR Code...', 'info');
+        }
+    }).catch(error => {
+        console.error('Erro ao gerar QR Code:', error);
+        window.showToast('Erro ao gerar QR Code', 'error');
+    });
+};
+
+window.restartWhatsAppConnection = function() {
+    if (confirm('Tem certeza que deseja reiniciar a conexão do WhatsApp? Isso desconectará a sessão atual.')) {
+        window.electronAPI.whatsappRestart().then(result => {
+            if (result.success) {
+                window.showToast('Reiniciando conexão WhatsApp...', 'info');
+                // Atualizar status após alguns segundos
+                setTimeout(() => {
+                    window.checkWhatsAppStatus();
+                }, 3000);
+            } else {
+                window.showToast('Erro ao reiniciar: ' + (result.error || 'Desconhecido'), 'error');
+            }
+        }).catch(error => {
+            console.error('Erro ao reiniciar WhatsApp:', error);
+            window.showToast('Erro ao reiniciar conexão', 'error');
+        });
+    }
 };
 
 // Função para verificar status do WhatsApp (simplificada - apenas para dashboard)
 window.checkWhatsAppStatusForDashboard = function() {
-    // Esta função é usada apenas internamente pelo dashboard
-    // Não expõe detalhes técnicos ao usuário
     return window.electronAPI.whatsappGetStatus().then(status => {
         return {
             online: status.connected || false,
@@ -954,6 +1027,13 @@ window.renderDashboardOpportunities = function() {
     });
 };
 
+// Função para verificar status do WhatsApp quando a aba de configurações é aberta
+window.checkWhatsAppOnConfigOpen = function() {
+    if (document.getElementById('config-panel').classList.contains('active')) {
+        window.checkWhatsAppStatus();
+    }
+};
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -978,6 +1058,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const panelId = newItem.getAttribute('data-panel');
                     console.log(`Navegação ${index}: ${panelId}`);
                     window.nav(panelId);
+                    
+                    // Verificar status do WhatsApp se for a aba de configurações
+                    if (panelId === 'config-panel') {
+                        setTimeout(() => {
+                            window.checkWhatsAppStatus();
+                        }, 100);
+                    }
                 });
                 console.log(`Evento adicionado ao item ${index}: ${newItem.getAttribute('data-panel')}`);
             });
@@ -1074,29 +1161,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Listener para atualização do QR Code do WhatsApp
         window.electronAPI.onWhatsappQrUpdated((event, data) => {
             console.log('QR Code do WhatsApp atualizado');
-            const qrContainer = document.getElementById('whatsapp-qr-container');
-            const qrImage = document.getElementById('whatsapp-qr-image');
-            const statusDiv = document.getElementById('whatsapp-status');
-            const statusText = document.getElementById('whatsapp-status-text');
             
-            if (qrContainer && qrImage && data.qrImage) {
-                qrImage.src = data.qrImage;
-                qrContainer.style.display = 'block';
-                
-                if (statusDiv && statusText) {
-                    statusDiv.style.display = 'block';
-                    statusText.innerHTML = `
-                        <strong>📱 QR Code do WhatsApp (Atualizado)</strong><br>
-                        Escaneie este código com o WhatsApp da loja<br>
-                        <small>No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho</small>
-                    `;
-                    statusText.style.color = 'var(--verde-esperanca)';
-                }
-                
-                // Mostrar notificação
-                if (document.getElementById('config-panel').classList.contains('active')) {
-                    window.showToast('QR Code do WhatsApp atualizado!', 'success');
-                }
+            // Atualizar QR Code na aba de configurações
+            const qrContainerConfig = document.getElementById('whatsapp-qr-container-config');
+            const qrImageConfig = document.getElementById('whatsapp-qr-image-config');
+            
+            if (qrContainerConfig && qrImageConfig && data.qrImage) {
+                qrImageConfig.src = data.qrImage;
+                qrContainerConfig.style.display = 'block';
+            }
+            
+            // Atualizar status
+            window.checkWhatsAppStatus();
+            
+            // Mostrar notificação
+            if (document.getElementById('config-panel').classList.contains('active')) {
+                window.showToast('QR Code do WhatsApp atualizado!', 'success');
             }
         });
 
