@@ -910,26 +910,44 @@ app.whenReady().then(() => {
   
   // Inicializar o WhatsApp após um breve delay para garantir que a janela está pronta
   setTimeout(() => {
-    console.log('Inicializando serviço WhatsApp...');
+    console.log('Verificando status do WhatsApp...');
     try {
       const service = getWhatsAppService();
       console.log('Serviço WhatsApp obtido, verificando status...');
       
-      // Forçar inicialização do WhatsApp
+      // Verificar se já está conectado
+      const status = service.getWhatsAppStatus();
+      console.log('Status atual do WhatsApp:', status);
+      
+      if (status.connected) {
+        console.log('✅ WhatsApp já está conectado!');
+        // Enviar status para a janela principal
+        BrowserWindow.getAllWindows().forEach(win => {
+          win.webContents.send('bot-status', {
+            online: true,
+            timestamp: Date.now(),
+            message: status.message
+          });
+        });
+        return;
+      }
+      
+      // Se não está conectado, tentar inicializar
+      console.log('WhatsApp não está conectado, tentando inicializar...');
       service.initializeWhatsApp().then(() => {
         console.log('✅ WhatsApp inicializado com sucesso!');
         
         // Verificar status após inicialização
         setTimeout(() => {
-          const status = service.getWhatsAppStatus();
-          console.log('Status do WhatsApp após inicialização:', status);
+          const newStatus = service.getWhatsAppStatus();
+          console.log('Status do WhatsApp após inicialização:', newStatus);
           
           // Enviar status para a janela principal
           BrowserWindow.getAllWindows().forEach(win => {
             win.webContents.send('bot-status', {
-              online: status.connected,
+              online: newStatus.connected,
               timestamp: Date.now(),
-              message: status.message
+              message: newStatus.message
             });
           });
         }, 2000);
@@ -937,17 +955,37 @@ app.whenReady().then(() => {
       }).catch(error => {
         console.error('❌ Erro ao inicializar WhatsApp:', error);
         
-        // Tentar novamente em 10 segundos
-        setTimeout(() => {
-          console.log('Tentando inicializar WhatsApp novamente...');
-          service.initializeWhatsApp().catch(err => {
-            console.error('❌ Erro na segunda tentativa:', err);
-          });
-        }, 10000);
+        // Não tentar novamente automaticamente se já estiver inicializando
+        if (error.message.includes('já está sendo inicializado')) {
+          console.log('WhatsApp já está em processo de inicialização, aguardando...');
+          // Aguardar e verificar status após 5 segundos
+          setTimeout(() => {
+            const currentStatus = service.getWhatsAppStatus();
+            if (currentStatus.connected) {
+              console.log('✅ WhatsApp conectado após espera!');
+              BrowserWindow.getAllWindows().forEach(win => {
+                win.webContents.send('bot-status', {
+                  online: true,
+                  timestamp: Date.now(),
+                  message: currentStatus.message
+                });
+              });
+            }
+          }, 5000);
+        } else {
+          // Para outros erros, tentar novamente em 15 segundos
+          console.log('Tentando novamente em 15 segundos...');
+          setTimeout(() => {
+            console.log('Tentando inicializar WhatsApp novamente...');
+            service.initializeWhatsApp().catch(err => {
+              console.error('❌ Erro na segunda tentativa:', err);
+            });
+          }, 15000);
+        }
       });
       
     } catch (error) {
-      console.error('Erro ao inicializar serviço WhatsApp:', error);
+      console.error('Erro ao verificar serviço WhatsApp:', error);
     }
   }, 3000); // Delay de 3 segundos
 

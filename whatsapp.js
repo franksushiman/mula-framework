@@ -275,26 +275,42 @@ function setupClientListeners() {
 
 // Função para inicializar o WhatsApp manualmente
 function initializeWhatsApp() {
+    // Se já está inicializado e conectado, retornar sucesso imediatamente
     if (isInitialized && whatsappStatus.connected) {
         console.log('WhatsApp já está inicializado e conectado');
         return Promise.resolve();
     }
     
+    // Se está inicializando, retornar uma promessa que aguarda o resultado
+    if (isInitializing) {
+        console.log('WhatsApp já está em processo de inicialização, aguardando...');
+        return new Promise((resolve, reject) => {
+            // Verificar periodicamente se já está pronto
+            const checkInterval = setInterval(() => {
+                if (isInitialized && whatsappStatus.connected) {
+                    clearInterval(checkInterval);
+                    console.log('WhatsApp conectado após espera!');
+                    resolve();
+                }
+                // Timeout após 30 segundos
+            }, 1000);
+            
+            // Timeout após 30 segundos
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                if (isInitialized && whatsappStatus.connected) {
+                    resolve();
+                } else {
+                    reject(new Error('Timeout ao aguardar inicialização do WhatsApp'));
+                }
+            }, 30000);
+        });
+    }
+    
     console.log('🚀 Inicializando WhatsApp Web...');
     return new Promise((resolve, reject) => {
         try {
-            // Verificar se já está inicializando
-            if (isInitializing) {
-                console.log('WhatsApp já está em processo de inicialização');
-                reject(new Error('WhatsApp já está sendo inicializado'));
-                return;
-            }
-            
             isInitializing = true;
-            
-            // Resetar estado
-            isInitialized = false;
-            whatsappStatus.connected = false;
             
             // Configurar listeners primeiro
             setupClientListeners();
