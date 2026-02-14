@@ -1503,8 +1503,16 @@ window.testPrint = function() {
 // Função para enviar convite do Telegram via WhatsApp (única função de convite)
 // IMPORTANTE: O link deve vir sempre do backend, nunca ser gerado no frontend
 window.sendTelegramInviteToWhatsApp = function() {
+    // Verificar se já está enviando
+    if (window.isSendingInvite) {
+        console.log('Envio já em andamento, ignorando clique duplo');
+        return;
+    }
+    
     console.log('sendTelegramInviteToWhatsApp chamada');
     const phoneInput = document.getElementById('fleet-invite-phone');
+    const btnEnviar = document.getElementById('btn-enviar-convite');
+    
     if (!phoneInput) {
         console.error('Campo de telefone não encontrado');
         window.showToast('Campo de telefone não encontrado!', 'error');
@@ -1526,6 +1534,19 @@ window.sendTelegramInviteToWhatsApp = function() {
         return;
     }
     
+    // Ativar trava de estado
+    window.isSendingInvite = true;
+    
+    // Desabilitar botão visualmente
+    if (btnEnviar) {
+        btnEnviar.disabled = true;
+        btnEnviar.classList.add('disabled');
+        btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        // Adicionar estilo inline para garantir visualização
+        btnEnviar.style.opacity = '0.7';
+        btnEnviar.style.cursor = 'not-allowed';
+    }
+    
     window.showToast('Enviando convite via WhatsApp...', 'info');
     
     // Log no frontend conforme solicitado
@@ -1535,6 +1556,19 @@ window.sendTelegramInviteToWhatsApp = function() {
     console.log('Chamando electronAPI.enviarConviteEntregador com:', cleanPhone);
     window.electronAPI.enviarConviteEntregador(cleanPhone).then(result => {
         console.log('Resultado do envio:', result);
+        
+        // Liberar trava de estado
+        window.isSendingInvite = false;
+        
+        // Reabilitar botão
+        if (btnEnviar) {
+            btnEnviar.disabled = false;
+            btnEnviar.classList.remove('disabled');
+            btnEnviar.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Convite';
+            btnEnviar.style.opacity = '';
+            btnEnviar.style.cursor = '';
+        }
+        
         if (result.success) {
             window.showToast('✅ Convite enviado com sucesso!', 'success');
             
@@ -1561,6 +1595,19 @@ window.sendTelegramInviteToWhatsApp = function() {
         }
     }).catch(error => {
         console.error('Erro ao enviar convite:', error);
+        
+        // Liberar trava de estado mesmo em caso de erro
+        window.isSendingInvite = false;
+        
+        // Reabilitar botão
+        if (btnEnviar) {
+            btnEnviar.disabled = false;
+            btnEnviar.classList.remove('disabled');
+            btnEnviar.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Convite';
+            btnEnviar.style.opacity = '';
+            btnEnviar.style.cursor = '';
+        }
+        
         window.showToast(`❌ Erro ao enviar: ${error.message}`, 'error');
     });
 };
