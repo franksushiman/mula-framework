@@ -147,12 +147,7 @@ ipcMain.handle('load-config', async () => {
 });
 
 ipcMain.handle('save-config', async (event, config) => {
-  // Validar configuração antes de salvar
-  const validation = validateConfig(config);
-  if (!validation.isValid) {
-    return { success: false, message: `Erro de validação: ${validation.errors.join(', ')}` };
-  }
-  
+  // Salvar sem validação rigorosa para permitir salvar configurações parciais
   const success = saveConfig(config);
   return success ? { success: true, message: 'Configurações salvas!' } : { success: false, message: 'Erro ao salvar configurações.' };
 });

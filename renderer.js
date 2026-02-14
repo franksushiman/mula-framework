@@ -216,12 +216,10 @@ window.saveConfig = function() {
         openAIKey: document.getElementById('k-ope')?.value || '',
         telegramToken: document.getElementById('k-tel')?.value || '',
         telegramBotName: document.getElementById('k-tel-bot')?.value || 'MulaFRotaBot',
-        // Campo telegramBotApiUrl removido da interface (mantido na configuração padrão)
         restaurantAddress: document.getElementById('addr')?.value || '',
         adminNumber: document.getElementById('k-adm')?.value || ''
     };
     
-    // Não fazer validação de formato - aceitar qualquer valor
     // Atualizar window.config com os valores coletados
     Object.assign(window.config, configUpdates);
     
@@ -230,6 +228,29 @@ window.saveConfig = function() {
         window.showToast('Configurações salvas com sucesso!', 'success');
         return result;
     });
+};
+
+// Função para carregar configurações nos campos
+window.loadConfigToForm = function() {
+    if (!window.config) return;
+    
+    const setValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = value || '';
+        }
+    };
+    
+    setValue('k-goo', window.config.googleMapsKey || '');
+    setValue('k-ope', window.config.openAIKey || '');
+    setValue('k-tel', window.config.telegramToken || '');
+    setValue('k-tel-bot', window.config.telegramBotName || 'MulaFRotaBot');
+    setValue('addr', window.config.restaurantAddress || '');
+    setValue('k-adm', window.config.adminNumber || '');
+    
+    // Atualizar status das chaves
+    window.checkGoogleMapsKeyStatus();
+    window.checkOpenAIKeyStatus();
 };
 
 // Alias para compatibilidade com código existente
@@ -2500,6 +2521,55 @@ window.checkWhatsAppOnConfigOpen = function() {
     }
 };
 
+// Função para adicionar botão de salvar configurações se não existir
+window.ensureSaveButton = function() {
+    const configPanel = document.getElementById('config-panel');
+    if (!configPanel) return;
+    
+    // Verificar se já existe um botão de salvar
+    const existingButton = configPanel.querySelector('#btn-save-config');
+    if (existingButton) return;
+    
+    // Criar botão de salvar
+    const saveButton = document.createElement('button');
+    saveButton.id = 'btn-save-config';
+    saveButton.className = 'btn btn-primary';
+    saveButton.innerHTML = '<i class="fas fa-save"></i> Salvar Configurações';
+    saveButton.style.marginTop = '20px';
+    saveButton.style.padding = '12px 24px';
+    saveButton.style.fontSize = '16px';
+    saveButton.style.display = 'flex';
+    saveButton.style.alignItems = 'center';
+    saveButton.style.gap = '8px';
+    saveButton.style.marginLeft = 'auto';
+    saveButton.style.marginRight = 'auto';
+    
+    // Adicionar evento de clique
+    saveButton.addEventListener('click', function() {
+        window.saveConfig();
+    });
+    
+    // Encontrar um local apropriado para adicionar o botão
+    const configContent = configPanel.querySelector('.panel-content') || configPanel;
+    configContent.appendChild(saveButton);
+    
+    // Adicionar evento onBlur para salvar automaticamente quando o usuário sai do campo
+    const configInputs = configPanel.querySelectorAll('input, textarea');
+    configInputs.forEach(input => {
+        // Remover event listeners antigos para evitar duplicação
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        
+        // Adicionar evento onBlur
+        newInput.addEventListener('blur', function() {
+            // Pequeno delay para garantir que o valor foi atualizado
+            setTimeout(() => {
+                window.saveConfig();
+            }, 100);
+        });
+    });
+};
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -2533,14 +2603,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (panelId === 'config-panel') {
                         setTimeout(() => {
                             window.checkWhatsAppStatus();
-                            // Verificar status da chave OpenAI
-                            const openAIKeyInput = document.getElementById('k-ope');
-                            if (openAIKeyInput && window.config && window.config.openAIKey) {
-                                openAIKeyInput.value = window.config.openAIKey;
-                                // Disparar evento para atualizar o status
-                                const event = new Event('input');
-                                openAIKeyInput.dispatchEvent(event);
-                            }
+                            // Carregar configurações nos campos
+                            window.loadConfigToForm();
+                            // Garantir que o botão de salvar existe
+                            window.ensureSaveButton();
                         }, 100);
                     }
                     if (panelId === 'golden-rules-panel') {
@@ -2587,33 +2653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Preencher campos de configuração
         if (window.config) {
-            const setValue = (id, value) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.value = value || '';
-                }
-            };
-            setValue('k-goo', window.config.googleMapsKey || '');
-            setValue('k-ope', window.config.openAIKey || '');
-            setValue('k-tel', window.config.telegramToken || '');
-            setValue('k-tel-bot', window.config.telegramBotName || 'MulaFRotaBot');
-            // Campo k-tel-api removido da interface (mantido na configuração padrão)
-            setValue('addr', window.config.restaurantAddress || '');
-            setValue('k-adm', window.config.adminNumber || '');
-            
-            // Atualizar status das chaves
-            if (window.config.googleMapsKey) {
-                const statusEl = document.getElementById('google-maps-key-status');
-                if (statusEl) {
-                    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
-                }
-            }
-            if (window.config.openAIKey) {
-                const statusEl = document.getElementById('openai-key-status');
-                if (statusEl) {
-                    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
-                }
-            }
+            window.loadConfigToForm();
             
             const goldenRulesText = document.getElementById('golden-rules-text');
             if (goldenRulesText && window.config.goldenRules) {
