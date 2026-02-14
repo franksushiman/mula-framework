@@ -614,8 +614,8 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
     const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log('Invite ID gerado:', inviteId);
     
-    // ID da loja (usar slug ou nome)
-    const storeId = config.hubPagesSlug || 'ceia-delivery';
+    // ID da loja (usar slug ou nome) - garantir que não seja vazio
+    const storeId = config.hubPagesSlug || config.storeName?.replace(/\s+/g, '-').toLowerCase() || 'ceia-delivery';
     console.log('Store ID:', storeId);
     
     // Link do Telegram com ID da loja
@@ -672,6 +672,9 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
 });
 
 // Handler para enviar convite do entregador
+// IMPORTANTE: O bot do Telegram deve processar tanto links com carimbo (/start storeId_inviteId)
+// quanto links genéricos (/start). Links genéricos devem criar cadastros sem loja (unassigned)
+// que podem ser associados posteriormente. Nenhum cadastro deve ser perdido.
 ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   console.log(`[BACKEND] Handler 'enviar-convite-entregador' chamado com telefone: ${phoneNumber}`);
   
@@ -738,10 +741,12 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
     if (!config.pendingMotoboys) {
       config.pendingMotoboys = [];
     }
+    // Garantir que storeId não seja undefined
+    const safeStoreId = storeId || 'ceia-delivery';
     config.pendingMotoboys.push({
       phone: numericPhone,
       inviteId,
-      storeId,
+      storeId: safeStoreId,
       telegramLink,
       sentAt: Date.now(),
       status: 'sent'

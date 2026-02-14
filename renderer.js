@@ -216,6 +216,7 @@ window.saveConfig = function() {
         openAIKey: document.getElementById('k-ope')?.value || '',
         telegramToken: document.getElementById('k-tel')?.value || '',
         telegramBotName: document.getElementById('k-tel-bot')?.value || 'MulaFRotaBot',
+        telegramBotApiUrl: document.getElementById('k-tel-api')?.value || 'https://ceia.ia.br/api/telegram',
         restaurantAddress: document.getElementById('addr')?.value || '',
         adminNumber: document.getElementById('k-adm')?.value || ''
     };
@@ -2539,6 +2540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setValue('k-ope', window.config.openAIKey || '');
             setValue('k-tel', window.config.telegramToken || '');
             setValue('k-tel-bot', window.config.telegramBotName || 'MulaFRotaBot');
+            setValue('k-tel-api', window.config.telegramBotApiUrl || 'https://ceia.ia.br/api/telegram');
             setValue('addr', window.config.restaurantAddress || '');
             setValue('k-adm', window.config.adminNumber || '');
             
