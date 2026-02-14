@@ -48,15 +48,22 @@ const defaultConfig = {
   hubPagesPublicUrl: ''
 };
 
-// Função para gerar link do Telegram com carimbo
-// Para links genéricos (sem carimbo), use: `https://t.me/${telegramBotName}?start`
-// O bot deve processar ambos os formatos
+// Função para gerar link do Telegram com carimbo (para convites específicos da loja)
+// Para links genéricos (sem carimbo), use: `generateTelegramGenericLink(config)`
+// O bot deve processar ambos os formatos: /start com payload e /start sem payload
 function generateTelegramInviteLink(config, inviteId) {
   const telegramBotName = config.telegramBotName || 'MulaFRotaBot';
   const storeId = config.hubPagesSlug || config.storeName?.replace(/\s+/g, '-').toLowerCase() || 'ceia-delivery';
   // Garantir que inviteId não seja undefined
   const safeInviteId = inviteId || `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   return `https://t.me/${telegramBotName}?start=${storeId}_${safeInviteId}`;
+}
+
+// Função para gerar link genérico do Telegram (sem carimbo de loja)
+// Usado para cadastros neutros que podem ser associados posteriormente
+function generateTelegramGenericLink(config) {
+  const telegramBotName = config.telegramBotName || 'MulaFRotaBot';
+  return `https://t.me/${telegramBotName}?start`;
 }
 
 // Estado em tempo real
@@ -688,6 +695,8 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
 // IMPORTANTE: O bot do Telegram deve processar tanto links com carimbo (/start storeId_inviteId)
 // quanto links genéricos (/start). Links genéricos devem criar cadastros sem loja (unassigned)
 // que podem ser associados posteriormente. Nenhum cadastro deve ser perdido.
+// Este handler usa links com carimbo para vincular o entregador à loja imediatamente.
+// Para links genéricos, use generateTelegramGenericLink(config).
 ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   console.log(`[BACKEND] Handler 'enviar-convite-entregador' chamado com telefone: ${phoneNumber}`);
   
