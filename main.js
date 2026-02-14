@@ -483,7 +483,7 @@ ipcMain.handle('whatsapp-restart', async () => {
 let currentQrCode = null;
 
 // Ouvir evento 'qr' do WhatsApp e armazenar o QR Code
-const whatsappService = require('./whatsapp.js');
+// A variável whatsappService já foi importada acima, então usamos ela
 whatsappService.client.on('qr', (qr) => {
   console.log('QR Code recebido, convertendo para imagem...');
   // Converter QR Code para data URL
