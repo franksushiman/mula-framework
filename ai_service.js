@@ -236,11 +236,15 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
             // Pega a parte após '/' e remove qualquer parâmetro (separado por ';')
             format = mimeParts[1].split(';')[0].trim();
         }
+        // Log para depuração
+        console.log(`🎵 Formato extraído do mimeType "${mimeType}": "${format}"`);
+        
         // Garantir que a extensão seja uma das suportadas pela Whisper API
         // Mapear formatos conhecidos para extensões de arquivo
         const supportedFormats = {
             'ogg': 'ogg',
             'opus': 'ogg', // opus geralmente usa container .ogg
+            'oga': 'ogg',  // audio/ogg
             'mpeg': 'mp3',
             'mp3': 'mp3',
             'mp4': 'm4a',
@@ -252,7 +256,16 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
             'flac': 'flac',
             'x-flac': 'flac'
         };
-        const extension = supportedFormats[format] || 'ogg'; // fallback para ogg se não reconhecido
+        let extension = supportedFormats[format] || 'ogg'; // fallback para ogg se não reconhecido
+        
+        // Se a extensão for 'ogg' e o formato for 'opus' ou 'ogg', garantir que o arquivo seja .ogg
+        // A API Whisper pode rejeitar .ogg se não for Opus, mas o WhatsApp usa Opus em .ogg
+        // Para maior segurança, se o formato for 'opus' ou 'ogg', usamos .ogg
+        if (format === 'opus' || format === 'ogg' || format === 'oga') {
+            extension = 'ogg';
+        }
+        
+        console.log(`📁 Usando extensão: .${extension} para arquivo temporário`);
         const tempFilePath = path.join(tempDir, `audio_${Date.now()}.${extension}`);
         
         // Escrever buffer no arquivo
