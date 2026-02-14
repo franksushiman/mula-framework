@@ -59,6 +59,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   whatsappRestart: () => ipcRenderer.invoke('whatsapp-restart'),
   whatsappGetQr: () => ipcRenderer.invoke('whatsapp-get-qr'),
   
+  // Cardápio - Grupos de Complementos
+  menuAddonGroupSave: (groupData) => ipcRenderer.invoke('menu-addon-group-save', groupData),
+  menuAddonGroupDelete: (groupId) => ipcRenderer.invoke('menu-addon-group-delete', groupId),
+  menuAddonGroupList: () => ipcRenderer.invoke('menu-addon-group-list'),
+  
+  // WhatsApp - Limpar sessão
+  whatsappClearSession: () => ipcRenderer.invoke('whatsapp-clear-session'),
+  
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),

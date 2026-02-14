@@ -566,7 +566,7 @@ window.dropProduct = function(event, targetCategoryIndex, targetProductIndex) {
     });
 };
 
-// Funções para Complementos (serão implementadas na próxima parte)
+// Funções para Complementos
 window.openAddonGroupModal = function() {
     document.getElementById('addon-group-modal').style.display = 'flex';
     window.renderAddonGroups();
@@ -574,6 +574,142 @@ window.openAddonGroupModal = function() {
 
 window.closeAddonGroupModal = function() {
     document.getElementById('addon-group-modal').style.display = 'none';
+};
+
+window.openNewAddonGroupModal = function(groupId = null) {
+    window.currentEditingAddonGroupId = groupId;
+    const modal = document.getElementById('new-addon-group-modal');
+    const title = document.getElementById('addon-group-modal-title');
+    const container = document.getElementById('addon-options-container');
+    
+    if (groupId !== null) {
+        // Editar grupo existente
+        const group = window.config.menuData.addonGroups.find(g => g.id === groupId);
+        title.textContent = 'Editar Grupo de Complementos';
+        
+        document.getElementById('addon-group-name').value = group.name || '';
+        document.getElementById('addon-group-required').checked = group.required || false;
+        document.getElementById('addon-group-min').value = group.minQty || 0;
+        document.getElementById('addon-group-max').value = group.maxQty || 1;
+        
+        // Limpar opções existentes
+        container.innerHTML = '';
+        
+        // Adicionar opções
+        if (group.options && group.options.length > 0) {
+            group.options.forEach((option, index) => {
+                window.addAddonOption(option.name, option.price, index);
+            });
+        } else {
+            window.addAddonOption(); // Opção padrão
+        }
+    } else {
+        // Novo grupo
+        title.textContent = 'Novo Grupo de Complementos';
+        document.getElementById('addon-group-name').value = '';
+        document.getElementById('addon-group-required').checked = false;
+        document.getElementById('addon-group-min').value = 0;
+        document.getElementById('addon-group-max').value = 1;
+        
+        // Limpar opções
+        container.innerHTML = '';
+        window.addAddonOption(); // Opção padrão
+    }
+    
+    modal.style.display = 'flex';
+};
+
+window.closeNewAddonGroupModal = function() {
+    document.getElementById('new-addon-group-modal').style.display = 'none';
+    window.currentEditingAddonGroupId = null;
+};
+
+window.addAddonOption = function(name = '', price = 0, index = null) {
+    const container = document.getElementById('addon-options-container');
+    const optionId = index !== null ? index : container.children.length;
+    
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'addon-option-item';
+    optionDiv.innerHTML = `
+        <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+        <input type="text" class="addon-option-input" placeholder="Nome da opção" 
+               value="${name}" onchange="window.updateAddonOption(${optionId}, 'name', this.value)">
+        <input type="number" class="addon-option-input" placeholder="Preço" step="0.01" min="0"
+               value="${price}" onchange="window.updateAddonOption(${optionId}, 'price', parseFloat(this.value))">
+        <button class="btn btn-error" onclick="window.removeAddonOption(${optionId})" style="padding: 5px 10px;">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(optionDiv);
+};
+
+window.updateAddonOption = function(index, field, value) {
+    // Esta função será usada para atualizar opções em memória
+    // A implementação completa será feita no saveAddonGroup
+};
+
+window.removeAddonOption = function(index) {
+    const container = document.getElementById('addon-options-container');
+    if (container.children.length > 1) {
+        container.children[index].remove();
+        // Renumerar os índices restantes
+        Array.from(container.children).forEach((child, i) => {
+            const inputs = child.querySelectorAll('input');
+            inputs[0].setAttribute('onchange', `window.updateAddonOption(${i}, 'name', this.value)`);
+            inputs[1].setAttribute('onchange', `window.updateAddonOption(${i}, 'price', parseFloat(this.value))`);
+            const button = child.querySelector('button');
+            button.setAttribute('onclick', `window.removeAddonOption(${i})`);
+        });
+    }
+};
+
+window.saveAddonGroup = function() {
+    const name = document.getElementById('addon-group-name').value.trim();
+    if (!name) {
+        window.showToast('Digite um nome para o grupo', 'error');
+        return;
+    }
+    
+    const container = document.getElementById('addon-options-container');
+    const options = [];
+    
+    Array.from(container.children).forEach(child => {
+        const inputs = child.querySelectorAll('input');
+        const optionName = inputs[0].value.trim();
+        const optionPrice = parseFloat(inputs[1].value) || 0;
+        
+        if (optionName) {
+            options.push({
+                name: optionName,
+                price: optionPrice
+            });
+        }
+    });
+    
+    if (options.length === 0) {
+        window.showToast('Adicione pelo menos uma opção', 'error');
+        return;
+    }
+    
+    const groupData = {
+        id: window.currentEditingAddonGroupId || Date.now().toString(),
+        name: name,
+        required: document.getElementById('addon-group-required').checked,
+        minQty: parseInt(document.getElementById('addon-group-min').value) || 0,
+        maxQty: parseInt(document.getElementById('addon-group-max').value) || 1,
+        options: options
+    };
+    
+    // Salvar via IPC
+    window.electronAPI.menuAddonGroupSave(groupData).then(result => {
+        if (result.success) {
+            window.showToast('Grupo salvo com sucesso!', 'success');
+            window.closeNewAddonGroupModal();
+            window.renderAddonGroups();
+        } else {
+            window.showToast('Erro ao salvar grupo: ' + result.error, 'error');
+        }
+    });
 };
 
 window.renderAddonGroups = function() {
@@ -591,15 +727,15 @@ window.renderAddonGroups = function() {
         return;
     }
     
-    container.innerHTML = groups.map((group, index) => `
+    container.innerHTML = groups.map(group => `
         <div class="addon-group-item">
             <div class="addon-group-header">
                 <div class="addon-group-name">${group.name}</div>
                 <div>
-                    <button class="btn btn-secondary" onclick="window.editAddonGroup(${index})" style="padding: 5px 10px;">
+                    <button class="btn btn-secondary" onclick="window.editAddonGroup('${group.id}')" style="padding: 5px 10px;">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-error" onclick="window.deleteAddonGroup(${index})" style="padding: 5px 10px;">
+                    <button class="btn btn-error" onclick="window.deleteAddonGroup('${group.id}')" style="padding: 5px 10px;">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -614,6 +750,23 @@ window.renderAddonGroups = function() {
             </div>
         </div>
     `).join('');
+};
+
+window.editAddonGroup = function(groupId) {
+    window.openNewAddonGroupModal(groupId);
+};
+
+window.deleteAddonGroup = function(groupId) {
+    if (confirm('Tem certeza que deseja excluir este grupo de complementos?')) {
+        window.electronAPI.menuAddonGroupDelete(groupId).then(result => {
+            if (result.success) {
+                window.showToast('Grupo excluído!', 'success');
+                window.renderAddonGroups();
+            } else {
+                window.showToast('Erro ao excluir grupo: ' + result.error, 'error');
+            }
+        });
+    }
 };
 
 window.renderAddonGroupsForProduct = function(selectedGroups) {
@@ -1212,6 +1365,18 @@ window.restartWhatsAppConnection = function() {
         }).catch(error => {
             console.error('Erro ao reiniciar WhatsApp:', error);
             window.showToast('Erro ao reiniciar conexão', 'error');
+        });
+    }
+};
+
+window.clearWhatsAppSession = function() {
+    if (confirm('Isso irá limpar completamente a sessão do WhatsApp. Você precisará escanear o QR Code novamente. Continuar?')) {
+        window.electronAPI.whatsappClearSession().then(result => {
+            if (result.success) {
+                window.showToast('Sessão limpa! Reinicie o aplicativo.', 'success');
+            } else {
+                window.showToast('Erro ao limpar sessão: ' + result.error, 'error');
+            }
         });
     }
 };

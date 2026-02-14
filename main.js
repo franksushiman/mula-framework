@@ -366,8 +366,19 @@ ipcMain.handle('import-backup', async (event) => {
   }
 });
 
-// Importar serviço do WhatsApp
-const whatsappService = require('./whatsapp.js');
+// Importar serviço do WhatsApp com tratamento de erro
+let whatsappService;
+try {
+    whatsappService = require('./whatsapp.js');
+} catch (error) {
+    console.error('Erro ao carregar módulo WhatsApp:', error);
+    whatsappService = {
+        sendWhatsAppMessage: () => Promise.reject(new Error('WhatsApp não disponível')),
+        getWhatsAppStatus: () => ({ connected: false, error: 'WhatsApp não inicializado' }),
+        restartWhatsApp: () => console.log('WhatsApp não disponível para reiniciar'),
+        client: { on: () => {} }
+    };
+}
 
 // Handlers para Telegram
 ipcMain.handle('send-telegram-message', async (event, { botToken, chatId, message }) => {
