@@ -2680,7 +2680,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Configurar listeners de eventos
         window.electronAPI.onDriverPos((event, data) => {
             console.log('Driver position updated:', data);
-            window.driverLastSeen[data.phone] = Date.now();
+            // Usar timestamp do GPS se disponível, caso contrário usar o tempo atual
+            window.driverLastSeen[data.phone] = data.timestamp || Date.now();
+            
+            // Verificar se é rastreamento em tempo real
+            if (data.liveTracking) {
+                console.log('Live tracking:', data.lat, data.lng);
+            }
+            
             window.renderFleet();
             window.renderDashboardStats();
         });
