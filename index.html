@@ -411,394 +411,55 @@
             gap: 24px;
         }
 
-        /* DASHBOARD OPERACIONAL - COM PALETA CEIA */
-        .dashboard-container {
-            padding: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            background: var(--cinza-fundo);
-            min-height: 100vh;
-        }
-
-        /* Status da Loja */
-        .dashboard-header {
-            background: var(--terra);
-            border-radius: 16px;
-            padding: 20px 24px;
-            border: 1px solid var(--terra-clara);
-        }
-
-        .store-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .status-indicators {
-            display: flex;
-            gap: 24px;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: var(--texto-sobre-terra);
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .status-dot.online { background: var(--verde-esperanca); box-shadow: 0 0 8px var(--verde-esperanca); }
-        .status-dot.offline { background: var(--vermelho-sobrio); }
-        .status-dot.paused { background: var(--ambar); }
-
-        /* Botão Pausar Grande - Ação crítica */
-        .btn-pause-grande {
-            background: var(--vermelho-sobrio);
-            color: var(--branco-quente);
-            border: 2px solid var(--vermelho-claro);
-            padding: 14px 28px;
-            border-radius: 40px;
-            font-weight: 700;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(127,29,29,0.2);
-        }
-
-        .btn-pause-grande:hover {
-            background: var(--vermelho-claro);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(127,29,29,0.3);
-        }
-
-        .btn-pause-grande.paused {
-            background: var(--verde-esperanca);
-            border-color: var(--verde-claro);
-            box-shadow: 0 4px 12px rgba(45,106,79,0.2);
-        }
-
-        .btn-pause-grande.paused:hover {
-            background: var(--verde-claro);
-            box-shadow: 0 6px 16px rgba(45,106,79,0.3);
-        }
-
-        .pause-icone {
-            font-size: 20px;
-        }
-
-        /* Feed da Frota */
-        .feed-frota-card {
-            background: var(--branco-quente);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--borda-quente);
-            border-left: 4px solid var(--verde-esperanca);
-        }
-
-        .feed-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .feed-header h4 {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--terra);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .feed-icone {
-            font-size: 20px;
-            color: var(--verde-esperanca);
-        }
-
-        .feed-timestamp {
-            font-size: 12px;
-            color: var(--texto-secundario);
-            background: var(--cinza-fundo);
-            padding: 4px 8px;
-            border-radius: 20px;
-        }
-
-        .feed-lista {
-            max-height: 160px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .fleet-feed-item {
-            display: flex;
-            gap: 12px;
-            padding: 8px 12px;
-            background: var(--cinza-fundo);
-            border-radius: 8px;
-            font-size: 13px;
-            align-items: center;
-            border-left: 3px solid transparent;
-        }
-
-        .fleet-feed-item:hover {
-            background: #f0e9e2;
-            border-left-color: var(--verde-esperanca);
-        }
-
-        .feed-item-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(45,106,79,0.1);
-            color: var(--verde-esperanca);
-        }
-
-        .feed-item-content {
-            flex: 1;
-            color: var(--texto-secundario);
-        }
-
-        .feed-item-content strong {
-            color: var(--terra);
-            font-weight: 600;
-        }
-
-        .feed-item-time {
-            font-size: 11px;
-            color: var(--texto-secundario);
-            opacity: 0.7;
-        }
-        .feed-footer {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--borda-quente);
-            font-size: 12px;
-            color: var(--texto-secundario);
-            text-align: center;
-        }
-
-        /* Cards Operacionais */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .card-operacional {
-            background: var(--branco-quente);
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid var(--borda-quente);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .card-operacional:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-            border-color: var(--verde-esperanca);
-        }
-
-        .card-operacional {
-            background: var(--branco-quente);
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid var(--borda-quente);
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 4px solid var(--borda-quente);
-        }
-
-        .card-operacional:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
-            border-color: var(--verde-esperanca);
-        }
-
-        .card-operacional.card-alta:hover {
-            border-left-color: var(--vermelho-sobrio);
-        }
-        .card-operacional.card-media:hover {
-            border-left-color: var(--ambar);
-        }
-        .card-operacional.card-baixa:hover {
-            border-left-color: var(--cinza-quente);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .card-icone {
-            font-size: 24px;
-            color: var(--texto-secundario);
-        }
-
-        .card-operacional:hover .card-icone {
-            color: var(--terra);
-        }
-
-        .card-titulo {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--texto-secundario);
-            letter-spacing: 0.5px;
-        }
-
-        .card-valor {
-            font-size: 36px;
-            font-weight: 800;
-            color: var(--terra);
-            line-height: 1.2;
-            margin-bottom: 4px;
-        }
-
-        .card-sub {
-            font-size: 12px;
-            color: var(--texto-secundario);
-        }
-
-        /* Últimos Pedidos */
-        .ultimos-pedidos-card {
-            background: var(--branco-quente);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--borda-quente);
-        }
-
-        .ultimos-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .ultimos-header h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--terra);
-        }
-
-        .btn-ver-todos {
-            background: none;
+        /* Ajustes para o Dashboard no padrão Ceia OS */
+        #home-panel .card {
+            background: transparent;
             border: none;
-            color: var(--verde-esperanca);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 20px;
+            padding: 0;
+            box-shadow: none;
         }
 
-        .btn-ver-todos:hover {
-            background: rgba(45,106,79,0.1);
-        }
-
-        .ultimos-tabela {
+        #home-panel .ceia-surface-card table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .ultimos-tabela th {
+        #home-panel .ceia-surface-card table th {
             text-align: left;
-            padding: 12px 8px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: 0.75rem;
+            font-size: 0.75rem;
             color: var(--texto-secundario);
+            font-weight: 600;
             border-bottom: 1px solid var(--borda-quente);
         }
 
-        .ultimos-tabela td {
-            padding: 12px 8px;
-            font-size: 14px;
-            color: var(--texto-secundario);
+        #home-panel .ceia-surface-card table td {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--texto-principal);
             border-bottom: 1px solid var(--cinza-fundo);
         }
 
-        .ultimos-tabela tr:hover td {
+        #home-panel .ceia-surface-card table tr:hover td {
             background: var(--cinza-fundo);
         }
 
-        /* Oportunidades */
-        .oportunidades-card {
-            background: var(--ambar-fundo);
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px solid var(--ambar);
+        #home-panel .ceia-surface-system-talk .btn {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
         }
 
-        .oportunidades-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
+        /* Responsividade para métricas */
+        @media (max-width: 1200px) {
+            #home-panel .ceia-surface-card > div[style*="grid-template-columns: repeat(4, 1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
         }
 
-        .oportunidades-header h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--ambar);
-        }
-
-        .badge {
-            background: var(--ambar);
-            color: var(--branco-quente);
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .hint {
-            font-size: 12px;
-            color: var(--texto-secundario);
-            margin-left: auto;
-        }
-
-        .oportunidades-lista {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        /* Estados vazios inteligentes */
-        .empty-state-operacional {
-            padding: 40px;
-            text-align: center;
-            color: var(--texto-secundario);
-            font-size: 14px;
-            background: var(--cinza-fundo);
-            border-radius: 12px;
-            border: 1px solid var(--borda-quente);
-        }
-
-        .empty-state-operacional .emoji {
-            font-size: 32px;
-            margin-bottom: 12px;
-            opacity: 0.3;
-            color: var(--terra);
+        @media (max-width: 768px) {
+            #home-panel .ceia-surface-card > div[style*="grid-template-columns: repeat(4, 1fr)"] {
+                grid-template-columns: 1fr !important;
+            }
         }
 
         /* FLEET PANEL - COM PALETA CEIA */
@@ -1688,133 +1349,121 @@
         <main class="main-content">
             <!-- Painéis com IDs obrigatórios -->
             <div id="home-panel" class="panel">
-                <div class="dashboard-container">
-                    <!-- CABEÇALHO DE ESTADO DA LOJA -->
-                    <div class="dashboard-header">
-                        <div class="store-status">
-                            <div class="status-indicators">
-                                <div class="status-item">
-                                    <span class="status-dot" id="store-status-dot"></span>
-                                    <span class="status-text" id="store-status-text">Carregando...</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-dot" id="system-status-dot"></span>
-                                    <span class="status-text" id="system-status-text">Sistema</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-dot" id="whatsapp-status-dot"></span>
-                                    <span class="status-text" id="whatsapp-status-text">WhatsApp</span>
-                                </div>
-                            </div>
-                            <button class="btn-pause-grande" id="btn-pause-dashboard" onclick="window.togglePause()">
-                                <span class="pause-icone">⏸️</span>
-                                <span class="pause-texto">PAUSAR LOJA</span>
-                            </button>
+                <div class="card">
+                    <!-- 1. ONDE ESTOU? -->
+                    <h1 class="ceia-surface-title">Dashboard</h1>
+
+                    <!-- 2. O QUE É ESTADO? -->
+                    <div class="ceia-surface-state">
+                        <div class="ceia-surface-state-label">Status da Loja</div>
+                        <div class="ceia-surface-state-value" id="dashboard-status-value">Ativa</div>
+                        <div class="ceia-surface-state-subtitle">
+                            <span class="status-dot online" style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;"></span>
+                            Sistema operacional pronto
                         </div>
                     </div>
 
-                    <!-- FEED TEXTUAL DA FROTA - VIDA DA COMUNIDADE -->
-                    <div class="feed-frota-card">
-                        <div class="feed-header">
-                            <h4><span class="feed-icone">📡</span> Vida da frota · agora</h4>
-                            <span class="feed-timestamp">em tempo real</span>
-                        </div>
-                        <div id="dashboard-fleet-feed-list" class="feed-lista">
-                            <!-- Populado via renderFleetFeed() -->
-                            <!-- Estado inicial: mensagem acolhedora -->
-                            <div class="fleet-feed-item">
-                                <span class="feed-item-icon">👋</span>
-                                <div class="feed-item-content">
-                                    <strong>Sistema pronto</strong> · Aguardando atividade da frota
+                    <!-- 3. O QUE É FLUXO? -->
+                    <div class="ceia-surface-flow">
+                        <!-- Cards Operacionais -->
+                        <div class="ceia-surface-flow-title">Métricas Operacionais</div>
+                        <div class="ceia-surface-card">
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--terra);" id="orders-today">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">Pedidos Hoje</div>
                                 </div>
-                                <div class="feed-item-time">agora</div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--terra);" id="orders-in-kitchen">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">Em Preparo</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--terra);" id="fleet-online">0</div>
+                                    <div style="font-size: 0.75rem; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">Entregadores</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2.5rem; font-weight: 700; color: var(--terra);" id="finance-total-hoje">R$ 0</div>
+                                    <div style="font-size: 0.75rem; color: var(--texto-secundario); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">Faturamento</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="feed-footer">
-                            <small>Os entregadores aparecem aqui quando compartilham localização</small>
+
+                        <!-- Feed da Frota -->
+                        <div class="ceia-surface-flow-title" style="margin-top: 2rem;">Atividade da Frota</div>
+                        <div class="ceia-surface-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div style="font-size: 0.875rem; font-weight: 600; color: var(--terra);">Vida da frota · agora</div>
+                                <div style="font-size: 0.75rem; color: var(--texto-secundario); background: var(--cinza-fundo); padding: 0.25rem 0.75rem; border-radius: 1rem;">em tempo real</div>
+                            </div>
+                            <div id="dashboard-fleet-feed-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
+                                <!-- Populado via renderFleetFeed() -->
+                                <div style="display: flex; gap: 0.75rem; padding: 0.75rem; background: var(--cinza-fundo); border-radius: 0.75rem; align-items: center;">
+                                    <div style="width: 2rem; height: 2rem; border-radius: 50%; background: rgba(45,106,79,0.1); display: flex; align-items: center; justify-content: center; color: var(--verde-esperanca);">👋</div>
+                                    <div style="flex: 1; font-size: 0.875rem; color: var(--texto-secundario);">
+                                        <strong style="color: var(--terra);">Sistema pronto</strong> · Aguardando atividade da frota
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: var(--texto-secundario); opacity: 0.7;">agora</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--texto-secundario); text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--borda-quente);">
+                                Os entregadores aparecem aqui quando compartilham localização
+                            </div>
+                        </div>
+
+                        <!-- Últimos Pedidos -->
+                        <div class="ceia-surface-flow-title" style="margin-top: 2rem;">Últimos Pedidos</div>
+                        <div class="ceia-surface-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div style="font-size: 0.875rem; font-weight: 600; color: var(--terra);">Atividade Recente</div>
+                                <button class="btn btn-secondary" onclick="window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info')" style="padding: 0.5rem 1rem; font-size: 0.75rem;">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left; padding: 0.75rem; font-size: 0.75rem; color: var(--texto-secundario); font-weight: 600; border-bottom: 1px solid var(--borda-quente);">Pedido</th>
+                                        <th style="text-align: left; padding: 0.75rem; font-size: 0.75rem; color: var(--texto-secundario); font-weight: 600; border-bottom: 1px solid var(--borda-quente);">Cliente</th>
+                                        <th style="text-align: left; padding: 0.75rem; font-size: 0.75rem; color: var(--texto-secundario); font-weight: 600; border-bottom: 1px solid var(--borda-quente);">Status</th>
+                                        <th style="text-align: left; padding: 0.75rem; font-size: 0.75rem; color: var(--texto-secundario); font-weight: 600; border-bottom: 1px solid var(--borda-quente);">Há</th>
+                                        <th style="text-align: left; padding: 0.75rem; font-size: 0.75rem; color: var(--texto-secundario); font-weight: 600; border-bottom: 1px solid var(--borda-quente);">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-last-orders-body">
+                                    <!-- Populado via renderDashboardLastOrders() -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <!-- CARDS OPERACIONAIS (HIERARQUIA POR URGÊNCIA) -->
-                    <div class="cards-grid">
-                        <!-- PRIORIDADE ALTA: Pedidos + Em Preparo -->
-                        <div class="card-operacional card-alta">
-                            <div class="card-header">
-                                <span class="card-icone">📦</span>
-                                <span class="card-titulo">PEDIDOS HOJE</span>
+                    <!-- 4. ONDE O SISTEMA FALA? -->
+                    <div class="ceia-surface-system-talk">
+                        <div class="ceia-surface-system-talk-title">
+                            <i class="fas fa-bullhorn"></i>
+                            Oportunidades e Ações
+                        </div>
+                        <div class="ceia-surface-system-talk-content">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div>
+                                    <div style="font-size: 0.875rem; font-weight: 600; color: var(--ambar);">Oportunidades</div>
+                                    <div style="font-size: 0.75rem; color: var(--texto-secundario);">pedidos pendentes há +15 min</div>
+                                </div>
+                                <div style="font-size: 0.75rem; background: var(--ambar); color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 600;" id="dashboard-opportunities-count">0</div>
                             </div>
-                            <div class="card-valor" id="orders-today">0</div>
-                            <div class="card-sub">total do dia</div>
-                        </div>
-
-                        <div class="card-operacional card-alta">
-                            <div class="card-header">
-                                <span class="card-icone">👨‍🍳</span>
-                                <span class="card-titulo">EM PREPARO</span>
+                            <div id="dashboard-opportunities-list" style="margin-bottom: 1.5rem;">
+                                <!-- Populado via renderDashboardOpportunities() -->
                             </div>
-                            <div class="card-valor" id="orders-in-kitchen">0</div>
-                            <div class="card-sub">pedidos na cozinha</div>
-                        </div>
-
-                        <!-- PRIORIDADE MÉDIA: Entregadores -->
-                        <div class="card-operacional card-media" onclick="window.nav('fleet-panel')">
-                            <div class="card-header">
-                                <span class="card-icone">🛵</span>
-                                <span class="card-titulo">ENTREGADORES</span>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="btn btn-secondary" onclick="window.closeCashier()" style="flex: 1;">
+                                    <i class="fas fa-cash-register"></i> Fechar Caixa
+                                </button>
+                                <button class="btn btn-primary" id="btn-pause-dashboard" onclick="window.togglePause()" style="flex: 1;">
+                                    <i class="fas fa-pause"></i> Pausar Loja
+                                </button>
                             </div>
-                            <div class="card-valor" id="fleet-online">0</div>
-                            <div class="card-sub">online agora</div>
-                        </div>
-
-                        <!-- PRIORIDADE BAIXA: Faturamento (secundário, sem ação) -->
-                        <div class="card-operacional card-baixa">
-                            <div class="card-header">
-                                <span class="card-icone">💰</span>
-                                <span class="card-titulo">FATURAMENTO</span>
-                            </div>
-                            <div class="card-valor" id="finance-total-hoje">R$ 0,00</div>
-                            <div class="card-sub">hoje</div>
-                        </div>
-                    </div>
-
-                    <!-- ÚLTIMOS PEDIDOS (RÁPIDA CONSULTA) -->
-                    <div class="ultimos-pedidos-card">
-                        <div class="ultimos-header">
-                            <h4>🕒 Últimos pedidos</h4>
-                            <button class="btn-ver-todos" onclick="window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info')">Ver detalhes →</button>
-                        </div>
-                        <table class="ultimos-tabela">
-                            <thead>
-                                <tr>
-                                    <th>Pedido</th>
-                                    <th>Cliente</th>
-                                    <th>Status</th>
-                                    <th>Há</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dashboard-last-orders-body">
-                                <!-- Populado via renderDashboardLastOrders() -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- ÁREA DE OPORTUNIDADES (CARRINHOS ABANDONADOS) -->
-                    <div class="oportunidades-card" id="dashboard-opportunities-section">
-                        <div class="oportunidades-header">
-                            <h4>🎯 Oportunidades <span class="badge" id="dashboard-opportunities-count">0</span></h4>
-                            <span class="hint">pedidos pendentes há +15 min</span>
-                        </div>
-                        <div id="dashboard-opportunities-list" class="oportunidades-lista">
-                            <!-- Populado via renderDashboardOpportunities() -->
-                        </div>
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--borda-quente);">
-                            <button class="btn btn-secondary" onclick="window.closeCashier()" style="width: 100%; padding: 10px;">
-                                <i class="fas fa-cash-register"></i> Fechar Caixa
-                            </button>
-                            <small style="color: var(--texto-secundario); font-size: 11px; display: block; margin-top: 8px; text-align: center;">
+                            <div style="font-size: 0.75rem; color: var(--texto-secundario); text-align: center; margin-top: 1rem;">
                                 Encerre o dia e gere o relatório de vendas
-                            </small>
+                            </div>
                         </div>
                     </div>
                 </div>

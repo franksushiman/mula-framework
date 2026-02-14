@@ -1832,12 +1832,6 @@ window.showInputError = function(inputId, message) {
 // Dashboard functions
 window.renderDashboardStats = async function() {
     try {
-        // Atualiza status do sistema
-        const systemDot = document.getElementById('system-status-dot');
-        if (systemDot) {
-            systemDot.className = 'status-dot online';
-        }
-        
         // Busca dados do dashboard
         let summary = { 
             today_sales: 0, 
@@ -1869,51 +1863,24 @@ window.renderDashboardStats = async function() {
             financeEl.textContent = `R$ ${valor}`;
         }
         
-        // Atualiza status da loja - Mensagens mais humanas
+        // Atualiza status da loja
         const isPaused = window.config.botPaused === true;
-        const statusDot = document.getElementById('store-status-dot');
-        const statusText = document.getElementById('store-status-text');
-        
-        if (statusDot && statusText) {
-            if (isPaused) {
-                statusDot.className = 'status-dot paused';
-                statusText.textContent = 'Loja pausada · não recebe pedidos';
-            } else {
-                statusDot.className = 'status-dot online';
-                statusText.textContent = 'Loja aberta · pronta para receber pedidos';
-            }
+        const statusValue = document.getElementById('dashboard-status-value');
+        if (statusValue) {
+            statusValue.textContent = isPaused ? 'Pausada' : 'Ativa';
         }
         
-        // Atualiza status do WhatsApp (simplificado)
-        const whatsappDot = document.getElementById('whatsapp-status-dot');
-        const whatsappText = document.getElementById('whatsapp-status-text');
-        
-        if (whatsappDot && whatsappText) {
-            // Verificar status do WhatsApp de forma simplificada
-            window.checkWhatsAppStatusForDashboard().then(result => {
-                if (result.online) {
-                    whatsappDot.className = 'status-dot online';
-                    whatsappText.textContent = 'WhatsApp · conectado';
-                } else {
-                    whatsappDot.className = 'status-dot offline';
-                    whatsappText.textContent = 'WhatsApp · desconectado';
-                }
-            }).catch(error => {
-                whatsappDot.className = 'status-dot offline';
-                whatsappText.textContent = 'WhatsApp · verificação';
-                console.error('Erro ao verificar status WhatsApp:', error);
-            });
-        }
-        
-        // Atualiza botão de pausa do dashboard
+        // Atualiza botão de pausa
         const pauseBtn = document.getElementById('btn-pause-dashboard');
         if (pauseBtn) {
             if (isPaused) {
-                pauseBtn.classList.add('paused');
-                pauseBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
+                pauseBtn.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
+                pauseBtn.classList.remove('btn-primary');
+                pauseBtn.classList.add('btn-success');
             } else {
-                pauseBtn.classList.remove('paused');
-                pauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pausar Loja';
+                pauseBtn.classList.remove('btn-success');
+                pauseBtn.classList.add('btn-primary');
             }
         }
         
