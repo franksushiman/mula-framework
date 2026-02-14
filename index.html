@@ -1687,16 +1687,29 @@
                         <!-- Filtros -->
                         <div class="ceia-surface-flow-title" style="margin-top: 2rem;">Filtrar por Tipo</div>
                         <div class="ceia-surface-card">
-                            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-                                <button class="btn btn-secondary" data-team="fixos" onclick="window.selectFleetTeam('fixos', event)" style="flex: 1;">
+                            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" data-team="fixos" onclick="window.selectFleetTeam('fixos', event)" style="flex: 1; min-width: 120px;">
                                     Fixos <span id="count-fixos">0</span>
                                 </button>
-                                <button class="btn btn-secondary" data-team="freelancers" onclick="window.selectFleetTeam('freelancers', event)" style="flex: 1;">
+                                <button class="btn btn-secondary" data-team="freelancers" onclick="window.selectFleetTeam('freelancers', event)" style="flex: 1; min-width: 120px;">
                                     Freelancers <span id="count-freelancers">0</span>
                                 </button>
-                                <button class="btn btn-secondary" data-team="offline" onclick="window.selectFleetTeam('offline', event)" style="flex: 1;">
+                                <button class="btn btn-secondary" data-team="mula" onclick="window.selectFleetTeam('mula', event)" style="flex: 1; min-width: 120px;">
+                                    MULA <span id="count-mula">0</span>
+                                </button>
+                                <button class="btn btn-secondary" data-team="offline" onclick="window.selectFleetTeam('offline', event)" style="flex: 1; min-width: 120px;">
                                     Offline <span id="count-offline">0</span>
                                 </button>
+                            </div>
+                            
+                            <!-- Botão de teste do despacho inteligente -->
+                            <div style="margin-bottom: 1.5rem; text-align: center;">
+                                <button id="btn-test-dispatch" class="btn-test-dispatch" onclick="window.testSmartDispatch()">
+                                    <i class="fas fa-brain"></i> Testar Despacho Inteligente
+                                </button>
+                                <div style="font-size: 0.875rem; color: var(--texto-secundario); margin-top: 0.5rem;">
+                                    Simula um pedido e encontra o melhor entregador usando IA
+                                </div>
                             </div>
                             
                             <!-- Lista de motoboys -->

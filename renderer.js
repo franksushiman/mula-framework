@@ -1661,15 +1661,21 @@ window.selectFleetTeam = function(team, event) {
         if (tab) tab.classList.add('active');
     }
     
-    // Filtrar cards (implementação básica)
+    // Filtrar cards
     const cards = document.querySelectorAll('.fleet-card');
     cards.forEach(card => {
         const cardTeam = card.dataset.team || 'fixos';
+        const cardType = card.dataset.type || '';
+        
         if (team === 'offline') {
             const isOnline = card.querySelector('.status-badge.online');
             card.style.display = isOnline ? 'none' : 'block';
-        } else if (team === 'fixos' || team === 'freelancers') {
-            card.style.display = cardTeam === team ? 'block' : 'none';
+        } else if (team === 'fixos') {
+            card.style.display = (cardTeam === 'fixos' || cardType === 'FIXO') ? 'block' : 'none';
+        } else if (team === 'freelancers') {
+            card.style.display = (cardTeam === 'freelancers' || (cardType !== 'FIXO' && cardType !== 'MULA' && cardTeam !== 'mula')) ? 'block' : 'none';
+        } else if (team === 'mula') {
+            card.style.display = (cardTeam === 'mula' || cardType === 'MULA') ? 'block' : 'none';
         } else {
             card.style.display = 'block';
         }
