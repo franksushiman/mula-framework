@@ -89,14 +89,24 @@ async function sendWhatsAppMessage(phone, message) {
             finalPhone = '55' + formattedPhone;
         }
         
-        const chatId = `${finalPhone}@c.us`;
-        
-        console.log(`📤 Enviando WhatsApp para ${chatId} (original: ${phone}): ${message.substring(0, 50)}...`);
+        console.log(`📤 Verificando número WhatsApp: ${finalPhone} (original: ${phone})`);
         
         // Verificar se o cliente está pronto
         if (!client.info) {
             throw new Error('Cliente WhatsApp não está pronto');
         }
+        
+        // Obter o ID do número no WhatsApp
+        const numberId = await client.getNumberId(finalPhone);
+        
+        if (!numberId) {
+            throw new Error(`Número ${finalPhone} não registrado no WhatsApp`);
+        }
+        
+        // Usar o ID serializado do número
+        const chatId = numberId._serialized;
+        
+        console.log(`📤 Enviando WhatsApp para ${chatId}: ${message.substring(0, 50)}...`);
         
         // Enviar mensagem
         const response = await client.sendMessage(chatId, message);
