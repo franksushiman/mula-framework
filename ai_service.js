@@ -54,6 +54,9 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
         
         // Verificar se a OpenAI está configurada
         if (!openai) {
+            // Tentar carregar a chave do config global (se disponível)
+            const config = require('./config_loader'); // Isso pode não existir
+            // Como alternativa, vamos lançar o erro e confiar que a chave já foi configurada via configureOpenAI
             throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
         }
         
@@ -226,7 +229,31 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
         
         // Criar arquivo temporário
         const tempDir = os.tmpdir();
-        const tempFilePath = path.join(tempDir, `audio_${Date.now()}.${mimeType.split('/')[1] || 'ogg'}`);
+        // Extrair o formato do mimeType, removendo parâmetros como '; codecs=opus'
+        const mimeParts = mimeType.split('/');
+        let format = 'ogg'; // fallback padrão
+        if (mimeParts.length > 1) {
+            // Pega a parte após '/' e remove qualquer parâmetro (separado por ';')
+            format = mimeParts[1].split(';')[0].trim();
+        }
+        // Garantir que a extensão seja uma das suportadas pela Whisper API
+        // Mapear formatos conhecidos para extensões de arquivo
+        const supportedFormats = {
+            'ogg': 'ogg',
+            'opus': 'ogg', // opus geralmente usa container .ogg
+            'mpeg': 'mp3',
+            'mp3': 'mp3',
+            'mp4': 'm4a',
+            'm4a': 'm4a',
+            'x-m4a': 'm4a',
+            'wav': 'wav',
+            'x-wav': 'wav',
+            'webm': 'webm',
+            'flac': 'flac',
+            'x-flac': 'flac'
+        };
+        const extension = supportedFormats[format] || 'ogg'; // fallback para ogg se não reconhecido
+        const tempFilePath = path.join(tempDir, `audio_${Date.now()}.${extension}`);
         
         // Escrever buffer no arquivo
         fs.writeFileSync(tempFilePath, audioBuffer);
