@@ -63,6 +63,7 @@ window.saveConfig = function() {
         adminNumber: document.getElementById('k-adm')?.value || ''
     };
     
+    // Não fazer validação de formato - aceitar qualquer valor
     // Atualizar window.config com os valores coletados
     Object.assign(window.config, configUpdates);
     
@@ -1384,6 +1385,9 @@ window.sendTelegramInviteToWhatsApp = function() {
             
             // Atualizar a lista de convites pendentes
             window.renderFleetInvites();
+            
+            // Limpar o campo do telefone
+            phoneInput.value = '';
         } else {
             window.showToast(`❌ Erro: ${result.error}`, 'error');
         }
@@ -1507,6 +1511,7 @@ window.renderFleetNew = function() {
         const minutesAgo = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
         const isOnline = minutesAgo < 30;
         const team = driver.team || 'freelancers';
+        const hasPix = driver.pixKey && driver.pixKey.trim() !== '';
         
         html += `
             <div class="fleet-card" data-team="${team}" data-vulgo="${driver.code}">
@@ -1529,6 +1534,14 @@ window.renderFleetNew = function() {
                         <span class="info-label">Vínculo:</span>
                         <span class="info-value fixed-badge">${team === 'fixos' ? 'FIXO da casa' : 'FREELANCER'}</span>
                     </div>
+                    ${hasPix ? `
+                    <div class="card-info">
+                        <span class="info-label">PIX:</span>
+                        <span class="info-value" style="color: var(--verde-esperanca); font-size: 0.8rem;">
+                            ${driver.pixKey.length > 20 ? driver.pixKey.substring(0, 20) + '...' : driver.pixKey}
+                        </span>
+                    </div>
+                    ` : ''}
                 </div>
                 <div class="card-footer">
                     <span class="last-seen">${isOnline ? `📍 há ${minutesAgo} min` : '⏳ offline'}</span>
@@ -1651,15 +1664,10 @@ window.checkGoogleMapsKeyStatus = function() {
     if (key.length === 0) {
         statusIndicator.innerHTML = '<i class="fas fa-times-circle" style="color: var(--vermelho-sobrio);"></i> Não configurada';
         statusIndicator.title = 'Chave Google Maps não configurada';
-    } else if (key.startsWith('AIza') && key.length > 30) {
-        statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
-        statusIndicator.title = 'Chave Google Maps configurada e válida';
-    } else if (key.length <= 30) {
-        statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
-        statusIndicator.title = 'Chave Google Maps deve ter mais de 30 caracteres';
     } else {
-        statusIndicator.innerHTML = '<i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Desconhecida';
-        statusIndicator.title = 'Formato de chave Google Maps não reconhecido';
+        // Aceita qualquer chave não vazia
+        statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
+        statusIndicator.title = 'Chave Google Maps configurada';
     }
 };
 
@@ -1670,12 +1678,6 @@ window.testGoogleMapsKey = function() {
     
     if (!key) {
         window.showToast('Digite uma chave Google Maps primeiro!', 'error');
-        return;
-    }
-    
-    // Verificação básica do formato
-    if (!key.startsWith('AIza') || key.length <= 30) {
-        window.showToast('Formato de chave inválido. Deve começar com "AIza" e ter mais de 30 caracteres.', 'error');
         return;
     }
     
