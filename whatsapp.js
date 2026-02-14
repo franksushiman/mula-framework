@@ -124,14 +124,50 @@ function restartWhatsApp() {
     });
 }
 
-// Inicializar o cliente
-console.log('🚀 Inicializando WhatsApp Web...');
-client.initialize();
+// Variável para controlar se o WhatsApp foi inicializado
+let isInitialized = false;
+
+// Função para inicializar o WhatsApp manualmente
+function initializeWhatsApp() {
+    if (isInitialized) {
+        console.log('WhatsApp já está inicializado');
+        return Promise.resolve();
+    }
+    
+    console.log('🚀 Inicializando WhatsApp Web...');
+    return new Promise((resolve, reject) => {
+        client.initialize();
+        
+        // Aguardar o evento 'ready' ou timeout
+        const readyTimeout = setTimeout(() => {
+            reject(new Error('Timeout ao inicializar WhatsApp'));
+        }, 30000);
+        
+        client.once('ready', () => {
+            clearTimeout(readyTimeout);
+            isInitialized = true;
+            console.log('✅ WhatsApp inicializado com sucesso!');
+            resolve();
+        });
+        
+        client.once('auth_failure', (error) => {
+            clearTimeout(readyTimeout);
+            reject(new Error('Falha na autenticação: ' + error));
+        });
+    });
+}
+
+// Função para verificar se está inicializado
+function isWhatsAppInitialized() {
+    return isInitialized;
+}
 
 // Exportar funções
 module.exports = {
     sendWhatsAppMessage,
     getWhatsAppStatus,
     restartWhatsApp,
+    initializeWhatsApp,
+    isWhatsAppInitialized,
     client
 };
