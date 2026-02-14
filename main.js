@@ -26,7 +26,6 @@ const defaultConfig = {
   openAIKey: '',
   telegramToken: '',
   telegramBotName: 'MulaFRotaBot', // Nome correto do bot do Telegram
-  telegramBotApiUrl: 'https://ceia.ia.br/api/telegram', // URL da API do bot para processar cadastros
   adminNumber: '',
   goldenRules: '',
   botPaused: false,
