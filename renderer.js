@@ -746,21 +746,62 @@ window.createBayleisPayment = function() {
     });
 };
 
-// Função para WhatsApp (mantida para compatibilidade)
-window.getWhatsAppQR = function() {
-    window.electronAPI.whatsappGetQr().then(qrDataUrl => {
-        if (qrDataUrl) {
-            const qrContainer = document.getElementById('whatsapp-qr-container');
-            const qrImage = document.getElementById('whatsapp-qr-image');
-            if (qrContainer && qrImage) {
-                qrImage.src = qrDataUrl;
-                qrContainer.style.display = 'block';
-                window.showToast('QR Code gerado! Escaneie com o WhatsApp.', 'success');
+// Funções para WhatsApp
+window.testWhatsAppConnection = function() {
+    window.electronAPI.whatsappGetStatus().then(status => {
+        const statusDiv = document.getElementById('whatsapp-status');
+        const statusText = document.getElementById('whatsapp-status-text');
+        if (statusDiv && statusText) {
+            statusDiv.style.display = 'block';
+            if (status.connected) {
+                statusText.innerHTML = `
+                    <strong>✅ WhatsApp Conectado</strong><br>
+                    Número: ${status.phone || 'N/A'}<br>
+                    Conectado desde: ${status.readyAt ? new Date(status.readyAt).toLocaleTimeString() : 'N/A'}
+                `;
+                statusText.style.color = 'var(--verde-esperanca)';
+                window.showToast('WhatsApp conectado!', 'success');
+            } else {
+                statusText.innerHTML = `
+                    <strong>❌ WhatsApp Desconectado</strong><br>
+                    Verifique o terminal para escanear o QR Code
+                `;
+                statusText.style.color = 'var(--vermelho-sobrio)';
+                window.showToast('WhatsApp desconectado', 'error');
             }
-        } else {
-            window.showToast('Erro ao gerar QR Code', 'error');
         }
     });
+};
+
+window.sendWhatsAppTest = function() {
+    const phone = prompt('Número para teste (com DDD, ex: 11999999999):');
+    if (!phone) return;
+    
+    const message = prompt('Mensagem de teste:', 'Teste do sistema Ceia Delivery');
+    if (!message) return;
+    
+    window.electronAPI.whatsappSend({ phone, message }).then(result => {
+        if (result.success) {
+            window.showToast('✅ Mensagem WhatsApp enviada com sucesso!', 'success');
+        } else {
+            window.showToast(`❌ Erro: ${result.error}`, 'error');
+        }
+    });
+};
+
+window.getWhatsAppQR = function() {
+    window.electronAPI.whatsappGetQr().then(result => {
+        window.showToast(result.message, 'info');
+        console.log('Nota:', result.note);
+    });
+};
+
+window.restartWhatsApp = function() {
+    if (confirm('Reiniciar a conexão do WhatsApp?')) {
+        window.electronAPI.whatsappRestart().then(result => {
+            window.showToast(result.message, 'info');
+        });
+    }
 };
 
 // Funções adicionais (mantidas para compatibilidade)

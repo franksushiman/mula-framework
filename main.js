@@ -426,6 +426,9 @@ ipcMain.handle('import-backup', async (event) => {
   }
 });
 
+// Importar serviço do WhatsApp
+const whatsappService = require('./whatsapp.js');
+
 // Handlers para Telegram
 ipcMain.handle('send-telegram-message', async (event, { botToken, chatId, message }) => {
   try {
@@ -452,6 +455,49 @@ ipcMain.handle('get-telegram-updates', async (event, botToken) => {
     console.error('Erro ao buscar atualizações Telegram:', error.response?.data || error.message);
     return { success: false, error: error.response?.data?.description || error.message };
   }
+});
+
+// Handler para enviar mensagem via WhatsApp
+ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
+  console.log(`📱 IPC: Tentando enviar WhatsApp para ${phone}...`);
+  try {
+    const response = await whatsappService.sendWhatsAppMessage(phone, message);
+    return { success: true, data: response };
+  } catch (error) {
+    console.error('Erro ao enviar WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler para obter status do WhatsApp
+ipcMain.handle('whatsapp-get-status', async () => {
+  try {
+    const status = whatsappService.getWhatsAppStatus();
+    return status;
+  } catch (error) {
+    console.error('Erro ao obter status WhatsApp:', error);
+    return { connected: false, error: error.message };
+  }
+});
+
+// Handler para reiniciar WhatsApp
+ipcMain.handle('whatsapp-restart', async () => {
+  try {
+    whatsappService.restartWhatsApp();
+    return { success: true, message: 'Reiniciando WhatsApp...' };
+  } catch (error) {
+    console.error('Erro ao reiniciar WhatsApp:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler para obter QR Code (para mostrar no frontend se necessário)
+ipcMain.handle('whatsapp-get-qr', async () => {
+  // Nota: O QR Code é mostrado no terminal, mas podemos enviar para o frontend também
+  return { 
+    message: 'Verifique o terminal para escanear o QR Code',
+    note: 'O QR Code é exibido automaticamente no terminal quando necessário'
+  };
 });
 
 // Handler para testar conexão Bayleis (simulação mais realista)

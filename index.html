@@ -1711,8 +1711,14 @@
                                 <button class="btn btn-success" onclick="window.createBayleisPayment()" style="padding: 8px 15px; margin-left: 10px;">
                                     <i class="fas fa-qrcode"></i> Criar PIX
                                 </button>
-                                <button class="btn btn-secondary" onclick="window.getWhatsAppQR()" style="padding: 8px 15px; margin-left: 10px;">
-                                    <i class="fab fa-whatsapp"></i> WhatsApp
+                                <button class="btn btn-secondary" onclick="window.testWhatsAppConnection()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fab fa-whatsapp"></i> Status WhatsApp
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.sendWhatsAppTest()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fas fa-paper-plane"></i> Enviar Teste
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.restartWhatsApp()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fas fa-sync-alt"></i> Reiniciar
                                 </button>
                             </div>
                             <div id="whatsapp-status" style="margin-top: 10px; padding: 10px; background: var(--branco-quente); border-radius: 6px; display: none;">

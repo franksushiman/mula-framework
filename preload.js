@@ -59,6 +59,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createBayleisPayment: (data) => ipcRenderer.invoke('create-bayleis-payment', data),
   checkBayleisPayment: (data) => ipcRenderer.invoke('check-bayleis-payment', data),
   
+  // WhatsApp
+  whatsappSend: (data) => ipcRenderer.invoke('whatsapp-send', data),
+  whatsappGetStatus: () => ipcRenderer.invoke('whatsapp-get-status'),
+  whatsappRestart: () => ipcRenderer.invoke('whatsapp-restart'),
+  whatsappGetQr: () => ipcRenderer.invoke('whatsapp-get-qr'),
+  
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
