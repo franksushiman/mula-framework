@@ -1525,27 +1525,35 @@ window.sendTelegramInviteToWhatsApp = function() {
     
     window.showToast('Enviando convite via WhatsApp...', 'info');
     
-    console.log('Chamando electronAPI.sendTelegramInviteToWhatsApp com:', cleanPhone);
-    window.electronAPI.sendTelegramInviteToWhatsApp(cleanPhone).then(result => {
+    // Log no frontend conforme solicitado
+    console.log('Botão clicado, enviando para backend: ' + cleanPhone);
+    
+    // Usar o novo handler 'enviarConviteEntregador' em vez do antigo
+    console.log('Chamando electronAPI.enviarConviteEntregador com:', cleanPhone);
+    window.electronAPI.enviarConviteEntregador(cleanPhone).then(result => {
         console.log('Resultado do envio:', result);
         if (result.success) {
             window.showToast('✅ Convite enviado com sucesso!', 'success');
             
-            // Mostrar preview do link
+            // Mostrar preview do link (se disponível)
             const preview = document.getElementById('invite-preview');
-            const linkEl = preview.querySelector('.preview-link');
-            if (preview && linkEl) {
-                linkEl.textContent = result.telegramLink || 'Link do Telegram gerado';
-                preview.classList.remove('hidden');
+            if (preview) {
+                const linkEl = preview.querySelector('.preview-link');
+                if (linkEl) {
+                    linkEl.textContent = result.telegramLink || 'Link do Telegram gerado';
+                    preview.classList.remove('hidden');
+                }
             }
             
             // Atualizar a lista de convites pendentes
-            window.renderFleetInvites();
+            if (window.renderFleetInvites) {
+                window.renderFleetInvites();
+            }
             
             // Limpar o campo do telefone
             phoneInput.value = '';
         } else {
-            window.showToast(`❌ Erro: ${result.error}`, 'error');
+            window.showToast(`❌ Erro: ${result.error || 'Erro desconhecido'}`, 'error');
         }
     }).catch(error => {
         console.error('Erro ao enviar convite:', error);
