@@ -1554,21 +1554,7 @@ window.renderFleetNew = function() {
     document.getElementById('fleet-global-count').textContent = fleet.length;
 };
 
-// Funções para Telegram
-window.saveTelegramConfig = function() {
-    const botToken = document.getElementById('telegram-bot-token').value;
-    const chatId = document.getElementById('telegram-chat-id').value;
-    const motoboysChannel = document.getElementById('telegram-motoboys-channel').value;
-    
-    if (!window.config.telegram) window.config.telegram = {};
-    window.config.telegram.botToken = botToken;
-    window.config.telegram.chatId = chatId;
-    window.config.telegram.motoboysChannel = motoboysChannel;
-    
-    window.electronAPI.saveConfig(window.config).then(result => {
-        window.showToast('Configuração do Telegram salva!', 'success');
-    });
-};
+// Funções para Telegram - Removida duplicação, usando window.saveConfig
 
 window.testTelegram = function() {
     const message = document.getElementById('telegram-test-message').value || 'Teste do sistema Ceia Delivery';

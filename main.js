@@ -432,13 +432,23 @@ function initializeWhatsAppService() {
             });
         });
         
+        // Configurar outros listeners importantes
+        whatsappService.client.on('ready', () => {
+            console.log('✅ WhatsApp pronto via initializeWhatsAppService');
+        });
+        
+        whatsappService.client.on('disconnected', (reason) => {
+            console.log(`❌ WhatsApp desconectado: ${reason}`);
+            currentQrCode = null;
+        });
+        
         return whatsappService;
     } catch (error) {
         console.error('Erro ao carregar módulo WhatsApp:', error);
         whatsappService = {
             sendWhatsAppMessage: () => Promise.reject(new Error('WhatsApp não disponível')),
             getWhatsAppStatus: () => ({ connected: false, error: 'WhatsApp não inicializado' }),
-            restartWhatsApp: () => console.log('WhatsApp não disponível para reiniciar'),
+            restartWhatsApp: () => Promise.reject(new Error('WhatsApp não disponível')),
             initializeWhatsApp: () => Promise.reject(new Error('WhatsApp não disponível')),
             isWhatsAppInitialized: () => false,
             resetInitialization: () => {},
@@ -510,8 +520,13 @@ ipcMain.handle('whatsapp-get-status', async () => {
 // Handler para reiniciar WhatsApp
 ipcMain.handle('whatsapp-restart', async () => {
   try {
-    whatsappService.restartWhatsApp();
-    return { success: true, message: 'Reiniciando WhatsApp...' };
+    const service = getWhatsAppService();
+    if (service.restartWhatsApp) {
+      await service.restartWhatsApp();
+      return { success: true, message: 'WhatsApp reiniciado com sucesso!' };
+    } else {
+      return { success: false, error: 'Função restartWhatsApp não disponível' };
+    }
   } catch (error) {
     console.error('Erro ao reiniciar WhatsApp:', error);
     return { success: false, error: error.message };
