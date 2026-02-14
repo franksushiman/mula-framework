@@ -128,41 +128,515 @@ window.dispatchOrder = function(orderId) {
     }
 };
 
-window.renderT = function() {
-    const tbody = document.querySelector('#tb tbody');
-    if (!tbody) return;
+// Sistema de Cardápio Moderno
+window.currentEditingCategoryId = null;
+window.currentEditingProductId = null;
+window.currentEditingAddonGroupId = null;
+window.daysOfWeek = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+// Inicializar o cardápio
+window.initMenu = function() {
+    if (!window.config.menuData) {
+        window.config.menuData = {
+            categories: [],
+            addonGroups: []
+        };
+    }
+    window.renderMenuCategories();
+    window.renderAddonGroups();
+};
+
+// Renderizar categorias
+window.renderMenuCategories = function() {
+    const accordion = document.getElementById('menu-categories-accordion');
+    if (!accordion) return;
     
-    tbody.innerHTML = '';
+    const categories = window.config.menuData?.categories || [];
     
-    const menu = window.config.menu || [];
-    
-    menu.forEach((item, index) => {
-        const row = document.createElement('tr');
-        if (item.paused) row.classList.add('paused-row');
-        
-        row.innerHTML = `
-            <td><input type="text" value="${item.category || ''}" onchange="window.updM(${index}, 'category', this.value)"></td>
-            <td><input type="text" value="${item.name || ''}" onchange="window.updM(${index}, 'name', this.value)"></td>
-            <td><input type="text" value="${item.ingredients || ''}" onchange="window.updM(${index}, 'ingredients', this.value)"></td>
-            <td><input type="number" step="0.01" value="${item.price || 0}" onchange="window.updM(${index}, 'price', parseFloat(this.value))"></td>
-            <td>
-                <select onchange="window.updM(${index}, 'printer', this.value)">
-                    <option value="Cozinha" ${item.printer === 'Cozinha' ? 'selected' : ''}>Cozinha</option>
-                    <option value="Bar" ${item.printer === 'Bar' ? 'selected' : ''}>Bar</option>
-                    <option value="Sobremesa" ${item.printer === 'Sobremesa' ? 'selected' : ''}>Sobremesa</option>
-                </select>
-            </td>
-            <td>
-                <button class="btn ${item.paused ? 'btn-success' : 'btn-secondary'}" onclick="window.toggleM(${index})" style="padding: 5px 10px; margin-right: 5px;">
-                    <i class="fas ${item.paused ? 'fa-play' : 'fa-pause'}"></i> ${item.paused ? 'Ativar' : 'Pausar'}
+    if (categories.length === 0) {
+        accordion.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-utensils"></i>
+                <h3>Nenhuma categoria criada</h3>
+                <p>Comece criando sua primeira categoria para organizar o cardápio.</p>
+                <button class="btn btn-primary" onclick="window.openCategoryModal()">
+                    <i class="fas fa-plus"></i> Criar Primeira Categoria
                 </button>
-                <button class="btn btn-error" onclick="window.delM(${index})" style="padding: 5px 10px;">
-                    <i class="fas fa-trash"></i> Excluir
-                </button>
-            </td>
+            </div>
         `;
-        tbody.appendChild(row);
+        return;
+    }
+    
+    accordion.innerHTML = '';
+    
+    categories.forEach((category, categoryIndex) => {
+        const categoryElement = document.createElement('div');
+        categoryElement.className = 'category-item';
+        categoryElement.innerHTML = `
+            <div class="category-header" onclick="window.toggleCategory(${categoryIndex})">
+                <div class="category-title">
+                    <i class="fas fa-chevron-right" id="category-icon-${categoryIndex}"></i>
+                    <span>${category.name}</span>
+                    <span class="badge" style="background: var(--cinza-quente); color: white; font-size: 12px;">
+                        ${category.products?.length || 0} itens
+                    </span>
+                </div>
+                <div class="category-actions">
+                    <button class="btn btn-secondary" onclick="window.editCategory(${categoryIndex}, event)" style="padding: 5px 10px;">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-error" onclick="window.deleteCategory(${categoryIndex}, event)" style="padding: 5px 10px;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-success" onclick="window.openProductModal(null, ${categoryIndex}, event)" style="padding: 5px 10px;">
+                        <i class="fas fa-plus"></i> Produto
+                    </button>
+                </div>
+            </div>
+            <div class="category-products" id="category-products-${categoryIndex}">
+                ${category.products && category.products.length > 0 ? 
+                    category.products.map((product, productIndex) => `
+                        <div class="product-item" draggable="true" 
+                             ondragstart="window.dragProduct(event, ${categoryIndex}, ${productIndex})"
+                             ondragover="window.allowDrop(event)"
+                             ondrop="window.dropProduct(event, ${categoryIndex}, ${productIndex})">
+                            <img src="${product.image || ''}" class="product-image" onerror="this.style.display='none'">
+                            <div class="product-info">
+                                <div class="product-name">${product.name}</div>
+                                <div class="product-description">${product.description || ''}</div>
+                                <div>
+                                    <span class="product-price">R$ ${product.price?.toFixed(2) || '0.00'}</span>
+                                    ${product.promoPrice ? `<span class="product-promo-price">R$ ${product.promoPrice.toFixed(2)}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="product-actions">
+                                <label class="switch">
+                                    <input type="checkbox" ${product.status !== false ? 'checked' : ''} 
+                                           onchange="window.toggleProductStatus(${categoryIndex}, ${productIndex})">
+                                    <span class="slider"></span>
+                                </label>
+                                <button class="btn btn-secondary" onclick="window.editProduct(${categoryIndex}, ${productIndex}, event)" style="padding: 5px 10px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-error" onclick="window.deleteProduct(${categoryIndex}, ${productIndex}, event)" style="padding: 5px 10px;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('') : 
+                    `<div class="empty-state" style="padding: 20px;">
+                        <p>Nenhum produto nesta categoria</p>
+                        <button class="btn btn-primary" onclick="window.openProductModal(null, ${categoryIndex})">
+                            <i class="fas fa-plus"></i> Adicionar Produto
+                        </button>
+                    </div>`
+                }
+            </div>
+        `;
+        accordion.appendChild(categoryElement);
     });
+};
+
+// Funções para Categorias
+window.toggleCategory = function(categoryIndex) {
+    const productsDiv = document.getElementById(`category-products-${categoryIndex}`);
+    const icon = document.getElementById(`category-icon-${categoryIndex}`);
+    const header = productsDiv.previousElementSibling;
+    
+    if (productsDiv.classList.contains('expanded')) {
+        productsDiv.classList.remove('expanded');
+        header.classList.remove('active');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    } else {
+        productsDiv.classList.add('expanded');
+        header.classList.add('active');
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-down');
+    }
+};
+
+window.openCategoryModal = function(categoryIndex = null) {
+    window.currentEditingCategoryId = categoryIndex;
+    const modal = document.getElementById('category-modal');
+    const title = document.getElementById('category-modal-title');
+    const nameInput = document.getElementById('category-name');
+    
+    if (categoryIndex !== null) {
+        const category = window.config.menuData.categories[categoryIndex];
+        title.textContent = 'Editar Categoria';
+        nameInput.value = category.name;
+    } else {
+        title.textContent = 'Nova Categoria';
+        nameInput.value = '';
+    }
+    
+    modal.style.display = 'flex';
+};
+
+window.closeCategoryModal = function() {
+    document.getElementById('category-modal').style.display = 'none';
+    window.currentEditingCategoryId = null;
+};
+
+window.saveCategory = function() {
+    const name = document.getElementById('category-name').value.trim();
+    if (!name) {
+        window.showToast('Digite um nome para a categoria', 'error');
+        return;
+    }
+    
+    if (!window.config.menuData) window.config.menuData = { categories: [], addonGroups: [] };
+    if (!window.config.menuData.categories) window.config.menuData.categories = [];
+    
+    if (window.currentEditingCategoryId !== null) {
+        // Editar categoria existente
+        window.config.menuData.categories[window.currentEditingCategoryId].name = name;
+    } else {
+        // Nova categoria
+        window.config.menuData.categories.push({
+            id: Date.now(),
+            name: name,
+            products: []
+        });
+    }
+    
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Categoria salva com sucesso!', 'success');
+        window.closeCategoryModal();
+        window.renderMenuCategories();
+    });
+};
+
+window.editCategory = function(categoryIndex, event) {
+    event.stopPropagation();
+    window.openCategoryModal(categoryIndex);
+};
+
+window.deleteCategory = function(categoryIndex, event) {
+    event.stopPropagation();
+    if (confirm('Tem certeza que deseja excluir esta categoria? Todos os produtos serão removidos.')) {
+        window.config.menuData.categories.splice(categoryIndex, 1);
+        window.electronAPI.saveConfig(window.config).then(() => {
+            window.showToast('Categoria excluída!', 'success');
+            window.renderMenuCategories();
+        });
+    }
+};
+
+// Funções para Produtos
+window.openProductModal = function(productIndex = null, categoryIndex = null, event = null) {
+    if (event) event.stopPropagation();
+    
+    window.currentEditingProductId = productIndex;
+    window.currentEditingCategoryId = categoryIndex;
+    
+    const modal = document.getElementById('product-modal');
+    const title = document.getElementById('product-modal-title');
+    
+    // Configurar dias da semana
+    const daysContainer = modal.querySelector('.category-products').previousElementSibling;
+    daysContainer.innerHTML = '';
+    window.daysOfWeek.forEach(day => {
+        daysContainer.innerHTML += `
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" id="day-${day.toLowerCase()}" value="${day}">
+                <span>${day}</span>
+            </label>
+        `;
+    });
+    
+    if (productIndex !== null && categoryIndex !== null) {
+        // Editar produto existente
+        const product = window.config.menuData.categories[categoryIndex].products[productIndex];
+        title.textContent = 'Editar Produto';
+        
+        document.getElementById('product-name').value = product.name || '';
+        document.getElementById('product-description').value = product.description || '';
+        document.getElementById('product-price').value = product.price || '';
+        document.getElementById('product-promo-price').value = product.promoPrice || '';
+        document.getElementById('product-status').checked = product.status !== false;
+        document.getElementById('product-status-label').textContent = product.status !== false ? 'Disponível' : 'Indisponível';
+        
+        // Dias da semana
+        if (product.availableDays) {
+            product.availableDays.forEach(day => {
+                const checkbox = document.getElementById(`day-${day.toLowerCase()}`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+        
+        // Horários
+        document.getElementById('product-start-time').value = product.startTime || '';
+        document.getElementById('product-end-time').value = product.endTime || '';
+        
+        // Imagem
+        const preview = document.getElementById('product-image-preview');
+        if (product.image) {
+            preview.innerHTML = `<img src="${product.image}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        }
+        
+        // Complementos
+        window.renderAddonGroupsForProduct(product.addonGroups || []);
+    } else {
+        // Novo produto
+        title.textContent = 'Novo Produto';
+        document.getElementById('product-name').value = '';
+        document.getElementById('product-description').value = '';
+        document.getElementById('product-price').value = '';
+        document.getElementById('product-promo-price').value = '';
+        document.getElementById('product-status').checked = true;
+        document.getElementById('product-status-label').textContent = 'Disponível';
+        
+        // Resetar checkboxes
+        window.daysOfWeek.forEach(day => {
+            const checkbox = document.getElementById(`day-${day.toLowerCase()}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        
+        document.getElementById('product-start-time').value = '';
+        document.getElementById('product-end-time').value = '';
+        
+        // Resetar imagem
+        const preview = document.getElementById('product-image-preview');
+        preview.innerHTML = '<i class="fas fa-camera" style="font-size: 40px; color: var(--texto-secundario);"></i>';
+        
+        // Complementos
+        window.renderAddonGroupsForProduct([]);
+    }
+    
+    // Configurar upload de imagem
+    const uploadInput = document.getElementById('product-image-upload');
+    uploadInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const preview = document.getElementById('product-image-preview');
+                preview.innerHTML = `<img src="${event.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    modal.style.display = 'flex';
+};
+
+window.closeProductModal = function() {
+    document.getElementById('product-modal').style.display = 'none';
+    window.currentEditingProductId = null;
+    window.currentEditingCategoryId = null;
+};
+
+window.saveProduct = function() {
+    const name = document.getElementById('product-name').value.trim();
+    const price = parseFloat(document.getElementById('product-price').value);
+    
+    if (!name) {
+        window.showToast('Digite um nome para o produto', 'error');
+        return;
+    }
+    if (isNaN(price) || price < 0) {
+        window.showToast('Digite um preço válido', 'error');
+        return;
+    }
+    
+    // Coletar dias selecionados
+    const availableDays = [];
+    window.daysOfWeek.forEach(day => {
+        const checkbox = document.getElementById(`day-${day.toLowerCase()}`);
+        if (checkbox && checkbox.checked) {
+            availableDays.push(day);
+        }
+    });
+    
+    // Coletar imagem
+    const preview = document.getElementById('product-image-preview');
+    const image = preview.querySelector('img') ? preview.querySelector('img').src : '';
+    
+    // Coletar complementos selecionados
+    const selectedAddonGroups = [];
+    const checkboxes = document.querySelectorAll('#addon-groups-list input[type="checkbox"]:checked');
+    checkboxes.forEach(checkbox => {
+        selectedAddonGroups.push(checkbox.value);
+    });
+    
+    const productData = {
+        id: window.currentEditingProductId !== null ? window.config.menuData.categories[window.currentEditingCategoryId].products[window.currentEditingProductId].id : Date.now(),
+        name: name,
+        description: document.getElementById('product-description').value,
+        price: price,
+        promoPrice: document.getElementById('product-promo-price').value ? parseFloat(document.getElementById('product-promo-price').value) : null,
+        status: document.getElementById('product-status').checked,
+        image: image,
+        availableDays: availableDays,
+        startTime: document.getElementById('product-start-time').value,
+        endTime: document.getElementById('product-end-time').value,
+        addonGroups: selectedAddonGroups
+    };
+    
+    if (window.currentEditingProductId !== null && window.currentEditingCategoryId !== null) {
+        // Editar produto existente
+        window.config.menuData.categories[window.currentEditingCategoryId].products[window.currentEditingProductId] = productData;
+    } else {
+        // Novo produto
+        if (!window.config.menuData.categories[window.currentEditingCategoryId].products) {
+            window.config.menuData.categories[window.currentEditingCategoryId].products = [];
+        }
+        window.config.menuData.categories[window.currentEditingCategoryId].products.push(productData);
+    }
+    
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Produto salvo com sucesso!', 'success');
+        window.closeProductModal();
+        window.renderMenuCategories();
+    });
+};
+
+window.toggleProductStatus = function(categoryIndex, productIndex) {
+    const product = window.config.menuData.categories[categoryIndex].products[productIndex];
+    product.status = !product.status;
+    
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast(`Produto ${product.status ? 'ativado' : 'pausado'}!`, 'success');
+        // Atualizar visualmente sem recarregar tudo
+        window.renderMenuCategories();
+    });
+};
+
+window.editProduct = function(categoryIndex, productIndex, event) {
+    event.stopPropagation();
+    window.openProductModal(productIndex, categoryIndex);
+};
+
+window.deleteProduct = function(categoryIndex, productIndex, event) {
+    event.stopPropagation();
+    if (confirm('Tem certeza que deseja excluir este produto?')) {
+        window.config.menuData.categories[categoryIndex].products.splice(productIndex, 1);
+        window.electronAPI.saveConfig(window.config).then(() => {
+            window.showToast('Produto excluído!', 'success');
+            window.renderMenuCategories();
+        });
+    }
+};
+
+// Drag and Drop para produtos
+window.dragProduct = function(event, categoryIndex, productIndex) {
+    event.dataTransfer.setData('text/plain', JSON.stringify({ categoryIndex, productIndex }));
+    event.currentTarget.classList.add('dragging');
+};
+
+window.allowDrop = function(event) {
+    event.preventDefault();
+};
+
+window.dropProduct = function(event, targetCategoryIndex, targetProductIndex) {
+    event.preventDefault();
+    const sourceData = JSON.parse(event.dataTransfer.getData('text/plain'));
+    const sourceCategoryIndex = sourceData.categoryIndex;
+    const sourceProductIndex = sourceData.productIndex;
+    
+    if (sourceCategoryIndex === targetCategoryIndex && sourceProductIndex === targetProductIndex) {
+        return;
+    }
+    
+    const product = window.config.menuData.categories[sourceCategoryIndex].products[sourceProductIndex];
+    
+    // Remover da posição original
+    window.config.menuData.categories[sourceCategoryIndex].products.splice(sourceProductIndex, 1);
+    
+    // Inserir na nova posição
+    if (sourceCategoryIndex === targetCategoryIndex) {
+        // Mesma categoria, ajustar índice
+        const newIndex = sourceProductIndex < targetProductIndex ? targetProductIndex - 1 : targetProductIndex;
+        window.config.menuData.categories[targetCategoryIndex].products.splice(newIndex, 0, product);
+    } else {
+        // Categoria diferente
+        window.config.menuData.categories[targetCategoryIndex].products.splice(targetProductIndex, 0, product);
+    }
+    
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Produto movido!', 'success');
+        window.renderMenuCategories();
+    });
+    
+    // Remover classe dragging
+    document.querySelectorAll('.product-item.dragging').forEach(el => {
+        el.classList.remove('dragging');
+    });
+};
+
+// Funções para Complementos (serão implementadas na próxima parte)
+window.openAddonGroupModal = function() {
+    document.getElementById('addon-group-modal').style.display = 'flex';
+    window.renderAddonGroups();
+};
+
+window.closeAddonGroupModal = function() {
+    document.getElementById('addon-group-modal').style.display = 'none';
+};
+
+window.renderAddonGroups = function() {
+    const container = document.getElementById('addon-groups-container');
+    const groups = window.config.menuData?.addonGroups || [];
+    
+    if (groups.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-layer-group"></i>
+                <h3>Nenhum grupo de complementos</h3>
+                <p>Crie grupos para oferecer opções extras nos produtos.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = groups.map((group, index) => `
+        <div class="addon-group-item">
+            <div class="addon-group-header">
+                <div class="addon-group-name">${group.name}</div>
+                <div>
+                    <button class="btn btn-secondary" onclick="window.editAddonGroup(${index})" style="padding: 5px 10px;">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-error" onclick="window.deleteAddonGroup(${index})" style="padding: 5px 10px;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="addon-group-rules">
+                ${group.required ? 'Obrigatório' : 'Opcional'} · 
+                Mín: ${group.minQty} · Máx: ${group.maxQty}
+            </div>
+            <div>
+                <strong>Opções:</strong>
+                ${group.options.map(option => `<div style="padding: 5px 0;">• ${option.name} (R$ ${option.price?.toFixed(2) || '0.00'})</div>`).join('')}
+            </div>
+        </div>
+    `).join('');
+};
+
+window.renderAddonGroupsForProduct = function(selectedGroups) {
+    const container = document.getElementById('addon-groups-list');
+    const groups = window.config.menuData?.addonGroups || [];
+    
+    if (groups.length === 0) {
+        container.innerHTML = '<p style="color: var(--texto-secundario); text-align: center; padding: 20px;">Nenhum grupo de complementos criado</p>';
+        return;
+    }
+    
+    container.innerHTML = groups.map(group => `
+        <label style="display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid var(--borda-quente);">
+            <input type="checkbox" value="${group.id}" ${selectedGroups.includes(group.id) ? 'checked' : ''}>
+            <div>
+                <div style="font-weight: 600;">${group.name}</div>
+                <div style="font-size: 12px; color: var(--texto-secundario);">
+                    ${group.required ? 'Obrigatório' : 'Opcional'} · 
+                    Mín: ${group.minQty} · Máx: ${group.maxQty}
+                </div>
+            </div>
+        </label>
+    `).join('');
 };
 
 window.updM = function(index, field, value) {
@@ -1100,6 +1574,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (panelId === 'golden-rules-panel') {
                         setTimeout(() => {
                             window.loadGoldenRules();
+                        }, 100);
+                    }
+                    // Inicializar cardápio se for a aba de Menu
+                    if (panelId === 'menu-panel') {
+                        setTimeout(() => {
+                            window.initMenu();
                         }, 100);
                     }
                 });
