@@ -1627,18 +1627,22 @@ window.checkWhatsAppStatus = function() {
                 } else {
                     lastActivity.textContent = 'Ativo';
                 }
-                window.showToast('WhatsApp conectado!', 'success');
+                // Não mostrar toast automaticamente para evitar spam
+            } else if (status.status === 'initializing') {
+                statusDot.className = 'status-dot initializing';
+                statusText.textContent = 'Inicializando...';
+                statusText.style.color = 'var(--ambar)';
+                lastActivity.textContent = 'Aguardando conexão';
             } else {
                 statusDot.className = 'status-dot offline';
                 statusText.textContent = 'Desconectado';
                 statusText.style.color = 'var(--vermelho-sobrio)';
                 lastActivity.textContent = 'Não conectado';
-                window.showToast('WhatsApp desconectado.', 'error');
             }
         }
     }).catch(error => {
         console.error('Erro ao verificar status WhatsApp:', error);
-        window.showToast('Erro ao verificar status WhatsApp', 'error');
+        // Não mostrar toast para evitar spam
     });
 };
 

@@ -951,24 +951,32 @@ ipcMain.handle('whatsapp-get-status', async () => {
     const status = service.getWhatsAppStatus();
     
     // Se não estiver conectado, tentar verificar se precisa inicializar
-    if (!status.connected) {
+    if (!status.connected && status.status !== 'initializing') {
       console.log('WhatsApp não está conectado, verificando se precisa inicializar...');
       
       // Verificar se o serviço está inicializado
       if (service.isWhatsAppInitialized && !service.isWhatsAppInitialized()) {
         console.log('WhatsApp não está inicializado, tentando inicializar...');
         try {
-          await service.initializeWhatsApp();
-          // Aguardar um momento e obter status atualizado
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const newStatus = service.getWhatsAppStatus();
-          return newStatus;
+          // Inicializar em segundo plano, mas não bloquear a resposta
+          service.initializeWhatsApp().catch(error => {
+            console.error('Erro ao inicializar WhatsApp em segundo plano:', error);
+          });
+          
+          // Retornar status atualizado para indicar que está inicializando
+          return {
+            ...status,
+            status: 'initializing',
+            message: 'Inicializando WhatsApp...',
+            isInitializing: true
+          };
         } catch (initError) {
           console.error('Erro ao tentar inicializar WhatsApp:', initError);
           return {
             ...status,
             error: initError.message,
-            initializationError: true
+            initializationError: true,
+            status: 'error'
           };
         }
       }
@@ -981,7 +989,8 @@ ipcMain.handle('whatsapp-get-status', async () => {
       connected: false, 
       error: error.message,
       isInitialized: false,
-      status: 'error'
+      status: 'error',
+      message: `Erro: ${error.message}`
     };
   }
 });
