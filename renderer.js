@@ -222,7 +222,7 @@ window.renderMenuTable = function() {
                     ${item.description ? `<div style="font-size: 13px; color: var(--stone-400); margin-top: 4px;">${item.description}</div>` : ''}
                 </td>
                 <td>
-                    <span style="background: var(--stone-800); color: var(--stone-300); padding: 4px 8px; border-radius: 4px; font-size: 13px;">
+                    <span class="category-badge">
                         ${item.category || 'Geral'}
                     </span>
                 </td>
@@ -235,12 +235,12 @@ window.renderMenuTable = function() {
                     </div>
                 </td>
                 <td>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-secondary" onclick="window.editMenuItemInline(${index})" style="padding: 6px 12px; font-size: 13px;">
-                            <i class="fas fa-edit"></i>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; padding-right: 16px;">
+                        <button class="btn btn-secondary" onclick="window.editMenuItemInline(${index})" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px; background: var(--cinza-fundo); color: var(--texto-principal); border: 1px solid var(--borda-quente);">
+                            <i class="fas fa-edit"></i> Editar
                         </button>
-                        <button class="btn btn-error" onclick="window.deleteMenuItem(${index})" style="padding: 6px 12px; font-size: 13px;">
-                            <i class="fas fa-trash"></i>
+                        <button class="btn btn-error" onclick="window.deleteMenuItem(${index})" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px; background: var(--vermelho-fundo); color: var(--vermelho-sobrio); border: 1px solid var(--vermelho-sobrio);">
+                            <i class="fas fa-trash"></i> Excluir
                         </button>
                     </div>
                 </td>
@@ -332,14 +332,14 @@ window.editMenuItemInline = function(index) {
         </div>
     `;
     
-    // Ações
+    // Ações - Botões maiores e mais claros
     cells[4].innerHTML = `
-        <div style="display: flex; gap: 8px;">
-            <button class="btn btn-success" onclick="window.saveMenuItemEdit()" style="padding: 6px 12px; font-size: 13px;">
-                <i class="fas fa-check"></i> Salvar
-            </button>
-            <button class="btn btn-secondary" onclick="window.cancelMenuItemEdit()" style="padding: 6px 12px; font-size: 13px;">
+        <div style="display: flex; gap: 12px; justify-content: flex-end; padding-right: 8px;">
+            <button class="btn btn-secondary" onclick="window.cancelMenuItemEdit()" style="padding: 12px 20px; font-size: 14px; border-radius: 8px; background: var(--cinza-fundo); color: var(--texto-principal); border: 1px solid var(--borda-quente); display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn btn-success" onclick="window.saveMenuItemEdit()" style="padding: 12px 20px; font-size: 14px; border-radius: 8px; background: var(--verde-esperanca); color: white; border: none; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                <i class="fas fa-check"></i> Salvar
             </button>
         </div>
     `;

@@ -1576,48 +1576,67 @@
 
             <div id="menu-panel" class="panel">
                 <div class="card">
-                    <!-- 1. ONDE ESTOU? -->
-                    <h1 class="ceia-surface-title">Cardápio</h1>
-
-                    <!-- 2. O QUE É ESTADO? -->
-                    <div class="ceia-surface-state">
-                        <div class="ceia-surface-state-label">Resumo do Cardápio</div>
-                        <div class="ceia-surface-state-value" id="menu-total-items">0</div>
-                        <div class="ceia-surface-state-subtitle">
-                            itens ativos no cardápio
+                    <!-- 1. ONDE ESTOU? - Header forte -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px;">
+                        <div>
+                            <h1 class="ceia-surface-title" style="font-size: 28px; font-weight: 700; color: var(--terra); margin-bottom: 8px;">Cardápio</h1>
+                            <p style="color: var(--texto-secundario); font-size: 16px; line-height: 1.5;">
+                                Gerencie os produtos, preços e disponibilidade do seu cardápio
+                            </p>
+                        </div>
+                        <div class="ceia-surface-state" style="text-align: right; min-width: 180px;">
+                            <div class="ceia-surface-state-label" style="font-size: 14px; color: var(--texto-secundario);">Itens ativos</div>
+                            <div class="ceia-surface-state-value" id="menu-total-items" style="font-size: 36px; font-weight: 700; color: var(--terra);">0</div>
+                            <div class="ceia-surface-state-subtitle" style="font-size: 14px; color: var(--texto-secundario);">
+                                no cardápio
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 3. O QUE É FLUXO? -->
-                    <div class="ceia-surface-flow">
-                        <div class="ceia-surface-flow-title">Ações</div>
-                        <div class="ceia-surface-card">
-                            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-                                <button class="btn btn-primary" onclick="window.openAddonGroupModal()" style="flex: 1;">
+                    <!-- 2. AÇÕES PRINCIPAIS - Destaque claro -->
+                    <div style="background: linear-gradient(135deg, var(--verde-fundo) 0%, rgba(216,243,220,0.3) 100%); border-radius: 16px; padding: 24px; margin-bottom: 32px; border: 1px solid rgba(45,106,79,0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <div>
+                                <h2 style="font-size: 18px; font-weight: 600; color: var(--terra); margin-bottom: 4px;">Gerenciar cardápio</h2>
+                                <p style="color: var(--texto-secundario); font-size: 14px;">Adicione produtos, configure complementos e ajuste preços</p>
+                            </div>
+                            <div style="display: flex; gap: 12px;">
+                                <button class="btn btn-primary" onclick="window.openAddonGroupModal()" style="padding: 12px 24px; font-size: 15px; font-weight: 600; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
                                     <i class="fas fa-layer-group"></i> Complementos
                                 </button>
-                                <button class="btn btn-success" onclick="window.addMenuItem()" style="flex: 1;">
+                                <button class="btn btn-success" onclick="window.addMenuItem()" style="padding: 12px 24px; font-size: 15px; font-weight: 600; border-radius: 8px; display: flex; align-items: center; gap: 8px; background: var(--verde-esperanca); border: none;">
                                     <i class="fas fa-plus"></i> Novo Item
                                 </button>
                             </div>
-                            
-                            <!-- Tabela do Cardápio -->
+                        </div>
+                    </div>
+
+                    <!-- 3. TABELA DO CARDÁPIO -->
+                    <div class="ceia-surface-flow">
+                        <div class="ceia-surface-flow-title" style="font-size: 18px; font-weight: 600; color: var(--terra); margin-bottom: 16px;">Produtos do cardápio</div>
+                        <div class="ceia-surface-card" style="padding: 0; overflow: hidden;">
                             <div class="menu-table-container">
                                 <table class="menu-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 60px;">Status</th>
+                                            <th style="width: 80px; padding-left: 24px;">Status</th>
                                             <th>Produto</th>
-                                            <th style="width: 150px;">Categoria</th>
-                                            <th style="width: 120px;">Preço</th>
-                                            <th style="width: 100px;">Ações</th>
+                                            <th style="width: 160px;">Categoria</th>
+                                            <th style="width: 140px;">Preço</th>
+                                            <th style="width: 120px; padding-right: 24px;">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody id="menu-table-body">
                                         <!-- Itens serão carregados aqui -->
                                         <tr>
-                                            <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                                                Carregando cardápio...
+                                            <td colspan="5" style="text-align: center; padding: 60px 40px; color: var(--texto-secundario);">
+                                                <div style="margin-bottom: 16px;">
+                                                    <i class="fas fa-utensils" style="font-size: 48px; opacity: 0.3;"></i>
+                                                </div>
+                                                <div style="font-size: 18px; font-weight: 600; color: var(--terra); margin-bottom: 8px;">Nenhum item no cardápio</div>
+                                                <div style="font-size: 15px; color: var(--texto-secundario);">
+                                                    Comece adicionando seu primeiro produto
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -1625,11 +1644,13 @@
                             </div>
                             
                             <!-- Aviso Operacional -->
-                            <div id="menu-warning-callout" class="ceia-callout-warning" style="display: none; margin-top: 20px;">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <div>
-                                    <strong>Estoque baixo</strong> · <span id="low-stock-count">0</span> itens com menos de 5 unidades
-                                    <div style="font-size: 13px; margin-top: 4px;">
+                            <div id="menu-warning-callout" class="ceia-callout-warning" style="display: none; margin: 24px; border-radius: 12px; padding: 20px;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 20px;"></i>
+                                <div style="flex: 1;">
+                                    <div style="font-size: 16px; font-weight: 600; color: var(--ambar); margin-bottom: 4px;">
+                                        Estoque baixo · <span id="low-stock-count">0</span> itens com menos de 5 unidades
+                                    </div>
+                                    <div style="font-size: 14px; color: var(--texto-secundario);">
                                         Considere repor ou pausar temporariamente
                                     </div>
                                 </div>
@@ -1638,12 +1659,12 @@
                     </div>
 
                     <!-- 4. ONDE O SISTEMA FALA? -->
-                    <div class="ceia-surface-system-talk" id="menu-system-talk" style="display: none;">
-                        <div class="ceia-surface-system-talk-title">
+                    <div class="ceia-surface-system-talk" id="menu-system-talk" style="display: none; margin-top: 32px; border-radius: 16px; padding: 24px;">
+                        <div class="ceia-surface-system-talk-title" style="font-size: 16px; font-weight: 600; color: var(--ambar); margin-bottom: 12px;">
                             <i class="fas fa-lightbulb"></i>
                             Dicas do Cardápio
                         </div>
-                        <div class="ceia-surface-system-talk-content">
+                        <div class="ceia-surface-system-talk-content" style="font-size: 15px; color: var(--texto-principal); line-height: 1.6;">
                             <!-- Conteúdo será preenchido dinamicamente -->
                         </div>
                     </div>
