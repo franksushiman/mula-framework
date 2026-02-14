@@ -37,11 +37,11 @@ function initializeTelegramBot() {
         const token = config.telegramToken || config.telegramClientToken;
         
         if (!token || token.trim() === '') {
-            console.warn('Token do Telegram não configurado. Configure na aba de Configurações.');
+            console.warn('⚠️ Token Telegram vazio no config.json. Configure na aba de Configurações.');
             return null;
         }
         
-        console.log('Inicializando bot Telegram...');
+        console.log('🤖 Inicializando bot Telegram...');
         bot = new Telegraf(token);
         
         // Listener para mensagens editadas (Live Location)
@@ -382,15 +382,16 @@ function initializeTelegramBot() {
             console.log('✅ Bot Telegram iniciado com sucesso');
         }).catch(err => {
             console.error('❌ Erro ao iniciar bot Telegram:', err);
+            bot = null;
         });
         
         // Configurar graceful shutdown
-        process.once('SIGINT', () => bot.stop('SIGINT'));
-        process.once('SIGTERM', () => bot.stop('SIGTERM'));
+        process.once('SIGINT', () => bot && bot.stop('SIGINT'));
+        process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
         
         return bot;
     } catch (error) {
-        console.error('Erro ao inicializar bot Telegram:', error);
+        console.error('❌ Erro ao inicializar bot Telegram:', error);
         return null;
     }
 }
