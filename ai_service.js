@@ -227,6 +227,11 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
         const path = require('path');
         const os = require('os');
         
+        // Verificar se o mimeType é válido
+        if (!mimeType || typeof mimeType !== 'string') {
+            throw new Error('Tipo MIME inválido fornecido para transcrição de áudio');
+        }
+        
         // Criar arquivo temporário
         const tempDir = os.tmpdir();
         // Extrair o formato do mimeType, removendo parâmetros como '; codecs=opus'
@@ -242,9 +247,9 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
         // Garantir que a extensão seja uma das suportadas pela Whisper API
         // Mapear formatos conhecidos para extensões de arquivo
         const supportedFormats = {
-            'ogg': 'ogg',
-            'opus': 'ogg', // opus geralmente usa container .ogg
-            'oga': 'ogg',  // audio/ogg
+            'ogg': 'oga',    // Usar .oga para áudio OGG
+            'opus': 'oga',   // Opus em container OGG -> .oga
+            'oga': 'oga',    // audio/ogg -> .oga
             'mpeg': 'mp3',
             'mp3': 'mp3',
             'mp4': 'm4a',
@@ -256,13 +261,12 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
             'flac': 'flac',
             'x-flac': 'flac'
         };
-        let extension = supportedFormats[format] || 'ogg'; // fallback para ogg se não reconhecido
+        let extension = supportedFormats[format] || 'oga'; // fallback para oga se não reconhecido
         
-        // Se a extensão for 'ogg' e o formato for 'opus' ou 'ogg', garantir que o arquivo seja .ogg
-        // A API Whisper pode rejeitar .ogg se não for Opus, mas o WhatsApp usa Opus em .ogg
-        // Para maior segurança, se o formato for 'opus' ou 'ogg', usamos .ogg
+        // Para áudio do WhatsApp (audio/ogg; codecs=opus), a API Whisper pode rejeitar .ogg
+        // Vamos sempre usar .oga para formatos OGG/Opus
         if (format === 'opus' || format === 'ogg' || format === 'oga') {
-            extension = 'ogg';
+            extension = 'oga';
         }
         
         console.log(`📁 Usando extensão: .${extension} para arquivo temporário`);
