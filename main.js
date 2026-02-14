@@ -91,14 +91,44 @@ function saveConfig(data) {
   return writeJSON(configPath, merged);
 }
 
+// Função centralizada para validar configurações
+function validateConfig(config) {
+    const errors = [];
+    
+    // Validar campos obrigatórios básicos
+    if (!config.restaurantAddress || config.restaurantAddress.trim() === '') {
+        errors.push('Endereço do restaurante é obrigatório');
+    }
+    
+    // Validar formato do telefone do admin (se fornecido)
+    if (config.adminNumber && config.adminNumber.trim() !== '') {
+        const phoneRegex = /^[0-9]{10,15}$/;
+        const cleanPhone = config.adminNumber.replace(/\D/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+            errors.push('Número do administrador deve conter apenas dígitos (10-15 caracteres)');
+        }
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
 // IPC Handlers
 ipcMain.handle('load-config', async () => {
   return loadConfig();
 });
 
 ipcMain.handle('save-config', async (event, config) => {
+  // Validar configuração antes de salvar
+  const validation = validateConfig(config);
+  if (!validation.isValid) {
+    return { success: false, message: `Erro de validação: ${validation.errors.join(', ')}` };
+  }
+  
   const success = saveConfig(config);
-  return success ? 'Configurações salvas!' : 'Erro ao salvar configurações.';
+  return success ? { success: true, message: 'Configurações salvas!' } : { success: false, message: 'Erro ao salvar configurações.' };
 });
 
 ipcMain.handle('get-fleet-status', async () => {

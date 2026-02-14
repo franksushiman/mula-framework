@@ -914,12 +914,32 @@ window.exportGoldenRules = function() {
     window.showToast('Regras exportadas com sucesso!', 'success');
 };
 
+// Função centralizada para gerenciar o estado de pausa da loja
 window.togglePause = function() {
-    const btn = document.getElementById('btn-pause');
-    const dashboardBtn = document.getElementById('btn-pause-dashboard');
+    // Atualizar o estado
     window.config.botPaused = !window.config.botPaused;
     
+    // Atualizar a interface
+    window.updatePauseUI();
+    
+    // Mostrar notificação
+    const message = window.config.botPaused ? 'Loja pausada' : 'Loja retomada';
+    const type = window.config.botPaused ? 'error' : 'success';
+    window.showToast(message, type);
+    
+    // Persistir o estado
+    window.electronAPI.saveConfig(window.config).then(result => {
+        console.log('Estado de pausa salvo:', result);
+    });
+};
+
+// Função para atualizar a interface baseada no estado de pausa
+window.updatePauseUI = function() {
+    const btn = document.getElementById('btn-pause');
+    const dashboardBtn = document.getElementById('btn-pause-dashboard');
+    
     if (window.config.botPaused) {
+        // Estado pausado
         if (btn) {
             btn.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
             btn.className = 'btn btn-success';
@@ -928,8 +948,8 @@ window.togglePause = function() {
             dashboardBtn.classList.add('paused');
             dashboardBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
         }
-        window.showToast('Loja pausada', 'error');
     } else {
+        // Estado ativo
         if (btn) {
             btn.innerHTML = '<i class="fas fa-pause"></i> Pausar Loja';
             btn.className = 'btn btn-secondary';
@@ -938,12 +958,7 @@ window.togglePause = function() {
             dashboardBtn.classList.remove('paused');
             dashboardBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
         }
-        window.showToast('Loja retomada', 'success');
     }
-    // Salvar configuração
-    window.electronAPI.saveConfig(window.config).then(result => {
-        console.log('Configuração salva após pausa:', result);
-    });
 };
 
 window.initMap = function() {
