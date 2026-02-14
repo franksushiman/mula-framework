@@ -1760,6 +1760,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Iniciando aplicativo...');
         
+        // Interceptar cliques em links externos para abrir no navegador do sistema
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a[href^="http"]');
+            if (link && link.getAttribute('href').startsWith('http')) {
+                e.preventDefault();
+                e.stopPropagation();
+                window.openExternalLink(link.getAttribute('href'));
+                return false;
+            }
+        });
+        
         // Configurar navegação
         const navItems = document.querySelectorAll('.nav-item');
         if (navItems.length === 0) {
@@ -1942,6 +1953,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             errorMsg.textContent = error.message;
             errorDiv.style.display = 'block';
         }
-        window.showToast('Erro ao inicializar: ' + error.message, 'error');
+        window.showErrorWithInstruction(
+            'Erro ao inicializar o aplicativo.',
+            'Verifique sua conexão e reinicie o aplicativo.'
+        );
     }
 });
