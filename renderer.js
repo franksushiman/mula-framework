@@ -5,6 +5,26 @@ window.pendingOrders = [];
 window.currentDrawMode = null;
 window.currentShape = null;
 
+// Função de compatibilidade para renderT (definida antes de qualquer uso)
+window.renderT = function() {
+    // Esta função não é mais usada no novo sistema de cardápio
+    // Mantida apenas para compatibilidade com código existente
+    console.log('renderT chamada (função de compatibilidade)');
+    // Atualizar contador do cardápio se necessário
+    const menuTotalItems = document.getElementById('menu-total-items');
+    if (menuTotalItems) {
+        let total = 0;
+        if (window.config.menuData && window.config.menuData.categories) {
+            window.config.menuData.categories.forEach(category => {
+                if (category.products) {
+                    total += category.products.length;
+                }
+            });
+        }
+        menuTotalItems.textContent = total;
+    }
+};
+
 // Funções obrigatórias
 window.renderFleet = function() {
     // Renderiza a frota no novo formato
@@ -826,6 +846,26 @@ window.renderAddonGroupsForProduct = function(selectedGroups) {
     `).join('');
 };
 
+// Função de compatibilidade para renderT (cardápio antigo)
+window.renderT = function() {
+    // Esta função não é mais usada no novo sistema de cardápio
+    // Mantida apenas para compatibilidade com código existente
+    console.log('renderT chamada (função de compatibilidade)');
+    // Atualizar contador do cardápio se necessário
+    const menuTotalItems = document.getElementById('menu-total-items');
+    if (menuTotalItems) {
+        let total = 0;
+        if (window.config.menuData && window.config.menuData.categories) {
+            window.config.menuData.categories.forEach(category => {
+                if (category.products) {
+                    total += category.products.length;
+                }
+            });
+        }
+        menuTotalItems.textContent = total;
+    }
+};
+
 window.updM = function(index, field, value) {
     if (!window.config.menu) window.config.menu = [];
     if (window.config.menu[index]) {
@@ -837,7 +877,8 @@ window.toggleM = function(index) {
     if (!window.config.menu) window.config.menu = [];
     if (window.config.menu[index]) {
         window.config.menu[index].paused = !window.config.menu[index].paused;
-        window.renderT();
+        // Não chamar renderT() pois não é mais necessário
+        window.showToast(`Item ${window.config.menu[index].paused ? 'pausado' : 'ativado'}!`, 'success');
     }
 };
 
@@ -845,7 +886,7 @@ window.delM = function(index) {
     if (confirm('Excluir este item do cardápio?')) {
         if (window.config.menu) {
             window.config.menu.splice(index, 1);
-            window.renderT();
+            // Não chamar renderT() pois não é mais necessário
             window.showToast('Item removido!', 'success');
         }
     }
@@ -861,7 +902,8 @@ window.addM = function() {
         printer: 'Cozinha',
         paused: false
     });
-    window.renderT();
+    // Não chamar renderT() pois não é mais necessário
+    window.showToast('Item adicionado!', 'success');
 };
 
 window.saveM = function() {
@@ -879,7 +921,7 @@ window.aiM = function() {
     window.electronAPI.aiParseMenu(text).then(items => {
         if (!window.config.menu) window.config.menu = [];
         window.config.menu.push(...items);
-        window.renderT();
+        // Não chamar renderT() pois não é mais necessário
         window.showToast('Cardápio processado com IA!', 'success');
     });
 };
@@ -1045,7 +1087,8 @@ window.nav = function(panelId) {
     if (panelId === 'fleet-panel') {
         window.renderFleet();
     } else if (panelId === 'menu-panel') {
-        window.renderT();
+        // Usar initMenu() em vez de renderT() para o novo sistema de cardápio
+        window.initMenu();
     } else if (panelId === 'home-panel') {
         window.renderDashboardStats();
     }
@@ -1967,7 +2010,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Inicializar componentes
         window.renderFleet();
-        window.renderT();
+        // Não chamar renderT() aqui - o novo sistema de cardápio usa initMenu()
         window.loadPrinters();
         window.initMap();
         window.updateDashboard();
