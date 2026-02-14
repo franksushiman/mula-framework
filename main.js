@@ -491,33 +491,8 @@ function initializeWhatsAppService() {
             });
         }
         
-        // Configurar listener para QR Code
-        whatsappService.client.on('qr', (qr) => {
-            console.log('QR Code recebido, convertendo para imagem...');
-            QRCode.toDataURL(qr, (err, url) => {
-                if (err) {
-                    console.error('Erro ao converter QR Code:', err);
-                    return;
-                }
-                currentQrCode = url;
-                console.log('QR Code convertido para imagem');
-                
-                // Enviar para todas as janelas
-                BrowserWindow.getAllWindows().forEach(win => {
-                    win.webContents.send('whatsapp-qr-updated', { qrImage: url });
-                });
-            });
-        });
-        
-        // Configurar outros listeners importantes
-        whatsappService.client.on('ready', () => {
-            console.log('✅ WhatsApp pronto via initializeWhatsAppService');
-        });
-        
-        whatsappService.client.on('disconnected', (reason) => {
-            console.log(`❌ WhatsApp desconectado: ${reason}`);
-            currentQrCode = null;
-        });
+        // NÃO configurar listeners aqui, pois já estão configurados no whatsapp.js
+        // Apenas usar o serviço existente
         
         return whatsappService;
     } catch (error) {

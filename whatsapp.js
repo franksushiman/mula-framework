@@ -1,5 +1,6 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 
 // Inicializa o cliente do WhatsApp
 const client = new Client({
@@ -20,6 +21,9 @@ const client = new Client({
     }
 });
 
+// Variável para armazenar o QR Code atual
+let currentQrCode = null;
+
 // Variável para armazenar o status da conexão
 let whatsappStatus = {
     connected: false,
@@ -38,27 +42,11 @@ client.on('qr', (qr) => {
     // mainWindow.webContents.send('whatsapp-qr', qr);
 });
 
-// Evento: Cliente pronto
-client.on('ready', () => {
-    console.log('✅ WhatsApp está pronto!');
-    whatsappStatus.connected = true;
-    whatsappStatus.readyAt = new Date();
-    
-    // Obter informações do número conectado
-    client.getState().then(state => {
-        console.log(`Estado: ${state}`);
-    });
-    
-    client.info.then(info => {
-        whatsappStatus.phone = info.wid.user;
-        console.log(`📱 Conectado como: ${whatsappStatus.phone}`);
-    });
-});
+// Evento: Cliente pronto (configurado apenas uma vez)
+// Este listener é configurado em setupClientListeners, não aqui
 
-// Evento: Cliente autenticado
-client.on('authenticated', () => {
-    console.log('🔐 WhatsApp autenticado!');
-});
+// Evento: Cliente autenticado (configurado apenas uma vez)
+// Este listener é configurado em setupClientListeners, não aqui
 
 // Evento: Desconectado
 client.on('disconnected', (reason) => {
