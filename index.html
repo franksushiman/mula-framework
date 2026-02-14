@@ -2521,10 +2521,7 @@ Exemplo:
                 const passwordFields = [
                     'k-goo',
                     'k-ope',
-                    'k-tel',
-                    'telegram-bot-token',
-                    'bayleis-api-key',
-                    'bayleis-secret-key'
+                    'k-tel'
                 ];
                 passwordFields.forEach(id => {
                     const field = document.getElementById(id);
@@ -2562,15 +2559,18 @@ Exemplo:
             setupPasswordToggle('k-ope', 'toggle-openai-key');
             setupPasswordToggle('k-goo', 'toggle-google-maps-key');
             setupPasswordToggle('k-tel', 'toggle-telegram-bot-token');
-            setupPasswordToggle('telegram-bot-token', 'toggle-telegram-token');
-            setupPasswordToggle('bayleis-api-key', 'toggle-bayleis-api-key');
-            setupPasswordToggle('bayleis-secret-key', 'toggle-bayleis-secret-key');
 
-            // Configurar verificação de status da chave OpenAI
+            // Configurar verificação de status das chaves
             const openAIKeyInput = document.getElementById('k-ope');
+            const googleMapsKeyInput = document.getElementById('k-goo');
+            
             if (openAIKeyInput) {
                 openAIKeyInput.addEventListener('input', checkOpenAIKeyStatus);
                 openAIKeyInput.addEventListener('change', checkOpenAIKeyStatus);
+            }
+            if (googleMapsKeyInput) {
+                googleMapsKeyInput.addEventListener('input', checkGoogleMapsKeyStatus);
+                googleMapsKeyInput.addEventListener('change', checkGoogleMapsKeyStatus);
             }
 
             // Observar mudanças no config
@@ -2598,25 +2598,18 @@ Exemplo:
                 checkOpenAIKeyStatus();
                 ensurePasswordFields();
                 
-                // Verificar se há uma chave OpenAI já configurada
-                if (window.config && window.config.openAIKey) {
+                // Verificar se há chaves já configuradas
+                if (window.config) {
                     const openAIKeyInput = document.getElementById('k-ope');
-                    if (openAIKeyInput) {
+                    const googleMapsKeyInput = document.getElementById('k-goo');
+                    
+                    if (openAIKeyInput && window.config.openAIKey) {
                         openAIKeyInput.value = window.config.openAIKey;
                         checkOpenAIKeyStatus();
                     }
-                }
-                
-                // Carregar valores salvos para Bayleis (se existirem)
-                if (window.config) {
-                    const bayleisApiKeyInput = document.getElementById('bayleis-api-key');
-                    const bayleisSecretKeyInput = document.getElementById('bayleis-secret-key');
-                    
-                    if (bayleisApiKeyInput && window.config.bayleisApiKey) {
-                        bayleisApiKeyInput.value = window.config.bayleisApiKey;
-                    }
-                    if (bayleisSecretKeyInput && window.config.bayleisSecretKey) {
-                        bayleisSecretKeyInput.value = window.config.bayleisSecretKey;
+                    if (googleMapsKeyInput && window.config.googleMapsKey) {
+                        googleMapsKeyInput.value = window.config.googleMapsKey;
+                        checkGoogleMapsKeyStatus();
                     }
                 }
             }, 500);

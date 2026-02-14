@@ -1638,6 +1638,30 @@ window.checkOpenAIKeyStatus = function() {
     }
 };
 
+// Função para verificar status da chave Google Maps
+window.checkGoogleMapsKeyStatus = function() {
+    const googleMapsKeyInput = document.getElementById('k-goo');
+    const statusIndicator = document.getElementById('google-maps-key-status');
+    
+    if (!googleMapsKeyInput || !statusIndicator) return;
+    
+    const key = googleMapsKeyInput.value.trim();
+    
+    if (key.length === 0) {
+        statusIndicator.innerHTML = '<i class="fas fa-times-circle" style="color: var(--vermelho-sobrio);"></i> Não configurada';
+        statusIndicator.title = 'Chave Google Maps não configurada';
+    } else if (key.length < 20) {
+        statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
+        statusIndicator.title = 'Chave Google Maps parece muito curta';
+    } else if (key.startsWith('AIza')) {
+        statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
+        statusIndicator.title = 'Chave Google Maps configurada e válida';
+    } else {
+        statusIndicator.innerHTML = '<i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Desconhecida';
+        statusIndicator.title = 'Formato de chave Google Maps não reconhecido';
+    }
+};
+
 // Função para testar a chave Google Maps
 window.testGoogleMapsKey = function() {
     const googleMapsKeyInput = document.getElementById('k-goo');
