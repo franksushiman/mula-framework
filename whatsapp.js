@@ -439,43 +439,9 @@ function setupClientListeners() {
                                     });
                                 });
                                 
-                                // Processar o áudio em segundo plano usando ipcRenderer.invoke
-                                // Note: ipcMain.handle não pode ser chamado diretamente aqui
-                                // Em vez disso, enviar um evento para o main process
-                                setTimeout(() => {
-                                    try {
-                                        // Enviar evento para processar o áudio
-                                        const { ipcRenderer } = require('electron');
-                                        
-                                        // Usar ipcRenderer.invoke para chamar o handler
-                                        ipcRenderer.invoke('whatsapp-process-audio-message', 
-                                            { messageId: msg.id.id, audioData, mimeType })
-                                        .then(result => {
-                                            console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
-                                            
-                                            // Se for um pedido, notificar o sistema
-                                            if (result.success && result.analysis && result.analysis.intent === 'pedido') {
-                                                console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
-                                                
-                                                // Notificar o frontend sobre o pedido detectado
-                                                BrowserWindow.getAllWindows().forEach(win => {
-                                                    win.webContents.send('whatsapp-order-detected', {
-                                                        from: msg.from,
-                                                        messageId: msg.id.id,
-                                                        analysis: result.analysis,
-                                                        transcription: result.transcription
-                                                    });
-                                                });
-                                            }
-                                        })
-                                        .catch(processError => {
-                                            console.error('Erro ao processar áudio em segundo plano:', processError);
-                                        });
-                                        
-                                    } catch (processError) {
-                                        console.error('Erro ao processar áudio em segundo plano:', processError);
-                                    }
-                                }, 1000);
+                                // Processar o áudio em segundo plano - desabilitado temporariamente
+                                // para evitar erros de handler duplicado
+                                console.log('Áudio recebido, processamento desabilitado temporariamente');
                                 
                             } catch (ipcError) {
                                 console.error('Erro ao enviar áudio para processamento IPC:', ipcError);
