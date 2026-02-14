@@ -213,10 +213,6 @@ async function transcreverAudio(audioBuffer, mimeType) {
         
         console.log(`🎤 Transcrevendo áudio (${audioBuffer.length} bytes, ${mimeType})...`);
         
-        // Converter buffer para formato adequado para a API
-        // A API Whisper espera um arquivo de áudio em formato compatível
-        // Vamos criar um FormData virtual usando o buffer
-        
         // Para a API OpenAI, precisamos enviar o áudio como um arquivo
         // Vamos usar a API diretamente com o buffer
         const fs = require('fs');
