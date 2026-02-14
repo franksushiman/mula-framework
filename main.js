@@ -584,6 +584,202 @@ ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
   }
 });
 
+// Handler para processar áudio com OpenAI (transcrição + análise semântica)
+ipcMain.handle('process-audio', async (event, { audioData, mimeType }) => {
+  try {
+    const config = loadConfig();
+    const openAIKey = config.openAIKey || config.openaiKey;
+    
+    if (!openAIKey) {
+      throw new Error('Chave OpenAI não configurada. Configure na aba de Configurações.');
+    }
+    
+    console.log('Processando áudio com OpenAI...');
+    
+    // 1. Primeiro, transcrever o áudio usando Whisper
+    const transcription = await transcribeAudioWithWhisper(openAIKey, audioData, mimeType);
+    
+    // 2. Analisar semanticamente a transcrição usando GPT
+    const semanticAnalysis = await analyzeTranscriptionWithGPT(openAIKey, transcription);
+    
+    return {
+      success: true,
+      transcription: transcription,
+      analysis: semanticAnalysis
+    };
+    
+  } catch (error) {
+    console.error('Erro ao processar áudio:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      note: 'Verifique se a chave OpenAI está configurada e tem créditos suficientes.'
+    };
+  }
+});
+
+// Função para transcrever áudio usando Whisper API
+async function transcribeAudioWithWhisper(apiKey, audioData, mimeType) {
+  try {
+    // Converter base64 para buffer se necessário
+    let audioBuffer;
+    if (typeof audioData === 'string' && audioData.startsWith('data:')) {
+      // Remover prefixo data:audio/ogg;base64,
+      const base64Data = audioData.split(',')[1];
+      audioBuffer = Buffer.from(base64Data, 'base64');
+    } else if (typeof audioData === 'string') {
+      audioBuffer = Buffer.from(audioData, 'base64');
+    } else {
+      audioBuffer = audioData;
+    }
+    
+    // Criar FormData para enviar para a API
+    const formData = new FormData();
+    const blob = new Blob([audioBuffer], { type: mimeType || 'audio/ogg' });
+    formData.append('file', blob, 'audio.ogg');
+    formData.append('model', 'whisper-1');
+    formData.append('response_format', 'json');
+    
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Erro Whisper API: ${errorData.error?.message || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.text;
+    
+  } catch (error) {
+    console.error('Erro na transcrição Whisper:', error);
+    throw error;
+  }
+}
+
+// Função para analisar semanticamente a transcrição usando GPT
+async function analyzeTranscriptionWithGPT(apiKey, transcription) {
+  try {
+    const systemPrompt = `Você é um assistente especializado em entender pedidos de delivery de restaurante.
+Analise a transcrição de áudio e extraia:
+1. Intenção do usuário (pedido, dúvida, reclamação, elogio, endereço, etc.)
+2. Entidades relevantes (produto, sabor, tamanho, quantidade, endereço, etc.)
+3. Contexto implícito
+
+Retorne um objeto JSON com a seguinte estrutura:
+{
+  "type": "audio",
+  "transcription": "transcrição completa",
+  "intent": "intenção principal",
+  "entities": {
+    "produto": "nome do produto se mencionado",
+    "sabor": "sabor se mencionado",
+    "tamanho": "tamanho se mencionado",
+    "quantidade": "quantidade se mencionada",
+    "endereco": "endereço se mencionado",
+    "observacoes": "observações especiais"
+  },
+  "confidence": 0.0 a 1.0
+}
+
+Seja preciso e capture todas as informações relevantes para um sistema de delivery.`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Transcrição: "${transcription}"`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Erro GPT API: ${errorData.error?.message || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('Resposta da GPT vazia');
+    }
+    
+    // Extrair JSON da resposta
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const analysis = JSON.parse(jsonMatch[0]);
+      // Garantir que a transcrição original está incluída
+      analysis.transcription = transcription;
+      return analysis;
+    } else {
+      // Fallback: retornar estrutura básica
+      return {
+        type: 'audio',
+        transcription: transcription,
+        intent: 'unknown',
+        entities: {},
+        confidence: 0.5
+      };
+    }
+    
+  } catch (error) {
+    console.error('Erro na análise GPT:', error);
+    // Retornar análise básica em caso de erro
+    return {
+      type: 'audio',
+      transcription: transcription,
+      intent: 'error',
+      entities: {},
+      confidence: 0.0,
+      error: error.message
+    };
+  }
+}
+
+// Handler para processar mensagem de áudio do WhatsApp
+ipcMain.handle('whatsapp-process-audio-message', async (event, { messageId, audioData, mimeType }) => {
+  try {
+    console.log(`Processando mensagem de áudio ${messageId}...`);
+    
+    // Processar o áudio
+    const result = await ipcMain.handle('process-audio', event, { audioData, mimeType });
+    
+    // Enviar notificação para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('audio-processed', {
+        messageId,
+        result
+      });
+    });
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Erro ao processar mensagem de áudio:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handler para obter status do WhatsApp
 ipcMain.handle('whatsapp-get-status', async () => {
   try {

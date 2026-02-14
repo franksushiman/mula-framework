@@ -70,6 +70,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Importação de cardápio via IA
   openMenuImport: () => ipcRenderer.invoke('open-menu-import'),
   
+  // Processamento de áudio
+  processAudio: (audioData, mimeType) => ipcRenderer.invoke('process-audio', { audioData, mimeType }),
+  processWhatsAppAudioMessage: (messageId, audioData, mimeType) => 
+    ipcRenderer.invoke('whatsapp-process-audio-message', { messageId, audioData, mimeType }),
+  
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
@@ -78,6 +83,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onConfigUpdated: (callback) => ipcRenderer.on('config-updated', callback),
   onTelegramLocation: (callback) => ipcRenderer.on('telegram-location', callback),
   onWhatsappQrUpdated: (callback) => ipcRenderer.on('whatsapp-qr-updated', callback),
+  onWhatsappAudioReceived: (callback) => ipcRenderer.on('whatsapp-audio-received', callback),
+  onAudioProcessed: (callback) => ipcRenderer.on('audio-processed', callback),
+  onWhatsappOrderDetected: (callback) => ipcRenderer.on('whatsapp-order-detected', callback),
   
   // Envio de eventos para o main
   notifyMotoboyApproved: (data) => ipcRenderer.send('notify-motoboy-approved', data),
