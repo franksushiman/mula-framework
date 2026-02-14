@@ -204,8 +204,13 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
 }
 
 // Função para transcrever áudio usando Whisper API
-async function transcreverAudio(audioBuffer, mimeType) {
+async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
     try {
+        // Se uma chave foi fornecida, configurar a OpenAI com ela
+        if (apiKey && apiKey.trim() !== '' && apiKey.startsWith('sk-')) {
+            configureOpenAI(apiKey);
+        }
+        
         // Verificar se a OpenAI está configurada
         if (!openai) {
             throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
@@ -221,7 +226,7 @@ async function transcreverAudio(audioBuffer, mimeType) {
         
         // Criar arquivo temporário
         const tempDir = os.tmpdir();
-        const tempFilePath = path.join(tempDir, `audio_${Date.now()}.ogg`);
+        const tempFilePath = path.join(tempDir, `audio_${Date.now()}.${mimeType.split('/')[1] || 'ogg'}`);
         
         // Escrever buffer no arquivo
         fs.writeFileSync(tempFilePath, audioBuffer);
@@ -235,16 +240,37 @@ async function transcreverAudio(audioBuffer, mimeType) {
                 response_format: "text"
             });
             
-            console.log(`✅ Transcrição concluída: ${transcription.text?.substring(0, 100)}...`);
+            // Log da resposta bruta para debug
+            console.log('📄 Resposta bruta da API Whisper:', JSON.stringify(transcription));
+            
+            // Extrair texto da transcrição
+            let text = '';
+            if (typeof transcription === 'string') {
+                text = transcription;
+            } else if (transcription && transcription.text) {
+                text = transcription.text;
+            } else if (transcription && transcription.data && transcription.data.text) {
+                text = transcription.data.text;
+            } else {
+                console.warn('⚠️  Estrutura inesperada da resposta:', transcription);
+                text = '[Erro na transcrição - formato desconhecido]';
+            }
+            
+            if (!text || text.trim() === '') {
+                text = '[Transcrição vazia]';
+            }
+            
+            console.log(`✅ Transcrição concluída: ${text.substring(0, 100)}...`);
             
             // Limpar arquivo temporário
             fs.unlinkSync(tempFilePath);
             
-            return transcription.text;
+            return text;
             
         } catch (transcriptionError) {
             // Limpar arquivo temporário em caso de erro
-            try { fs.unlinkSync(tempFilePath); } catch {}
+            try { fs.unlinkSync(tempFilePath); } catch (e) {}
+            console.error('❌ Erro na chamada Whisper API:', transcriptionError.message);
             throw transcriptionError;
         }
         
