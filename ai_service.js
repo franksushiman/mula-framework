@@ -232,6 +232,11 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
             throw new Error('Tipo MIME inválido fornecido para transcrição de áudio');
         }
         
+        // Verificar se o mimeType é válido
+        if (!mimeType || typeof mimeType !== 'string') {
+            throw new Error('Tipo MIME inválido fornecido para transcrição de áudio');
+        }
+        
         // Criar arquivo temporário
         const tempDir = os.tmpdir();
         // Extrair o formato do mimeType, removendo parâmetros como '; codecs=opus'
