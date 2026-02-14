@@ -454,22 +454,142 @@ ipcMain.handle('get-telegram-updates', async (event, botToken) => {
   }
 });
 
-// Handler para testar conexão Bayleis (simulação)
+// Handler para testar conexão Bayleis (simulação mais realista)
 ipcMain.handle('test-bayleis-connection', async (event, { apiKey, secretKey }) => {
   try {
-    // Simulação de conexão com Bayleis
-    console.log('Testando conexão Bayleis com API Key:', apiKey?.substring(0, 10) + '...');
+    console.log('Testando conexão Bayleis...');
     
-    // Simular uma resposta bem-sucedida
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Validação básica das chaves
+    if (!apiKey || !secretKey) {
+      return {
+        success: false,
+        connected: false,
+        message: 'API Key e Secret Key são obrigatórias'
+      };
+    }
+    
+    // Simular uma resposta da API Bayleis
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Verificar formato das chaves (simulação)
+    const isValidApiKey = apiKey.startsWith('bay_') || apiKey.startsWith('live_') || apiKey.startsWith('test_');
+    const isValidSecretKey = secretKey.length >= 32;
+    
+    if (!isValidApiKey || !isValidSecretKey) {
+      return {
+        success: false,
+        connected: false,
+        message: 'Chaves inválidas. Formato esperado: API Key começa com bay_, live_ ou test_'
+      };
+    }
+    
+    // Simular dados da conta
+    const accountTypes = ['PJ', 'MEI', 'PF'];
+    const randomAccount = accountTypes[Math.floor(Math.random() * accountTypes.length)];
     
     return {
       success: true,
       connected: true,
-      message: 'Conexão com Bayleis estabelecida'
+      message: 'Conexão com Bayleis estabelecida',
+      account: {
+        type: randomAccount,
+        name: 'Restaurante Ceia',
+        balance: Math.random() * 1000,
+        status: 'active',
+        canReceivePayments: true
+      }
     };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error.message,
+      message: 'Erro na conexão com Bayleis'
+    };
+  }
+});
+
+// Handler para criar QR Code de pagamento Bayleis
+ipcMain.handle('create-bayleis-payment', async (event, { apiKey, secretKey, amount, description }) => {
+  try {
+    console.log(`Criando pagamento Bayleis: R$ ${amount} - ${description}`);
+    
+    // Validação básica
+    if (!apiKey || !secretKey) {
+      return { 
+        success: false, 
+        error: 'Chaves de API não fornecidas' 
+      };
+    }
+    
+    if (!amount || amount <= 0) {
+      return { 
+        success: false, 
+        error: 'Valor inválido' 
+      };
+    }
+    
+    // Simular processamento
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // Gerar ID de pagamento
+    const paymentId = `bay_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    
+    // Gerar QR Code PIX real (simulação)
+    const pixKey = `ceia+${paymentId}@bayleis.com.br`;
+    const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}520400005303986540${amount.toFixed(2)}5802BR5900CEIA DELIVERY6008SAO PAULO62070503***6304`;
+    
+    // Gerar QR Code visual
+    const qrCodeUrl = await QRCode.toDataURL(pixPayload);
+    
+    return {
+      success: true,
+      paymentId,
+      qrCodeUrl,
+      pixPayload,
+      pixKey,
+      paymentUrl: `https://bayleis.com/pay/${paymentId}`,
+      expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutos
+      amount,
+      status: 'pending'
+    };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+});
+
+// Handler para verificar status de pagamento Bayleis
+ipcMain.handle('check-bayleis-payment', async (event, { apiKey, secretKey, paymentId }) => {
+  try {
+    console.log(`Verificando pagamento Bayleis: ${paymentId}`);
+    
+    // Simular verificação
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    // Status aleatórios (simulação)
+    const statuses = [
+      { status: 'pending', message: 'Aguardando pagamento' },
+      { status: 'processing', message: 'Processando' },
+      { status: 'completed', message: 'Pagamento confirmado' },
+      { status: 'expired', message: 'QR Code expirado' }
+    ];
+    
+    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+    
+    return {
+      success: true,
+      paymentId,
+      status: randomStatus.status,
+      message: randomStatus.message,
+      checkedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.message 
+    };
   }
 });
 

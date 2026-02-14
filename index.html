@@ -1676,34 +1676,43 @@
                             </div>
                         </div>
                         
-                        <!-- WhatsApp via Bayleis -->
+                        <!-- Bayleis (Pagamentos) -->
                         <div style="background: var(--cinza-fundo); padding: 15px; border-radius: 8px;">
                             <h4 style="color: var(--texto-principal); margin-bottom: 10px;">
-                                <i class="fab fa-whatsapp"></i> WhatsApp (via Bayleis)
+                                <i class="fas fa-credit-card"></i> Bayleis (Pagamentos PIX)
                             </h4>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                 <div>
-                                    <label>Bayleis API Key</label>
-                                    <input type="text" id="bayleis-api-key" class="form-input" placeholder="Chave da API Bayleis">
+                                    <label>API Key Bayleis</label>
+                                    <input type="text" id="bayleis-api-key" class="form-input" placeholder="bay_... ou live_...">
+                                    <small style="color: var(--texto-secundario); font-size: 12px;">
+                                        Começa com bay_, live_ ou test_
+                                    </small>
                                 </div>
                                 <div>
-                                    <label>Bayleis Secret Key</label>
-                                    <input type="text" id="bayleis-secret-key" class="form-input" placeholder="Chave secreta Bayleis">
+                                    <label>Secret Key Bayleis</label>
+                                    <input type="text" id="bayleis-secret-key" class="form-input" placeholder="Chave secreta">
+                                    <small style="color: var(--texto-secundario); font-size: 12px;">
+                                        Mínimo 32 caracteres
+                                    </small>
                                 </div>
                                 <div style="grid-column: span 2;">
-                                    <label>Número do WhatsApp</label>
-                                    <input type="text" id="whatsapp-number" class="form-input" placeholder="+5511999999999">
+                                    <label>Chave PIX da Conta</label>
+                                    <input type="text" id="bayleis-pix-key" class="form-input" placeholder="CPF/CNPJ/Telefone/Email">
                                     <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        Número conectado ao Bayleis
+                                        Chave PIX cadastrada no Bayleis
                                     </small>
                                 </div>
                             </div>
                             <div style="margin-top: 10px;">
-                                <button class="btn btn-primary" onclick="window.testWhatsAppConnection()" style="padding: 8px 15px;">
+                                <button class="btn btn-primary" onclick="window.testBayleisConnection()" style="padding: 8px 15px;">
                                     <i class="fas fa-plug"></i> Testar Conexão
                                 </button>
-                                <button class="btn btn-success" onclick="window.getWhatsAppQR()" style="padding: 8px 15px; margin-left: 10px;">
-                                    <i class="fas fa-qrcode"></i> Obter QR Code
+                                <button class="btn btn-success" onclick="window.createBayleisPayment()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fas fa-qrcode"></i> Criar PIX
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.getWhatsAppQR()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fab fa-whatsapp"></i> WhatsApp
                                 </button>
                             </div>
                             <div id="whatsapp-status" style="margin-top: 10px; padding: 10px; background: var(--branco-quente); border-radius: 6px; display: none;">
@@ -1712,7 +1721,7 @@
                             <div id="whatsapp-qr-container" style="margin-top: 10px; text-align: center; display: none;">
                                 <img id="whatsapp-qr-image" src="" style="max-width: 200px; border: 1px solid var(--borda-quente); border-radius: 8px;">
                                 <p style="font-size: 12px; color: var(--texto-secundario); margin-top: 5px;">
-                                    Escaneie com o WhatsApp para conectar
+                                    Escaneie com seu app bancário para pagar
                                 </p>
                             </div>
                         </div>
