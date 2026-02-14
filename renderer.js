@@ -215,6 +215,7 @@ window.saveConfig = function() {
         googleMapsKey: document.getElementById('k-goo')?.value || '',
         openAIKey: document.getElementById('k-ope')?.value || '',
         telegramToken: document.getElementById('k-tel')?.value || '',
+        telegramBotName: document.getElementById('k-tel-bot')?.value || 'MulaFRotaBot',
         restaurantAddress: document.getElementById('addr')?.value || '',
         adminNumber: document.getElementById('k-adm')?.value || ''
     };
@@ -2537,6 +2538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             setValue('k-goo', window.config.googleMapsKey || '');
             setValue('k-ope', window.config.openAIKey || '');
             setValue('k-tel', window.config.telegramToken || '');
+            setValue('k-tel-bot', window.config.telegramBotName || 'MulaFRotaBot');
             setValue('addr', window.config.restaurantAddress || '');
             setValue('k-adm', window.config.adminNumber || '');
             
