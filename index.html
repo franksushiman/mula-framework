@@ -1300,6 +1300,102 @@
             margin-bottom: 15px;
             opacity: 0.3;
         }
+
+        /* Estilos para convites pendentes */
+        .invite-card {
+            background: var(--branco-quente);
+            border: 1px solid var(--borda-quente);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .invite-card:hover {
+            border-color: var(--verde-esperanca);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .invite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--borda-quente);
+        }
+
+        .invite-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--terra);
+            font-weight: 600;
+        }
+
+        .invite-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .invite-status.sent {
+            background: rgba(45,106,79,0.1);
+            color: var(--verde-esperanca);
+        }
+
+        .invite-status.pending {
+            background: rgba(180,83,9,0.1);
+            color: var(--ambar);
+        }
+
+        .invite-status.expired {
+            background: rgba(127,29,29,0.1);
+            color: var(--vermelho-sobrio);
+        }
+
+        .invite-body {
+            font-size: 13px;
+        }
+
+        .invite-info {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            color: var(--texto-secundario);
+            min-width: 80px;
+        }
+
+        .info-value {
+            color: var(--texto-principal);
+            font-weight: 500;
+        }
+
+        .invite-link {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--borda-quente);
+        }
+
+        .link-label {
+            color: var(--texto-secundario);
+            font-size: 12px;
+        }
+
+        .link-value {
+            display: block;
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--terra);
+            word-break: break-all;
+            margin-top: 4px;
+            padding: 6px;
+            background: var(--cinza-fundo);
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1496,21 +1592,27 @@
                                        class="form-input"
                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                        style="width: 100%; margin-bottom: 1rem;">
-                                <div style="display: flex; gap: 1rem; align-items: center;">
+                                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                                     <button class="btn btn-primary" onclick="window.sendFleetInvite()">
-                                        Enviar Convite
+                                        <i class="fas fa-link"></i> Convite Padrão
+                                    </button>
+                                    <button class="btn btn-success" onclick="window.sendTelegramInviteToWhatsApp()">
+                                        <i class="fab fa-telegram"></i> Enviar Convite Telegram
                                     </button>
                                     <span style="font-size: 0.875rem; color: var(--texto-secundario);">
-                                        Configure o bot do Telegram primeiro
+                                        O bot do Telegram coletará PIX, placa, CPF, etc.
                                     </span>
                                 </div>
                             </div>
                             <div id="invite-preview" class="hidden" style="margin-top: 1rem; padding: 1rem; background: var(--cinza-fundo); border-radius: 8px;">
                                 <div style="font-size: 0.875rem; color: var(--texto-secundario); margin-bottom: 0.5rem;">Link enviado:</div>
-                                <code style="font-family: monospace; font-size: 0.875rem; color: var(--terra); word-break: break-all;">https://ceia.ia.br/cadastro/abc123</code>
-                                <button class="btn btn-secondary" onclick="window.copyInviteLink()" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.75rem;">
-                                    Copiar
+                                <code class="preview-link" style="font-family: monospace; font-size: 0.875rem; color: var(--terra); word-break: break-all; display: block; margin-bottom: 0.5rem;">https://ceia.ia.br/cadastro/abc123</code>
+                                <button class="btn btn-secondary" onclick="window.copyInviteLink()" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">
+                                    <i class="fas fa-copy"></i> Copiar Link
                                 </button>
+                            </div>
+                            <div id="fleet-invites-container" style="margin-top: 1.5rem;">
+                                <!-- Convites pendentes serão carregados aqui -->
                             </div>
                         </div>
 

@@ -1287,6 +1287,7 @@ window.nav = function(panelId) {
     // Atualizar componentes específicos do painel
     if (panelId === 'fleet-panel') {
         window.renderFleet();
+        window.renderFleetInvites(); // Carregar convites pendentes
     } else if (panelId === 'menu-panel') {
         // Usar initMenu() em vez de renderT() para o novo sistema de cardápio
         window.initMenu();
@@ -1373,7 +1374,7 @@ window.copyInviteLink = function() {
     if (!linkEl) return;
     
     navigator.clipboard.writeText(linkEl.textContent);
-    window.showToast('Link copiado!', 'success');
+    window.showToast('Link copiado para a área de transferência!', 'success');
 };
 
 window.selectFleetTeam = function(team, event) {
@@ -2391,6 +2392,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         setTimeout(() => {
             window.showToast('Sistema Ceia carregado com sucesso!', 'success');
+            // Carregar convites pendentes se estiver na aba da frota
+            if (document.getElementById('fleet-panel').classList.contains('active')) {
+                window.renderFleetInvites();
+            }
         }, 1000);
         
     } catch (error) {
