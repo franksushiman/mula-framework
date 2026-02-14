@@ -608,6 +608,7 @@ ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
 });
 
 // Handler para enviar convite do Telegram via WhatsApp
+// WhatsApp é opcional: se falhar, o convite ainda é criado e o link é retornado.
 ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
   console.log(`📱 IPC send-telegram-invite-to-whatsapp chamado com phone: ${phone}`);
   try {
@@ -616,18 +617,6 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
     
     const service = getWhatsAppService();
     console.log('Serviço WhatsApp obtido');
-    
-    // Verificar se o WhatsApp está conectado
-    const status = service.getWhatsAppStatus();
-    console.log('Status WhatsApp:', status);
-    
-    if (!status.connected) {
-      console.log('WhatsApp não está conectado');
-      return { 
-        success: false, 
-        error: 'WhatsApp não está conectado. Aguarde a inicialização completa.' 
-      };
-    }
     
     // Gerar ID único para o convite
     const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -655,14 +644,33 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
                    `• Número do WhatsApp\n\n` +
                    `Assim que cadastrado, você poderá compartilhar sua localização em tempo real e ficar online para receber corridas!`;
     
-    console.log(`Enviando convite Telegram para ${phone} via WhatsApp...`);
+    // Variáveis para rastrear o envio do WhatsApp
+    let whatsappSent = false;
+    let whatsappError = null;
     
-    // Enviar via WhatsApp
-    console.log('Chamando service.sendWhatsAppMessage...');
-    const response = await service.sendWhatsAppMessage(phone, message);
-    console.log('Resposta do WhatsApp:', response);
+    // Tentar enviar via WhatsApp (opcional)
+    try {
+      // Verificar se o WhatsApp está conectado
+      const status = service.getWhatsAppStatus();
+      console.log('Status WhatsApp:', status);
+      
+      if (status.connected) {
+        console.log(`Enviando convite Telegram para ${phone} via WhatsApp...`);
+        console.log('Chamando service.sendWhatsAppMessage...');
+        const response = await service.sendWhatsAppMessage(phone, message);
+        console.log('Resposta do WhatsApp:', response);
+        whatsappSent = true;
+      } else {
+        whatsappError = 'WhatsApp não está conectado';
+        console.log('WhatsApp não conectado, pulando envio:', whatsappError);
+      }
+    } catch (whatsappErr) {
+      whatsappError = whatsappErr.message;
+      console.warn(`WhatsApp falhou (não crítico): ${whatsappError}`);
+      // Não lançar erro - continuar com o fluxo
+    }
     
-    // Salvar o convite pendente
+    // Salvar o convite pendente (sempre, independente do WhatsApp)
     if (!config.pendingMotoboys) {
       config.pendingMotoboys = [];
     }
@@ -672,16 +680,29 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
       storeId,
       telegramLink,
       sentAt: Date.now(),
-      status: 'sent'
+      status: whatsappSent ? 'sent' : 'pending_whatsapp'
     });
     saveConfig(config);
     console.log('Convite salvo no config');
     
+    // Determinar mensagem de retorno
+    let userMessage;
+    if (whatsappSent) {
+      userMessage = 'Convite enviado com sucesso via WhatsApp!';
+    } else {
+      userMessage = 'Convite criado! O link está pronto para ser compartilhado.';
+      if (whatsappError) {
+        userMessage += ` (WhatsApp não pôde enviar: ${whatsappError})`;
+      }
+    }
+    
     return { 
       success: true, 
-      message: 'Convite enviado com sucesso!',
+      message: userMessage,
       inviteId,
-      telegramLink 
+      telegramLink,
+      whatsappSent,
+      whatsappError: whatsappError || null
     };
   } catch (error) {
     console.error('Erro ao enviar convite Telegram via WhatsApp:', error);
@@ -696,6 +717,7 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
 // que podem ser associados posteriormente. Nenhum cadastro deve ser perdido.
 // Este handler usa links com carimbo para vincular o entregador à loja imediatamente.
 // Para links genéricos, use generateTelegramGenericLink(config).
+// WhatsApp é opcional: se falhar, o convite ainda é criado e o link é retornado.
 ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   console.log(`[BACKEND] Handler 'enviar-convite-entregador' chamado com telefone: ${phoneNumber}`);
   
@@ -722,14 +744,6 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
     const service = getWhatsAppService();
     const config = loadConfig();
     
-    // Verificar se o WhatsApp está conectado
-    const status = service.getWhatsAppStatus();
-    console.log(`[BACKEND] Status do WhatsApp:`, status);
-    
-    if (!status.connected) {
-      throw new Error('WhatsApp não está conectado. Aguarde a inicialização completa.');
-    }
-    
     // Gerar ID único para o convite
     const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -753,12 +767,32 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
                    `• Número do WhatsApp\n\n` +
                    `Assim que cadastrado, você poderá compartilhar sua localização em tempo real e ficar online para receber corridas!`;
     
-    console.log(`[BACKEND] Enviando mensagem via WhatsApp para ${numericPhone}...`);
+    // Variáveis para rastrear o envio do WhatsApp
+    let whatsappSent = false;
+    let whatsappError = null;
     
-    // Enviar via WhatsApp
-    await service.sendWhatsAppMessage(numericPhone, message);
+    // Tentar enviar via WhatsApp (opcional)
+    try {
+      // Verificar se o WhatsApp está conectado
+      const status = service.getWhatsAppStatus();
+      console.log(`[BACKEND] Status do WhatsApp:`, status);
+      
+      if (status.connected) {
+        console.log(`[BACKEND] Tentando enviar mensagem via WhatsApp para ${numericPhone}...`);
+        await service.sendWhatsAppMessage(numericPhone, message);
+        whatsappSent = true;
+        console.log(`[BACKEND] WhatsApp enviado com sucesso para ${numericPhone}`);
+      } else {
+        whatsappError = 'WhatsApp não está conectado';
+        console.log(`[BACKEND] WhatsApp não conectado, pulando envio: ${whatsappError}`);
+      }
+    } catch (whatsappErr) {
+      whatsappError = whatsappErr.message;
+      console.warn(`[BACKEND] WhatsApp falhou (não crítico): ${whatsappError}`);
+      // Não lançar erro - continuar com o fluxo
+    }
     
-    // Salvar o convite pendente
+    // Salvar o convite pendente (sempre, independente do WhatsApp)
     if (!config.pendingMotoboys) {
       config.pendingMotoboys = [];
     }
@@ -770,18 +804,31 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
       storeId: safeStoreId,
       telegramLink,
       sentAt: Date.now(),
-      status: 'sent'
+      status: whatsappSent ? 'sent' : 'pending_whatsapp'
     });
     saveConfig(config);
     
-    console.log(`[BACKEND] Convite enviado com sucesso para ${numericPhone}`);
+    console.log(`[BACKEND] Convite criado com sucesso para ${numericPhone}`);
+    
+    // Determinar mensagem de retorno
+    let userMessage;
+    if (whatsappSent) {
+      userMessage = 'Convite enviado com sucesso via WhatsApp!';
+    } else {
+      userMessage = 'Convite criado! O link está pronto para ser compartilhado.';
+      if (whatsappError) {
+        userMessage += ` (WhatsApp não pôde enviar: ${whatsappError})`;
+      }
+    }
     
     return { 
       success: true, 
-      message: 'Convite enviado com sucesso!',
+      message: userMessage,
       inviteId,
       telegramLink,
       phone: numericPhone,
+      whatsappSent,
+      whatsappError: whatsappError || null,
       timestamp: new Date().toISOString()
     };
     
