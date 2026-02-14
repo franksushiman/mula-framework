@@ -203,8 +203,64 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
     }
 }
 
+// Função para transcrever áudio usando Whisper API
+async function transcreverAudio(audioBuffer, mimeType) {
+    try {
+        // Verificar se a OpenAI está configurada
+        if (!openai) {
+            throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
+        }
+        
+        console.log(`🎤 Transcrevendo áudio (${audioBuffer.length} bytes, ${mimeType})...`);
+        
+        // Converter buffer para formato adequado para a API
+        // A API Whisper espera um arquivo de áudio em formato compatível
+        // Vamos criar um FormData virtual usando o buffer
+        
+        // Para a API OpenAI, precisamos enviar o áudio como um arquivo
+        // Vamos usar a API diretamente com o buffer
+        const fs = require('fs');
+        const path = require('path');
+        const os = require('os');
+        
+        // Criar arquivo temporário
+        const tempDir = os.tmpdir();
+        const tempFilePath = path.join(tempDir, `audio_${Date.now()}.ogg`);
+        
+        // Escrever buffer no arquivo
+        fs.writeFileSync(tempFilePath, audioBuffer);
+        
+        try {
+            // Transcrever usando Whisper
+            const transcription = await openai.audio.transcriptions.create({
+                file: fs.createReadStream(tempFilePath),
+                model: "whisper-1",
+                language: "pt", // Português
+                response_format: "text"
+            });
+            
+            console.log(`✅ Transcrição concluída: ${transcription.text?.substring(0, 100)}...`);
+            
+            // Limpar arquivo temporário
+            fs.unlinkSync(tempFilePath);
+            
+            return transcription.text;
+            
+        } catch (transcriptionError) {
+            // Limpar arquivo temporário em caso de erro
+            try { fs.unlinkSync(tempFilePath); } catch {}
+            throw transcriptionError;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao transcrever áudio:', error.message);
+        throw error;
+    }
+}
+
 // Exportar funções
 module.exports = {
     gerarRespostaIA,
-    configureOpenAI
+    configureOpenAI,
+    transcreverAudio
 };

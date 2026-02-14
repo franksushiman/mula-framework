@@ -58,6 +58,11 @@ client.on('disconnected', (reason) => {
 // Evento: Mensagem recebida (configurado apenas uma vez em setupClientListeners)
 // Removido para evitar duplicação
 
+// Importar módulos necessários
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
 // Importar o serviço de IA
 let aiService = null;
 try {
@@ -66,7 +71,8 @@ try {
 } catch (error) {
     console.warn('⚠️  Serviço de IA não disponível:', error.message);
     aiService = {
-        gerarRespostaIA: async () => 'Desculpe, o serviço de IA não está disponível no momento.'
+        gerarRespostaIA: async () => 'Desculpe, o serviço de IA não está disponível no momento.',
+        transcreverAudio: async () => { throw new Error('Serviço de transcrição não disponível'); }
     };
 }
 
@@ -373,7 +379,117 @@ function setupClientListeners() {
                     console.error('Erro ao processar mídia de áudio:', mediaError);
                 }
                 
-                // IMPORTANTE: Retornar aqui para não processar como texto
+                // IMPORTANTE: Processar áudio e transcrever
+                try {
+                    // Transcrever áudio usando o serviço de IA
+                    if (aiService && aiService.transcreverAudio) {
+                        console.log('🎤 Transcrevendo áudio...');
+                        
+                        // Transcrever o áudio
+                        const transcricao = await aiService.transcreverAudio(audioData, mimeType);
+                        
+                        if (transcricao && transcricao.trim()) {
+                            console.log(`📝 Transcrição: ${transcricao.substring(0, 100)}...`);
+                            
+                            // Simular "Digitando..." para parecer humano
+                            const chat = await msg.getChat();
+                            await chat.sendStateTyping();
+                            
+                            // Contexto da loja - tentar obter do config
+                            let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+                            
+                            try {
+                                // Tentar obter informações reais do config
+                                if (typeof require !== 'undefined') {
+                                    const fs = require('fs');
+                                    const path = require('path');
+                                    const { app } = require('electron');
+                                    
+                                    const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
+                                    if (fs.existsSync(configPath)) {
+                                        const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                                        
+                                        // Verificar se há informações reais configuradas
+                                        const hasRealInfo = configData.restaurantAddress || 
+                                                           (configData.menuItems && configData.menuItems.length > 0) ||
+                                                           configData.storeName;
+                                        
+                                        if (hasRealInfo) {
+                                            // Construir contexto com informações reais
+                                            let contextParts = [];
+                                            
+                                            if (configData.storeName && configData.storeName !== 'Delivery Manager') {
+                                                contextParts.push(`Estabelecimento: ${configData.storeName}`);
+                                            }
+                                            
+                                            if (configData.restaurantAddress) {
+                                                contextParts.push(`Endereço: ${configData.restaurantAddress}`);
+                                            }
+                                            
+                                            if (configData.menuItems && configData.menuItems.length > 0) {
+                                                const sampleItems = configData.menuItems.slice(0, 3).map(item => 
+                                                    `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
+                                                ).join(', ');
+                                                contextParts.push(`Cardápio: ${sampleItems}${configData.menuItems.length > 3 ? '...' : ''}`);
+                                            }
+                                            
+                                            if (contextParts.length > 0) {
+                                                contextoLoja = contextParts.join('. ');
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (configError) {
+                                console.warn('⚠️  Não foi possível ler contexto do config:', configError.message);
+                            }
+                            
+                            // Chamar a OpenAI para gerar resposta baseada na transcrição
+                            let respostaIA;
+                            if (aiService && aiService.gerarRespostaIA) {
+                                // Tentar obter a chave OpenAI do config (se disponível)
+                                let openAIKey = null;
+                                try {
+                                    // Se estivermos no contexto do Electron, podemos acessar o config
+                                    if (typeof require !== 'undefined') {
+                                        const fs = require('fs');
+                                        const path = require('path');
+                                        const { app } = require('electron');
+                                        
+                                        const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
+                                        if (fs.existsSync(configPath)) {
+                                            const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                                            openAIKey = configData.openAIKey || configData.openaiKey || null;
+                                        }
+                                    }
+                                } catch (configError) {
+                                    console.warn('⚠️  Não foi possível ler a chave OpenAI do config:', configError.message);
+                                }
+                                
+                                // Chamar a função com a chave (se encontrada)
+                                respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, openAIKey);
+                            } else {
+                                respostaIA = "Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.";
+                            }
+                            
+                            // Responder
+                            await msg.reply(respostaIA);
+                            await chat.clearState(); // Para de digitar
+                            
+                            console.log(`✅ Resposta enviada para ${msg.from}: ${respostaIA.substring(0, 50)}...`);
+                        } else {
+                            console.log('⚠️  Transcrição vazia ou inválida');
+                            await msg.reply("Olá! Recebi sua mensagem de áudio, mas não consegui entender o que foi dito. Pode repetir por texto, por favor?");
+                        }
+                    } else {
+                        console.log('⚠️  Serviço de transcrição não disponível');
+                        await msg.reply("Olá! Recebi sua mensagem de áudio, mas nosso sistema de transcrição não está disponível no momento. Pode enviar por texto?");
+                    }
+                } catch (transcriptionError) {
+                    console.error('❌ Erro ao processar transcrição:', transcriptionError);
+                    await msg.reply("Desculpe, tive um problema ao processar seu áudio. Pode enviar sua mensagem por texto?");
+                }
+                
+                // IMPORTANTE: Retornar aqui para não processar como texto novamente
                 return;
             }
             
