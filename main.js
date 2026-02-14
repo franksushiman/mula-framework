@@ -366,18 +366,57 @@ ipcMain.handle('import-backup', async (event) => {
   }
 });
 
-// Importar serviço do WhatsApp com tratamento de erro
-let whatsappService;
-try {
-    whatsappService = require('./whatsapp.js');
-} catch (error) {
-    console.error('Erro ao carregar módulo WhatsApp:', error);
-    whatsappService = {
-        sendWhatsAppMessage: () => Promise.reject(new Error('WhatsApp não disponível')),
-        getWhatsAppStatus: () => ({ connected: false, error: 'WhatsApp não inicializado' }),
-        restartWhatsApp: () => console.log('WhatsApp não disponível para reiniciar'),
-        client: { on: () => {} }
-    };
+// WhatsApp service - inicializado apenas quando necessário
+let whatsappService = null;
+let whatsappInitialized = false;
+let currentQrCode = null;
+
+// Função para inicializar o WhatsApp apenas quando necessário
+function initializeWhatsAppService() {
+    if (whatsappInitialized) return whatsappService;
+    
+    try {
+        whatsappService = require('./whatsapp.js');
+        
+        // Configurar listener para QR Code apenas quando o WhatsApp for inicializado
+        whatsappService.client.on('qr', (qr) => {
+            console.log('QR Code recebido, convertendo para imagem...');
+            QRCode.toDataURL(qr, (err, url) => {
+                if (err) {
+                    console.error('Erro ao converter QR Code:', err);
+                    return;
+                }
+                currentQrCode = url;
+                console.log('QR Code convertido para imagem');
+                
+                // Enviar para todas as janelas
+                BrowserWindow.getAllWindows().forEach(win => {
+                    win.webContents.send('whatsapp-qr-updated', { qrImage: url });
+                });
+            });
+        });
+        
+        return whatsappService;
+    } catch (error) {
+        console.error('Erro ao carregar módulo WhatsApp:', error);
+        whatsappService = {
+            sendWhatsAppMessage: () => Promise.reject(new Error('WhatsApp não disponível')),
+            getWhatsAppStatus: () => ({ connected: false, error: 'WhatsApp não inicializado' }),
+            restartWhatsApp: () => console.log('WhatsApp não disponível para reiniciar'),
+            initializeWhatsApp: () => Promise.reject(new Error('WhatsApp não disponível')),
+            isWhatsAppInitialized: () => false,
+            client: { on: () => {} }
+        };
+        return whatsappService;
+    }
+}
+
+// Função para obter o serviço do WhatsApp (inicializa se necessário)
+function getWhatsAppService() {
+    if (!whatsappService) {
+        return initializeWhatsAppService();
+    }
+    return whatsappService;
 }
 
 // Handlers para Telegram
