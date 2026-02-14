@@ -2147,7 +2147,12 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                 <div>
                                     <label>Google Maps API Key</label>
-                                    <input type="text" id="k-goo" class="form-input" placeholder="Chave do Google Maps">
+                                    <div style="position: relative; width: 100%;">
+                                        <input type="password" id="k-goo" class="form-input" placeholder="Chave do Google Maps" style="padding-right: 50px;">
+                                        <button type="button" id="toggle-google-maps-key" class="btn btn-secondary" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; font-size: 14px;" title="Mostrar chave">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label>OpenAI API Key</label>
@@ -2175,8 +2180,31 @@
                                     </div>
                                 </div>
                                 <div>
+                                    <label>Bayleis API Key</label>
+                                    <div style="position: relative; width: 100%;">
+                                        <input type="password" id="bayleis-api-key" class="form-input" placeholder="Chave da API Bayleis" style="padding-right: 50px;">
+                                        <button type="button" id="toggle-bayleis-api-key" class="btn btn-secondary" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; font-size: 14px;" title="Mostrar chave">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label>Bayleis Secret Key</label>
+                                    <div style="position: relative; width: 100%;">
+                                        <input type="password" id="bayleis-secret-key" class="form-input" placeholder="Chave Secreta Bayleis" style="padding-right: 50px;">
+                                        <button type="button" id="toggle-bayleis-secret-key" class="btn btn-secondary" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; font-size: 14px;" title="Mostrar chave">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
                                     <label>Telegram Bot Token</label>
-                                    <input type="text" id="k-tel" class="form-input" placeholder="Token do Telegram Bot">
+                                    <div style="position: relative; width: 100%;">
+                                        <input type="password" id="k-tel" class="form-input" placeholder="Token do Telegram Bot" style="padding-right: 50px;">
+                                        <button type="button" id="toggle-telegram-bot-token" class="btn btn-secondary" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; font-size: 14px;" title="Mostrar token">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label>Telegram Bot Username</label>
@@ -2201,24 +2229,18 @@
                             <h4 style="color: var(--texto-principal); margin-bottom: 15px; display: flex; align-items: center; gap: 0.5rem;">
                                 <i class="fab fa-telegram"></i> Telegram
                             </h4>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                                 <div>
                                     <label>Bot Token (lojista)</label>
-                                    <input type="text" id="telegram-bot-token" class="form-input" placeholder="Token do seu bot">
+                                    <div style="position: relative; width: 100%;">
+                                        <input type="password" id="telegram-bot-token" class="form-input" placeholder="Token do seu bot" style="padding-right: 50px;">
+                                        <button type="button" id="toggle-telegram-token" class="btn btn-secondary" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; font-size: 14px;" title="Mostrar token">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
                                     <small style="color: var(--texto-secundario); font-size: 12px;">
                                         Crie um bot com @BotFather
                                     </small>
-                                </div>
-                                <div>
-                                    <label>Chat ID do Admin</label>
-                                    <input type="text" id="telegram-chat-id" class="form-input" placeholder="Seu ID de chat">
-                                    <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        Use @userinfobot para descobrir
-                                    </small>
-                                </div>
-                                <div style="grid-column: span 2;">
-                                    <label>Mensagem de Teste</label>
-                                    <textarea id="telegram-test-message" class="form-input" rows="2" placeholder="Digite uma mensagem para testar">Teste do sistema Ceia Delivery</textarea>
                                 </div>
                             </div>
                             <div style="margin-top: 15px; display: flex; gap: 10px;">
@@ -2507,21 +2529,23 @@ Exemplo:
                 }
             }
 
-            // Função para mostrar/ocultar chave OpenAI
-            function toggleOpenAIKeyVisibility() {
-                const openAIKeyInput = document.getElementById('k-ope');
-                const toggleButton = document.getElementById('toggle-openai-key');
+            // Função genérica para mostrar/ocultar campos de senha
+            function setupPasswordToggle(inputId, buttonId) {
+                const input = document.getElementById(inputId);
+                const button = document.getElementById(buttonId);
                 
-                if (openAIKeyInput && toggleButton) {
-                    if (openAIKeyInput.type === 'password') {
-                        openAIKeyInput.type = 'text';
-                        toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                        toggleButton.title = 'Ocultar chave';
-                    } else {
-                        openAIKeyInput.type = 'password';
-                        toggleButton.innerHTML = '<i class="fas fa-eye"></i>';
-                        toggleButton.title = 'Mostrar chave';
-                    }
+                if (input && button) {
+                    button.addEventListener('click', function() {
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                            button.title = 'Ocultar';
+                        } else {
+                            input.type = 'password';
+                            button.innerHTML = '<i class="fas fa-eye"></i>';
+                            button.title = 'Mostrar';
+                        }
+                    });
                 }
             }
 
@@ -2549,11 +2573,13 @@ Exemplo:
                 }
             }
 
-            // Configurar botão de mostrar/ocultar chave OpenAI
-            const toggleButton = document.getElementById('toggle-openai-key');
-            if (toggleButton) {
-                toggleButton.addEventListener('click', toggleOpenAIKeyVisibility);
-            }
+            // Configurar todos os toggles de senha
+            setupPasswordToggle('k-ope', 'toggle-openai-key');
+            setupPasswordToggle('k-goo', 'toggle-google-maps-key');
+            setupPasswordToggle('k-tel', 'toggle-telegram-bot-token');
+            setupPasswordToggle('telegram-bot-token', 'toggle-telegram-token');
+            setupPasswordToggle('bayleis-api-key', 'toggle-bayleis-api-key');
+            setupPasswordToggle('bayleis-secret-key', 'toggle-bayleis-secret-key');
 
             // Configurar verificação de status da chave OpenAI
             const openAIKeyInput = document.getElementById('k-ope');
@@ -2592,6 +2618,19 @@ Exemplo:
                     if (openAIKeyInput) {
                         openAIKeyInput.value = window.config.openAIKey;
                         checkOpenAIKeyStatus();
+                    }
+                }
+                
+                // Carregar valores salvos para Bayleis (se existirem)
+                if (window.config) {
+                    const bayleisApiKeyInput = document.getElementById('bayleis-api-key');
+                    const bayleisSecretKeyInput = document.getElementById('bayleis-secret-key');
+                    
+                    if (bayleisApiKeyInput && window.config.bayleisApiKey) {
+                        bayleisApiKeyInput.value = window.config.bayleisApiKey;
+                    }
+                    if (bayleisSecretKeyInput && window.config.bayleisSecretKey) {
+                        bayleisSecretKeyInput.value = window.config.bayleisSecretKey;
                     }
                 }
             }, 500);

@@ -60,7 +60,9 @@ window.saveConfig = function() {
         openAIKey: document.getElementById('k-ope')?.value || '',
         telegramToken: document.getElementById('k-tel')?.value || '',
         restaurantAddress: document.getElementById('addr')?.value || '',
-        adminNumber: document.getElementById('k-adm')?.value || ''
+        adminNumber: document.getElementById('k-adm')?.value || '',
+        bayleisApiKey: document.getElementById('bayleis-api-key')?.value || '',
+        bayleisSecretKey: document.getElementById('bayleis-secret-key')?.value || ''
     };
     
     // Atualizar window.config com os valores coletados
@@ -1569,23 +1571,25 @@ window.renderFleetNew = function() {
 // Funções para Telegram - Removida duplicação, usando window.saveConfig
 
 window.testTelegram = function() {
-    const message = document.getElementById('telegram-test-message').value || 'Teste do sistema Ceia Delivery';
     const botToken = document.getElementById('telegram-bot-token').value;
     const chatId = document.getElementById('telegram-chat-id').value;
     
-    if (!botToken || !chatId) {
-        window.showToast('Preencha o token e o chat ID primeiro!', 'error');
+    if (!botToken) {
+        window.showToast('Preencha o token do bot primeiro!', 'error');
         return;
     }
     
+    // Usar uma mensagem padrão
+    const message = '✅ Teste do sistema Ceia Delivery - Configuração de Telegram funcionando!';
+    
     window.electronAPI.sendTelegramMessage({ botToken, chatId, message }).then(result => {
         if (result.success) {
-            window.showToast('Mensagem enviada com sucesso!', 'success');
+            window.showToast('Mensagem de teste enviada com sucesso!', 'success');
             const statusDiv = document.getElementById('telegram-status');
             const statusText = document.getElementById('telegram-status-text');
             if (statusDiv && statusText) {
                 statusDiv.style.display = 'block';
-                statusText.textContent = `Mensagem enviada em ${new Date().toLocaleTimeString()}`;
+                statusText.textContent = `Mensagem de teste enviada em ${new Date().toLocaleTimeString()}`;
             }
         } else {
             window.showToast('Erro ao enviar mensagem: ' + result.error, 'error');
