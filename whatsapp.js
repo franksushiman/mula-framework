@@ -200,49 +200,69 @@ function restartWhatsApp() {
 
 // Função para configurar listeners do cliente
 function setupClientListeners() {
-    // Remover listeners antigos primeiro
-    client.removeAllListeners();
-    
-    // Configurar os listeners padrão
-    client.on('qr', (qr) => {
-        console.log('\n=== QR CODE PARA CONEXÃO DO WHATSAPP ===');
-        qrcode.generate(qr, { small: true });
-        console.log('Por favor, escaneie o QR Code acima com o WhatsApp da loja.');
-        console.log('No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho\n');
-    });
-    
-    client.on('ready', () => {
-        console.log('✅ WhatsApp está pronto!');
-        whatsappStatus.connected = true;
-        whatsappStatus.readyAt = new Date();
+    try {
+        // Remover listeners antigos primeiro
+        client.removeAllListeners();
         
-        // Obter informações do número conectado
-        client.getState().then(state => {
-            console.log(`Estado: ${state}`);
+        // Configurar os listeners padrão
+        client.on('qr', (qr) => {
+            console.log('\n=== QR CODE PARA CONEXÃO DO WHATSAPP ===');
+            try {
+                qrcode.generate(qr, { small: true });
+            } catch (error) {
+                console.log('QR Code recebido (não foi possível gerar visualização):', qr.substring(0, 50) + '...');
+            }
+            console.log('Por favor, escaneie o QR Code acima com o WhatsApp da loja.');
+            console.log('No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho\n');
         });
         
-        client.info.then(info => {
-            whatsappStatus.phone = info.wid.user;
-            console.log(`📱 Conectado como: ${whatsappStatus.phone}`);
+        client.on('ready', () => {
+            console.log('✅ WhatsApp está pronto!');
+            whatsappStatus.connected = true;
+            whatsappStatus.readyAt = new Date();
+            
+            // Obter informações do número conectado
+            client.getState().then(state => {
+                console.log(`Estado: ${state}`);
+            }).catch(error => {
+                console.error('Erro ao obter estado:', error);
+            });
+            
+            client.info.then(info => {
+                whatsappStatus.phone = info.wid.user;
+                console.log(`📱 Conectado como: ${whatsappStatus.phone}`);
+            }).catch(error => {
+                console.error('Erro ao obter info:', error);
+            });
         });
-    });
-    
-    client.on('authenticated', () => {
-        console.log('🔐 WhatsApp autenticado!');
-    });
-    
-    client.on('disconnected', (reason) => {
-        console.log(`❌ WhatsApp desconectado: ${reason}`);
-        whatsappStatus.connected = false;
-        whatsappStatus.phone = null;
-        isInitialized = false;
-    });
-    
-    client.on('message', async (msg) => {
-        if (!msg.fromMe) {
-            console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body.substring(0, 50)}...`);
-        }
-    });
+        
+        client.on('authenticated', () => {
+            console.log('🔐 WhatsApp autenticado!');
+        });
+        
+        client.on('disconnected', (reason) => {
+            console.log(`❌ WhatsApp desconectado: ${reason}`);
+            whatsappStatus.connected = false;
+            whatsappStatus.phone = null;
+            isInitialized = false;
+        });
+        
+        client.on('message', async (msg) => {
+            if (!msg.fromMe) {
+                console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 50) || 'sem corpo'}...`);
+            }
+        });
+        
+        client.on('auth_failure', (error) => {
+            console.error('❌ Falha na autenticação do WhatsApp:', error);
+            whatsappStatus.connected = false;
+            isInitialized = false;
+        });
+        
+        console.log('Listeners do WhatsApp configurados com sucesso');
+    } catch (error) {
+        console.error('Erro ao configurar listeners do WhatsApp:', error);
+    }
 }
 
 // Função para inicializar o WhatsApp manualmente
@@ -259,12 +279,15 @@ function initializeWhatsApp() {
             setupClientListeners();
             
             // Inicializar o cliente
-            client.initialize();
+            client.initialize().catch(error => {
+                console.error('Erro ao chamar client.initialize():', error);
+                reject(new Error('Erro ao inicializar cliente: ' + error.message));
+            });
             
             // Aguardar o evento 'ready' ou timeout
             const readyTimeout = setTimeout(() => {
-                reject(new Error('Timeout ao inicializar WhatsApp (30 segundos)'));
-            }, 30000);
+                reject(new Error('Timeout ao inicializar WhatsApp (60 segundos)'));
+            }, 60000);
             
             const onReady = () => {
                 clearTimeout(readyTimeout);
@@ -296,6 +319,7 @@ function initializeWhatsApp() {
             client.once('auth_failure', onAuthFailure);
             client.once('disconnected', onDisconnected);
         } catch (error) {
+            console.error('Erro na função initializeWhatsApp:', error);
             reject(new Error('Erro ao inicializar WhatsApp: ' + error.message));
         }
     });
@@ -309,6 +333,19 @@ function isWhatsAppInitialized() {
 // Função para resetar o estado de inicialização
 function resetInitialization() {
     isInitialized = false;
+}
+
+// Função para verificar se está inicializado
+function isWhatsAppInitialized() {
+    return isInitialized && whatsappStatus.connected;
+}
+
+// Função para resetar o estado de inicialização
+function resetInitialization() {
+    isInitialized = false;
+    whatsappStatus.connected = false;
+    whatsappStatus.phone = null;
+    whatsappStatus.readyAt = null;
 }
 
 // Exportar funções
