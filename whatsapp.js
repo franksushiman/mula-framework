@@ -411,6 +411,72 @@ function setupClientListeners() {
         client.on('message', async (msg) => {
             if (!msg.fromMe) {
                 console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 50) || 'sem corpo'}...`);
+                
+                // Verificar se é uma mensagem de localização
+                if (msg.type === 'location') {
+                    try {
+                        console.log(`📍 Mensagem de localização detectada de ${msg.from}`);
+                        
+                        // Extrair coordenadas
+                        const location = msg.location;
+                        if (location) {
+                            const latitude = location.latitude;
+                            const longitude = location.longitude;
+                            const contextMessage = msg.body || '';
+                            
+                            console.log(`Coordenadas: ${latitude}, ${longitude}`);
+                            
+                            // Enviar para processamento via IPC (se estiver no contexto do Electron)
+                            if (typeof require !== 'undefined') {
+                                const { ipcMain } = require('electron');
+                                
+                                // Notificar o frontend sobre a localização recebida
+                                const { BrowserWindow } = require('electron');
+                                BrowserWindow.getAllWindows().forEach(win => {
+                                    win.webContents.send('whatsapp-location-received', {
+                                        from: msg.from,
+                                        messageId: msg.id.id,
+                                        timestamp: msg.timestamp,
+                                        latitude: latitude,
+                                        longitude: longitude,
+                                        contextMessage: contextMessage
+                                    });
+                                });
+                                
+                                // Processar a localização em segundo plano
+                                setTimeout(async () => {
+                                    try {
+                                        // Chamar o handler de processamento de localização
+                                        const result = await ipcMain.handle('whatsapp-process-location-message', 
+                                            { messageId: msg.id.id, latitude, longitude, contextMessage });
+                                        
+                                        console.log(`Resultado do processamento de localização: ${result.success ? 'Sucesso' : 'Falha'}`);
+                                        
+                                        // Se for um endereço de entrega, notificar o sistema
+                                        if (result.success && result.analysis && result.analysis.interpreted_as === 'endereco_entrega') {
+                                            console.log(`🎯 Endereço de entrega detectado: ${result.analysis.address_guess || 'sem endereço'}`);
+                                            
+                                            // Notificar o frontend sobre o endereço detectado
+                                            BrowserWindow.getAllWindows().forEach(win => {
+                                                win.webContents.send('whatsapp-delivery-address-detected', {
+                                                    from: msg.from,
+                                                    messageId: msg.id.id,
+                                                    analysis: result.analysis,
+                                                    coordinates: { latitude, longitude }
+                                                });
+                                            });
+                                        }
+                                        
+                                    } catch (processError) {
+                                        console.error('Erro ao processar localização em segundo plano:', processError);
+                                    }
+                                }, 1000);
+                            }
+                        }
+                    } catch (locationError) {
+                        console.error('Erro ao processar localização:', locationError);
+                    }
+                }
             }
         });
         

@@ -793,6 +793,157 @@ ipcMain.handle('whatsapp-process-audio-message', async (event, { messageId, audi
   }
 });
 
+// Handler para processar localização com OpenAI (interpretação semântica)
+ipcMain.handle('process-location', async (event, { latitude, longitude, contextMessage }) => {
+  try {
+    const config = loadConfig();
+    const openAIKey = config.openAIKey || config.openaiKey;
+    
+    if (!openAIKey) {
+      throw new Error('Chave OpenAI não configurada. Configure na aba de Configurações.');
+    }
+    
+    console.log('Processando localização com OpenAI...');
+    
+    // Analisar semanticamente a localização usando GPT
+    const semanticAnalysis = await analyzeLocationWithGPT(openAIKey, latitude, longitude, contextMessage);
+    
+    return {
+      success: true,
+      location: { latitude, longitude },
+      analysis: semanticAnalysis
+    };
+    
+  } catch (error) {
+    console.error('Erro ao processar localização:', error);
+    return { 
+      success: false, 
+      error: error.message,
+      note: 'Verifique se a chave OpenAI está configurada e tem créditos suficientes.'
+    };
+  }
+});
+
+// Função para analisar semanticamente localização usando GPT
+async function analyzeLocationWithGPT(apiKey, latitude, longitude, contextMessage) {
+  try {
+    const systemPrompt = `Você é um assistente especializado em interpretar localizações no contexto de delivery de restaurante.
+Analise as coordenadas e o contexto da mensagem para inferir:
+1. Intenção do usuário (entrega, ponto de referência, confirmação de endereço, etc.)
+2. Endereço provável (quando possível inferir)
+3. Significado no contexto da conversa
+4. Se é um endereço de entrega válido
+
+Use as coordenadas para entender a localização, mas foque no significado para o negócio.
+
+Retorne um objeto JSON com a seguinte estrutura:
+{
+  "type": "location",
+  "latitude": ${latitude},
+  "longitude": ${longitude},
+  "interpreted_as": "intenção_principal",
+  "address_guess": "endereço provável se puder inferir",
+  "confidence": 0.0 a 1.0,
+  "context_notes": "notas sobre o contexto"
+}
+
+Seja preciso e capture todas as informações relevantes para um sistema de delivery.`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Coordenadas: ${latitude}, ${longitude}. Contexto da mensagem: "${contextMessage || 'sem contexto adicional'}"`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 500
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Erro GPT API: ${errorData.error?.message || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('Resposta da GPT vazia');
+    }
+    
+    // Extrair JSON da resposta
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const analysis = JSON.parse(jsonMatch[0]);
+      // Garantir que as coordenadas originais estão incluídas
+      analysis.latitude = latitude;
+      analysis.longitude = longitude;
+      return analysis;
+    } else {
+      // Fallback: retornar estrutura básica
+      return {
+        type: 'location',
+        latitude: latitude,
+        longitude: longitude,
+        interpreted_as: 'unknown',
+        address_guess: '',
+        confidence: 0.5,
+        context_notes: 'Não foi possível interpretar com precisão'
+      };
+    }
+    
+  } catch (error) {
+    console.error('Erro na análise de localização GPT:', error);
+    // Retornar análise básica em caso de erro
+    return {
+      type: 'location',
+      latitude: latitude,
+      longitude: longitude,
+      interpreted_as: 'error',
+      address_guess: '',
+      confidence: 0.0,
+      context_notes: `Erro: ${error.message}`
+    };
+  }
+}
+
+// Handler para processar mensagem de localização do WhatsApp
+ipcMain.handle('whatsapp-process-location-message', async (event, { messageId, latitude, longitude, contextMessage }) => {
+  try {
+    console.log(`Processando mensagem de localização ${messageId}...`);
+    
+    // Processar a localização
+    const result = await ipcMain.handle('process-location', event, { latitude, longitude, contextMessage });
+    
+    // Enviar notificação para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('location-processed', {
+        messageId,
+        result
+      });
+    });
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Erro ao processar mensagem de localização:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handler para obter status do WhatsApp
 ipcMain.handle('whatsapp-get-status', async () => {
   try {

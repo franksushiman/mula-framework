@@ -75,6 +75,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   processWhatsAppAudioMessage: (messageId, audioData, mimeType) => 
     ipcRenderer.invoke('whatsapp-process-audio-message', { messageId, audioData, mimeType }),
   
+  // Processamento de localização
+  processLocation: (latitude, longitude, contextMessage) => 
+    ipcRenderer.invoke('process-location', { latitude, longitude, contextMessage }),
+  processWhatsAppLocationMessage: (messageId, latitude, longitude, contextMessage) => 
+    ipcRenderer.invoke('whatsapp-process-location-message', { messageId, latitude, longitude, contextMessage }),
+  
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
@@ -86,6 +92,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onWhatsappAudioReceived: (callback) => ipcRenderer.on('whatsapp-audio-received', callback),
   onAudioProcessed: (callback) => ipcRenderer.on('audio-processed', callback),
   onWhatsappOrderDetected: (callback) => ipcRenderer.on('whatsapp-order-detected', callback),
+  onWhatsappLocationReceived: (callback) => ipcRenderer.on('whatsapp-location-received', callback),
+  onLocationProcessed: (callback) => ipcRenderer.on('location-processed', callback),
+  onWhatsappDeliveryAddressDetected: (callback) => ipcRenderer.on('whatsapp-delivery-address-detected', callback),
   
   // Envio de eventos para o main
   notifyMotoboyApproved: (data) => ipcRenderer.send('notify-motoboy-approved', data),
