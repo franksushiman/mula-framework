@@ -53,7 +53,7 @@ window.saveC = function() {
     window.config.telegramToken = document.getElementById('k-tel')?.value || '';
     window.config.restaurantAddress = document.getElementById('addr')?.value || '';
     window.config.adminNumber = document.getElementById('k-adm')?.value || '';
-    window.config.goldenRules = document.getElementById('golden-rules')?.value || '';
+    // Nota: goldenRules agora está em sua própria aba
     
     // Salvar configurações do Telegram
     const botToken = document.getElementById('telegram-bot-token')?.value || '';
@@ -223,12 +223,43 @@ window.aiM = function() {
     });
 };
 
-window.saveRules = function() {
+// Funções para Regras de Ouro
+window.saveGoldenRules = function() {
     const rules = document.getElementById('golden-rules-text').value;
     window.config.goldenRules = rules;
     window.electronAPI.saveConfig(window.config).then(result => {
-        window.showToast('Regras salvas!', 'success');
+        window.showToast('Regras de Ouro salvas!', 'success');
     });
+};
+
+window.loadGoldenRules = function() {
+    const textarea = document.getElementById('golden-rules-text');
+    if (textarea && window.config.goldenRules) {
+        textarea.value = window.config.goldenRules;
+        window.showToast('Regras carregadas!', 'success');
+    } else {
+        window.showToast('Nenhuma regra salva ainda.', 'info');
+    }
+};
+
+window.exportGoldenRules = function() {
+    const rules = document.getElementById('golden-rules-text').value;
+    if (!rules.trim()) {
+        window.showToast('Não há regras para exportar.', 'error');
+        return;
+    }
+    
+    const blob = new Blob([rules], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'regras-de-ouro.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    window.showToast('Regras exportadas com sucesso!', 'success');
 };
 
 window.togglePause = function() {
@@ -1065,6 +1096,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                             window.checkWhatsAppStatus();
                         }, 100);
                     }
+                    // Carregar regras se for a aba de Regras de Ouro
+                    if (panelId === 'golden-rules-panel') {
+                        setTimeout(() => {
+                            window.loadGoldenRules();
+                        }, 100);
+                    }
                 });
                 console.log(`Evento adicionado ao item ${index}: ${newItem.getAttribute('data-panel')}`);
             });
@@ -1119,8 +1156,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             setValue('k-tel', window.config.telegramToken);
             setValue('addr', window.config.restaurantAddress);
             setValue('k-adm', window.config.adminNumber);
-            setValue('golden-rules', window.config.goldenRules);
-            setValue('golden-rules-text', window.config.goldenRules);
+            // Nota: goldenRules agora está em sua própria aba
+            // Apenas preencher o textarea se existir
+            const goldenRulesText = document.getElementById('golden-rules-text');
+            if (goldenRulesText && window.config.goldenRules) {
+                goldenRulesText.value = window.config.goldenRules;
+            }
             
             // Preencher configurações do Telegram
             if (window.config.telegram) {

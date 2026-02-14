@@ -7,6 +7,92 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Estilos básicos para funcionamento - Filosofia Ceia */
+        
+        /* Estilos para o painel de Regras de Ouro */
+        .golden-rules-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--ambar);
+        }
+        
+        .golden-rules-header h2 {
+            color: var(--terra);
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .golden-rules-icon {
+            color: var(--ambar);
+            font-size: 28px;
+        }
+        
+        .golden-rules-description {
+            color: var(--texto-secundario);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .golden-rules-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 20px;
+            background: var(--branco-quente);
+            border: 2px solid var(--borda-quente);
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--texto-principal);
+            resize: vertical;
+            transition: all 0.2s;
+        }
+        
+        .golden-rules-textarea:focus {
+            border-color: var(--verde-esperanca);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+        }
+        
+        .golden-rules-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .golden-rules-tips {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(180,83,9,0.05) 0%, rgba(180,83,9,0.02) 100%);
+            border-radius: 12px;
+            border-left: 4px solid var(--ambar);
+        }
+        
+        .golden-rules-tips h4 {
+            color: var(--ambar);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .golden-rules-tips ul {
+            color: var(--texto-secundario);
+            font-size: 14px;
+            line-height: 1.8;
+            padding-left: 20px;
+        }
+        
+        .golden-rules-tips li {
+            margin-bottom: 8px;
+        }
+        
+        .golden-rules-tips li:last-child {
+            margin-bottom: 0;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; 
@@ -1240,6 +1326,7 @@
                 <!-- Nota: Painel Financeiro removido - Configurações financeiras não são acessíveis na interface do restaurante -->
                 <a href="#" class="nav-item" data-panel="printers-panel"><i class="fas fa-print"></i> Impressoras</a>
                 <a href="#" class="nav-item" data-panel="config-panel"><i class="fas fa-cog"></i> Configurações</a>
+                <a href="#" class="nav-item" data-panel="golden-rules-panel"><i class="fas fa-crown"></i> Regras de Ouro</a>
                 <a href="#" class="nav-item" data-panel="hub-panel"><i class="fas fa-store"></i> Hub</a>
             </nav>
             <div class="sidebar-footer">
@@ -1624,10 +1711,6 @@
                             <label>Número do Admin</label>
                             <input type="text" id="k-adm" class="form-input" placeholder="Telefone do administrador">
                         </div>
-                        <div style="grid-column: span 2;">
-                            <label>Regras de Ouro</label>
-                            <textarea id="golden-rules" class="form-input" rows="6" placeholder="Regras importantes para a operação"></textarea>
-                        </div>
                     </div>
                     
                     <!-- Seção de Mensageiros -->
@@ -1752,6 +1835,57 @@
                 </div>
             </div>
 
+
+            <div id="golden-rules-panel" class="panel">
+                <div class="card">
+                    <div class="golden-rules-header">
+                        <i class="fas fa-crown golden-rules-icon"></i>
+                        <h2>Regras de Ouro</h2>
+                    </div>
+                    <p class="golden-rules-description">
+                        Princípios fundamentais que guiam a operação do seu restaurante. 
+                        Estas regras devem ser compartilhadas com toda a equipe e revisadas periodicamente.
+                    </p>
+                    
+                    <textarea id="golden-rules-text" class="golden-rules-textarea" 
+                              placeholder="Escreva aqui as regras importantes para a operação do seu negócio...
+
+Exemplo:
+1. Sempre confirmar o endereço com o cliente antes de despachar
+2. Verificar o pedido na cozinha antes de embalar
+3. Manter comunicação clara com a frota
+4. ..."></textarea>
+                    
+                    <div class="golden-rules-actions">
+                        <button class="btn btn-primary" onclick="window.saveGoldenRules()">
+                            <i class="fas fa-save"></i> Salvar Regras
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.loadGoldenRules()">
+                            <i class="fas fa-sync"></i> Carregar Regras
+                        </button>
+                        <button class="btn btn-success" onclick="window.exportGoldenRules()">
+                            <i class="fas fa-download"></i> Exportar
+                        </button>
+                        <button class="btn btn-error" onclick="document.getElementById('golden-rules-text').value = ''" style="margin-left: auto;">
+                            <i class="fas fa-trash"></i> Limpar
+                        </button>
+                    </div>
+                    
+                    <div class="golden-rules-tips">
+                        <h4>
+                            <i class="fas fa-lightbulb"></i> Dicas para boas regras
+                        </h4>
+                        <ul>
+                            <li><strong>Seja claro e objetivo:</strong> Use linguagem simples e direta</li>
+                            <li><strong>Foque em comportamentos:</strong> Descreva ações, não julgue pessoas</li>
+                            <li><strong>Inclua exemplos práticos:</strong> Mostre situações reais do dia a dia</li>
+                            <li><strong>Revise periodicamente:</strong> Atualize conforme a operação evolui</li>
+                            <li><strong>Compartilhe com a equipe:</strong> Todos devem conhecer e seguir as regras</li>
+                            <li><strong>Seja consistente:</strong> Aplique as regras igualmente para todos</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
             <div id="hub-panel" class="panel">
                 <div class="card">
