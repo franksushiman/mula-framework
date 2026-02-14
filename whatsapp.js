@@ -110,16 +110,25 @@ async function sendWhatsAppMessage(phone, message) {
 
 // Função para obter status da conexão
 function getWhatsAppStatus() {
+    // Verificar se o cliente está realmente conectado
+    let actuallyConnected = whatsappStatus.connected;
+    
+    // Verificação adicional: se está inicializado mas não tem readyAt recente
+    if (isInitialized && !whatsappStatus.readyAt) {
+        actuallyConnected = false;
+    }
+    
     return {
-        connected: whatsappStatus.connected,
+        connected: actuallyConnected,
         phone: whatsappStatus.phone,
         readyAt: whatsappStatus.readyAt,
         isInitialized: isInitialized,
+        isInitializing: isInitializing,
         timestamp: new Date(),
-        status: whatsappStatus.connected ? 'connected' : 'disconnected',
-        message: whatsappStatus.connected ? 
+        status: actuallyConnected ? 'connected' : (isInitializing ? 'initializing' : 'disconnected'),
+        message: actuallyConnected ? 
             `Conectado como ${whatsappStatus.phone || 'número desconhecido'}` : 
-            'Desconectado'
+            (isInitializing ? 'Inicializando...' : 'Desconectado')
     };
 }
 

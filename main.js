@@ -934,6 +934,13 @@ app.whenReady().then(() => {
       
       // Se não está conectado, tentar inicializar
       console.log('WhatsApp não está conectado, tentando inicializar...');
+      
+      // Verificar se já está inicializando
+      if (status.isInitialized === true || status.status === 'connected') {
+        console.log('WhatsApp já está inicializado ou conectado, pulando...');
+        return;
+      }
+      
       service.initializeWhatsApp().then(() => {
         console.log('✅ WhatsApp inicializado com sucesso!');
         
@@ -955,39 +962,14 @@ app.whenReady().then(() => {
       }).catch(error => {
         console.error('❌ Erro ao inicializar WhatsApp:', error);
         
-        // Não tentar novamente automaticamente se já estiver inicializando
-        if (error.message.includes('já está sendo inicializado')) {
-          console.log('WhatsApp já está em processo de inicialização, aguardando...');
-          // Aguardar e verificar status após 5 segundos
-          setTimeout(() => {
-            const currentStatus = service.getWhatsAppStatus();
-            if (currentStatus.connected) {
-              console.log('✅ WhatsApp conectado após espera!');
-              BrowserWindow.getAllWindows().forEach(win => {
-                win.webContents.send('bot-status', {
-                  online: true,
-                  timestamp: Date.now(),
-                  message: currentStatus.message
-                });
-              });
-            }
-          }, 5000);
-        } else {
-          // Para outros erros, tentar novamente em 15 segundos
-          console.log('Tentando novamente em 15 segundos...');
-          setTimeout(() => {
-            console.log('Tentando inicializar WhatsApp novamente...');
-            service.initializeWhatsApp().catch(err => {
-              console.error('❌ Erro na segunda tentativa:', err);
-            });
-          }, 15000);
-        }
+        // Não tentar novamente automaticamente
+        console.log('Não tentando novamente automaticamente para evitar loops');
       });
       
     } catch (error) {
       console.error('Erro ao verificar serviço WhatsApp:', error);
     }
-  }, 3000); // Delay de 3 segundos
+  }, 5000); // Aumentar delay para 5 segundos
 
   app.on('activate', () => {
     // No macOS, é comum recriar uma janela quando o dock é clicado e não há outras janelas abertas
