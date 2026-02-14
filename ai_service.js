@@ -57,27 +57,54 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
             throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
         }
         
+        // Verificar se o contexto da loja é apenas placeholder ou está vazio
+        const isContextoPlaceholder = contextoLoja.includes("Restaurante Ceia Delivery") && 
+                                     contextoLoja.includes("Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60)");
+        
         // System Prompt: Definir o comportamento da IA
-        const systemPrompt = `Você é um Atendente Virtual do Restaurante "Ceia Delivery". 
-        Seu papel é ser curto, educado e focado em vender.
+        let systemPrompt;
         
-        CONTEXTO DA LOJA:
-        ${contextoLoja}
-        
-        DIRETRIZES:
-        1. Seja breve e direto (máximo 3 frases)
-        2. Sempre tente vender ou sugerir itens do cardápio
-        3. Para pedidos, peça detalhes: item, quantidade, endereço de entrega
-        4. Para dúvidas sobre horário, responda com os horários disponíveis
-        5. Para preços, consulte o cardápio no contexto
-        6. Se não souber algo, diga que vai consultar e sugira falar com atendente humano
-        7. Use emojis moderadamente (máximo 2 por resposta)
-        8. Nunca invente informações que não estão no contexto
-        
-        FORMATAÇÃO:
-        - Use quebras de linha para separar ideias
-        - Destaque preços com R$
-        - Seja caloroso mas profissional`;
+        if (isContextoPlaceholder) {
+            // Contexto placeholder - responder de forma genérica
+            systemPrompt = `Você é um Assistente Virtual de Atendimento ao Cliente.
+            Seu papel é ser útil, educado e direto.
+            
+            DIRETRIZES:
+            1. Seja breve e direto (máximo 3 frases)
+            2. Não mencione cardápio, preços ou itens específicos, pois não foram configurados
+            3. Para pedidos, peça que o cliente entre em contato com o atendimento humano
+            4. Para dúvidas sobre horário, peça que verifiquem com o estabelecimento
+            5. Se não souber algo, diga que vai consultar e sugira falar com atendente humano
+            6. Use emojis moderadamente (máximo 1 por resposta)
+            7. Nunca invente informações
+            
+            FORMATAÇÃO:
+            - Use quebras de linha para separar ideias
+            - Seja caloroso mas profissional
+            - Não assuma que representa um restaurante específico`;
+        } else {
+            // Contexto real configurado
+            systemPrompt = `Você é um Atendente Virtual do estabelecimento.
+            Seu papel é ser curto, educado e focado em ajudar.
+            
+            CONTEXTO DA LOJA:
+            ${contextoLoja}
+            
+            DIRETRIZES:
+            1. Seja breve e direto (máximo 3 frases)
+            2. Use as informações do contexto para responder
+            3. Para pedidos, peça detalhes: item, quantidade, endereço de entrega
+            4. Para dúvidas sobre horário, responda com os horários disponíveis no contexto
+            5. Para preços, consulte as informações do contexto
+            6. Se não souber algo, diga que vai consultar e sugira falar com atendente humano
+            7. Use emojis moderadamente (máximo 2 por resposta)
+            8. Nunca invente informações que não estão no contexto
+            
+            FORMATAÇÃO:
+            - Use quebras de linha para separar ideias
+            - Destaque preços se mencionados no contexto
+            - Seja caloroso mas profissional`;
+        }
         
         // Chamar a API da OpenAI
         const completion = await openai.chat.completions.create({
@@ -112,32 +139,67 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
         // Fallback: respostas pré-definidas baseadas em palavras-chave
         const mensagemLower = mensagemUsuario.toLowerCase();
         
-        if (mensagemLower.includes('oi') || mensagemLower.includes('olá') || mensagemLower.includes('ola')) {
-            return `Olá! 👋 Bem-vindo ao Ceia Delivery!\n\nTemos pizza, hambúrguer e sushi no cardápio hoje. Gostaria de fazer um pedido?`;
-        }
+        // Verificar se o contexto é placeholder
+        const isContextoPlaceholder = contextoLoja.includes("Restaurante Ceia Delivery") && 
+                                     contextoLoja.includes("Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60)");
         
-        if (mensagemLower.includes('cardápio') || mensagemLower.includes('cardapio') || mensagemLower.includes('menu')) {
-            return `📋 NOSSO CARDÁPIO:\n\n• Pizza - R$ 45\n• Hamburguer - R$ 35\n• Sushi - R$ 60\n\nEntrega: R$ 10\nHorário: 18h às 23h\n\nO que vai pedir hoje?`;
+        if (isContextoPlaceholder) {
+            // Respostas genéricas para contexto placeholder
+            if (mensagemLower.includes('oi') || mensagemLower.includes('olá') || mensagemLower.includes('ola')) {
+                return `Olá! 👋 Sou um assistente virtual. Como posso ajudar?`;
+            }
+            
+            if (mensagemLower.includes('cardápio') || mensagemLower.includes('cardapio') || mensagemLower.includes('menu')) {
+                return `📋 O cardápio ainda não foi configurado. Por favor, entre em contato com o atendimento para mais informações.`;
+            }
+            
+            if (mensagemLower.includes('preço') || mensagemLower.includes('preco') || mensagemLower.includes('valor')) {
+                return `💰 As informações de preços ainda não foram configuradas. Entre em contato com o atendimento para consultar valores.`;
+            }
+            
+            if (mensagemLower.includes('horário') || mensagemLower.includes('horario') || mensagemLower.includes('aberto')) {
+                return `⏰ Os horários de funcionamento ainda não foram configurados. Entre em contato com o atendimento para verificar.`;
+            }
+            
+            if (mensagemLower.includes('pedido') || mensagemLower.includes('comprar') || mensagemLower.includes('quero')) {
+                return `🎉 Para fazer um pedido, entre em contato com nosso atendimento humano. Eles poderão ajudar com todas as informações necessárias.`;
+            }
+            
+            if (mensagemLower.includes('entrega') || mensagemLower.includes('delivery') || mensagemLower.includes('frete')) {
+                return `🚚 As informações de entrega ainda não foram configuradas. Entre em contato com o atendimento para verificar disponibilidade.`;
+            }
+            
+            // Resposta padrão para contexto placeholder
+            return `Olá! Sou um assistente virtual. 😊\n\nNo momento, as informações detalhadas ainda não foram configuradas. Para melhor atendimento, entre em contato com nosso atendimento humano.`;
+        } else {
+            // Respostas específicas para contexto configurado
+            if (mensagemLower.includes('oi') || mensagemLower.includes('olá') || mensagemLower.includes('ola')) {
+                return `Olá! 👋 Bem-vindo!\n\nComo posso ajudar você hoje?`;
+            }
+            
+            if (mensagemLower.includes('cardápio') || mensagemLower.includes('cardapio') || mensagemLower.includes('menu')) {
+                return `📋 CARDÁPIO:\n\nConsulte nosso atendimento para informações atualizadas sobre o cardápio.`;
+            }
+            
+            if (mensagemLower.includes('preço') || mensagemLower.includes('preco') || mensagemLower.includes('valor')) {
+                return `💰 PREÇOS:\n\nEntre em contato com nosso atendimento para consultar os valores atualizados.`;
+            }
+            
+            if (mensagemLower.includes('horário') || mensagemLower.includes('horario') || mensagemLower.includes('aberto')) {
+                return `⏰ HORÁRIO:\n\nVerifique com nosso atendimento os horários de funcionamento.`;
+            }
+            
+            if (mensagemLower.includes('pedido') || mensagemLower.includes('comprar') || mensagemLower.includes('quero')) {
+                return `🎉 Ótimo! Para fazer seu pedido, entre em contato com nosso atendimento. Eles poderão ajudar com todas as informações necessárias.`;
+            }
+            
+            if (mensagemLower.includes('entrega') || mensagemLower.includes('delivery') || mensagemLower.includes('frete')) {
+                return `🚚 ENTREGA:\n\nConsulte nosso atendimento para informações sobre entrega e frete.`;
+            }
+            
+            // Resposta padrão para contexto configurado
+            return `Olá! Sou o assistente virtual. 😊\n\nComo posso ajudar você hoje?`;
         }
-        
-        if (mensagemLower.includes('preço') || mensagemLower.includes('preco') || mensagemLower.includes('valor')) {
-            return `💰 PREÇOS:\n\nPizza: R$ 45\nHamburguer: R$ 35\nSushi: R$ 60\n\nEntrega: R$ 10\n\nTodos os pedidos acima de R$ 80 têm frete grátis!`;
-        }
-        
-        if (mensagemLower.includes('horário') || mensagemLower.includes('horario') || mensagemLower.includes('aberto')) {
-            return `⏰ HORÁRIO DE FUNCIONAMENTO:\n\nTerça a Domingo: 18h às 23h\nSegunda: FECHADO\n\nFaça seu pedido!`;
-        }
-        
-        if (mensagemLower.includes('pedido') || mensagemLower.includes('comprar') || mensagemLower.includes('quero')) {
-            return `🎉 Ótimo! Para fazer seu pedido, me informe:\n\n1. O que você gostaria?\n2. Quantidade?\n3. Endereço de entrega?\n\nAssim que confirmar, enviaremos seu pedido!`;
-        }
-        
-        if (mensagemLower.includes('entrega') || mensagemLower.includes('delivery') || mensagemLower.includes('frete')) {
-            return `🚚 ENTREGA:\n\n• Taxa: R$ 10\n• Frete grátis: Pedidos acima de R$ 80\n• Tempo médio: 40-60 minutos\n\nQual seu endereço?`;
-        }
-        
-        // Resposta padrão
-        return `Olá! Sou o assistente virtual do Ceia Delivery. 😊\n\nPara ver o cardápio, digite "cardápio".\nPara fazer um pedido, digite "quero pedir".\nPara horários, digite "horário".\n\nComo posso ajudar?`;
     }
 }
 

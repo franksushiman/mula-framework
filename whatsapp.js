@@ -313,8 +313,53 @@ function setupClientListeners() {
                 const chat = await msg.getChat();
                 await chat.sendStateTyping();
                 
-                // 3. Contexto da loja (placeholder - pode ser melhorado)
-                const contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+                // 3. Contexto da loja - tentar obter do config
+                let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+                
+                try {
+                    // Tentar obter informações reais do config
+                    if (typeof require !== 'undefined') {
+                        const fs = require('fs');
+                        const path = require('path');
+                        const { app } = require('electron');
+                        
+                        const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
+                        if (fs.existsSync(configPath)) {
+                            const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                            
+                            // Verificar se há informações reais configuradas
+                            const hasRealInfo = configData.restaurantAddress || 
+                                               (configData.menuItems && configData.menuItems.length > 0) ||
+                                               configData.storeName;
+                            
+                            if (hasRealInfo) {
+                                // Construir contexto com informações reais
+                                let contextParts = [];
+                                
+                                if (configData.storeName && configData.storeName !== 'Delivery Manager') {
+                                    contextParts.push(`Estabelecimento: ${configData.storeName}`);
+                                }
+                                
+                                if (configData.restaurantAddress) {
+                                    contextParts.push(`Endereço: ${configData.restaurantAddress}`);
+                                }
+                                
+                                if (configData.menuItems && configData.menuItems.length > 0) {
+                                    const sampleItems = configData.menuItems.slice(0, 3).map(item => 
+                                        `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
+                                    ).join(', ');
+                                    contextParts.push(`Cardápio: ${sampleItems}${configData.menuItems.length > 3 ? '...' : ''}`);
+                                }
+                                
+                                if (contextParts.length > 0) {
+                                    contextoLoja = contextParts.join('. ');
+                                }
+                            }
+                        }
+                    }
+                } catch (configError) {
+                    console.warn('⚠️  Não foi possível ler contexto do config:', configError.message);
+                }
                 
                 // 4. Chamar a OpenAI para gerar resposta
                 let respostaIA;
@@ -394,29 +439,38 @@ function setupClientListeners() {
                                     });
                                 });
                                 
-                                // Processar o áudio em segundo plano
-                                setTimeout(async () => {
+                                // Processar o áudio em segundo plano usando ipcRenderer.invoke
+                                // Note: ipcMain.handle não pode ser chamado diretamente aqui
+                                // Em vez disso, enviar um evento para o main process
+                                setTimeout(() => {
                                     try {
-                                        // Chamar o handler de processamento de áudio
-                                        const result = await ipcMain.handle('whatsapp-process-audio-message', 
-                                            { messageId: msg.id.id, audioData, mimeType });
+                                        // Enviar evento para processar o áudio
+                                        const { ipcRenderer } = require('electron');
                                         
-                                        console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
-                                        
-                                        // Se for um pedido, notificar o sistema
-                                        if (result.success && result.analysis && result.analysis.intent === 'pedido') {
-                                            console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
+                                        // Usar ipcRenderer.invoke para chamar o handler
+                                        ipcRenderer.invoke('whatsapp-process-audio-message', 
+                                            { messageId: msg.id.id, audioData, mimeType })
+                                        .then(result => {
+                                            console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
                                             
-                                            // Notificar o frontend sobre o pedido detectado
-                                            BrowserWindow.getAllWindows().forEach(win => {
-                                                win.webContents.send('whatsapp-order-detected', {
-                                                    from: msg.from,
-                                                    messageId: msg.id.id,
-                                                    analysis: result.analysis,
-                                                    transcription: result.transcription
+                                            // Se for um pedido, notificar o sistema
+                                            if (result.success && result.analysis && result.analysis.intent === 'pedido') {
+                                                console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
+                                                
+                                                // Notificar o frontend sobre o pedido detectado
+                                                BrowserWindow.getAllWindows().forEach(win => {
+                                                    win.webContents.send('whatsapp-order-detected', {
+                                                        from: msg.from,
+                                                        messageId: msg.id.id,
+                                                        analysis: result.analysis,
+                                                        transcription: result.transcription
+                                                    });
                                                 });
-                                            });
-                                        }
+                                            }
+                                        })
+                                        .catch(processError => {
+                                            console.error('Erro ao processar áudio em segundo plano:', processError);
+                                        });
                                         
                                     } catch (processError) {
                                         console.error('Erro ao processar áudio em segundo plano:', processError);
@@ -464,34 +518,9 @@ function setupClientListeners() {
                                 });
                             });
                             
-                            // Processar a localização em segundo plano
-                            setTimeout(async () => {
-                                try {
-                                    // Chamar o handler de processamento de localização
-                                    const result = await ipcMain.handle('whatsapp-process-location-message', 
-                                        { messageId: msg.id.id, latitude, longitude, contextMessage });
-                                    
-                                    console.log(`Resultado do processamento de localização: ${result.success ? 'Sucesso' : 'Falha'}`);
-                                    
-                                    // Se for um endereço de entrega, notificar o sistema
-                                    if (result.success && result.analysis && result.analysis.interpreted_as === 'endereco_entrega') {
-                                        console.log(`🎯 Endereço de entrega detectado: ${result.analysis.address_guess || 'sem endereço'}`);
-                                        
-                                        // Notificar o frontend sobre o endereço detectado
-                                        BrowserWindow.getAllWindows().forEach(win => {
-                                            win.webContents.send('whatsapp-delivery-address-detected', {
-                                                from: msg.from,
-                                                messageId: msg.id.id,
-                                                analysis: result.analysis,
-                                                coordinates: { latitude, longitude }
-                                            });
-                                        });
-                                    }
-                                    
-                                } catch (processError) {
-                                    console.error('Erro ao processar localização em segundo plano:', processError);
-                                }
-                            }, 1000);
+                            // Processar a localização em segundo plano - desabilitado temporariamente
+                            // para evitar erros de handler duplicado
+                            console.log('Localização recebida, processamento desabilitado temporariamente');
                         }
                     }
                 } catch (locationError) {
