@@ -773,11 +773,20 @@ app.whenReady().then(() => {
   setTimeout(() => {
     console.log('Inicializando serviço WhatsApp...');
     try {
-      initializeWhatsAppService();
+      // Verificar se o WhatsApp já está inicializado
+      const service = getWhatsAppService();
+      if (service && service.isWhatsAppInitialized && !service.isWhatsAppInitialized()) {
+        console.log('WhatsApp não está inicializado, tentando inicializar...');
+        service.initializeWhatsApp().catch(error => {
+          console.error('Erro ao inicializar WhatsApp:', error);
+        });
+      } else {
+        console.log('WhatsApp já está inicializado ou em processo de inicialização');
+      }
     } catch (error) {
       console.error('Erro ao inicializar serviço WhatsApp:', error);
     }
-  }, 3000);
+  }, 5000); // Aumentar delay para 5 segundos para garantir que tudo está carregado
 
   app.on('activate', () => {
     // No macOS, é comum recriar uma janela quando o dock é clicado e não há outras janelas abertas

@@ -2123,6 +2123,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (panelId === 'config-panel') {
                         setTimeout(() => {
                             window.checkWhatsAppStatus();
+                            // Verificar status da chave OpenAI
+                            const openAIKeyInput = document.getElementById('k-ope');
+                            if (openAIKeyInput && window.config && window.config.openAIKey) {
+                                openAIKeyInput.value = window.config.openAIKey;
+                                // Disparar evento para atualizar o status
+                                const event = new Event('input');
+                                openAIKeyInput.dispatchEvent(event);
+                            }
                         }, 100);
                     }
                     if (panelId === 'golden-rules-panel') {
