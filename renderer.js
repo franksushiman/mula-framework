@@ -1654,9 +1654,9 @@ window.checkGoogleMapsKeyStatus = function() {
     } else if (key.startsWith('AIza') && key.length > 30) {
         statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
         statusIndicator.title = 'Chave Google Maps configurada e válida';
-    } else if (key.length < 30) {
+    } else if (key.length <= 30) {
         statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
-        statusIndicator.title = 'Chave Google Maps parece muito curta';
+        statusIndicator.title = 'Chave Google Maps deve ter mais de 30 caracteres';
     } else {
         statusIndicator.innerHTML = '<i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Desconhecida';
         statusIndicator.title = 'Formato de chave Google Maps não reconhecido';
