@@ -211,11 +211,15 @@ window.delDriver = function(phone) {
 // Função centralizada para salvar configurações
 window.saveConfig = function() {
     // Coletar todos os valores dos campos de configuração
+    const kGooEl = document.getElementById('k-goo');
+    const kOpeEl = document.getElementById('k-ope');
+    const kTelEl = document.getElementById('k-tel');
+    
     const configUpdates = {
         // Chaves de API (com trim para evitar espaços acidentais)
-        googleMapsKey: document.getElementById('k-goo')?.value?.trim() || '',
-        openAIKey: document.getElementById('k-ope')?.value?.trim() || '',
-        telegramToken: document.getElementById('k-tel')?.value?.trim() || '',
+        googleMapsKey: (kGooEl && kGooEl.value) ? kGooEl.value.trim() : '',
+        openAIKey: (kOpeEl && kOpeEl.value) ? kOpeEl.value.trim() : '',
+        telegramToken: (kTelEl && kTelEl.value) ? kTelEl.value.trim() : '',
         
         // Configurações Gerais
         telegramBotName: document.getElementById('k-tel-bot')?.value || 'MulaFRotaBot',
@@ -226,7 +230,14 @@ window.saveConfig = function() {
         hubPagesPublicUrl: document.getElementById('hub-pages-public-url')?.value || window.config.hubPagesPublicUrl || ''
     };
     
-    console.log('Salvando configurações:', configUpdates);
+    console.log('Salvando configurações (valores brutos):', {
+        googleMapsKey: configUpdates.googleMapsKey,
+        openAIKey: configUpdates.openAIKey,
+        telegramToken: configUpdates.telegramToken,
+        hasKGoo: !!kGooEl,
+        hasKOpe: !!kOpeEl,
+        hasKTel: !!kTelEl
+    });
     
     // Atualizar window.config com os valores coletados
     Object.assign(window.config, configUpdates);
@@ -235,7 +246,15 @@ window.saveConfig = function() {
     return window.electronAPI.saveConfig(window.config).then(result => {
         console.log('Resultado do salvamento:', result);
         window.showToast('Configurações salvas com sucesso!', 'success');
+        // Forçar recarregamento da configuração após salvar
+        window.electronAPI.loadConfig().then(newConfig => {
+            Object.assign(window.config, newConfig);
+        });
         return result;
+    }).catch(err => {
+        console.error('Erro ao salvar configurações:', err);
+        window.showToast('Erro ao salvar configurações: ' + err.message, 'error');
+        throw err;
     });
 };
 
