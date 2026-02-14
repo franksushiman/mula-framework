@@ -856,6 +856,29 @@ ipcMain.handle('process-audio', async (event, { audioData, mimeType }) => {
     
     console.log('Processando áudio com OpenAI...');
     
+    // Lista de formatos de áudio suportados pelo Whisper API
+    const SUPPORTED_AUDIO_TYPES = [
+      'audio/flac',
+      'audio/m4a',
+      'audio/mp3',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/mpga',
+      'audio/oga',
+      'audio/ogg',
+      'audio/wav',
+      'audio/webm'
+    ];
+    
+    // Validar formato do áudio antes de processar
+    if (!SUPPORTED_AUDIO_TYPES.includes(mimeType)) {
+      console.warn(`Formato de áudio não suportado: ${mimeType}. Tipos suportados: ${SUPPORTED_AUDIO_TYPES.join(', ')}`);
+      return {
+        success: false,
+        error: `Formato de áudio não suportado: ${mimeType}. Use um dos formatos: FLAC, M4A, MP3, MP4, MPEG, MPGA, OGA, OGG, WAV, WEBM.`
+      };
+    }
+    
     // 1. Primeiro, transcrever o áudio usando Whisper
     const transcription = await transcribeAudioWithWhisper(openAIKey, audioData, mimeType);
     
@@ -881,6 +904,26 @@ ipcMain.handle('process-audio', async (event, { audioData, mimeType }) => {
 // Função para transcrever áudio usando Whisper API
 async function transcribeAudioWithWhisper(apiKey, audioData, mimeType) {
   try {
+    // Lista de formatos de áudio suportados pelo Whisper API
+    const SUPPORTED_AUDIO_TYPES = [
+      'audio/flac',
+      'audio/m4a',
+      'audio/mp3',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/mpga',
+      'audio/oga',
+      'audio/ogg',
+      'audio/wav',
+      'audio/webm'
+    ];
+    
+    // Validar formato do áudio antes de processar
+    if (!SUPPORTED_AUDIO_TYPES.includes(mimeType)) {
+      console.warn(`Formato de áudio não suportado: ${mimeType}. Tipos suportados: ${SUPPORTED_AUDIO_TYPES.join(', ')}`);
+      throw new Error(`Formato de áudio não suportado: ${mimeType}. Use um dos formatos: FLAC, M4A, MP3, MP4, MPEG, MPGA, OGA, OGG, WAV, WEBM.`);
+    }
+    
     // Converter base64 para buffer se necessário
     let audioBuffer;
     if (typeof audioData === 'string' && audioData.startsWith('data:')) {
@@ -1033,6 +1076,29 @@ Seja preciso e capture todas as informações relevantes para um sistema de deli
 ipcMain.handle('whatsapp-process-audio-message', async (event, { messageId, audioData, mimeType }) => {
   try {
     console.log(`Processando mensagem de áudio ${messageId}...`);
+    
+    // Lista de formatos de áudio suportados pelo Whisper API
+    const SUPPORTED_AUDIO_TYPES = [
+      'audio/flac',
+      'audio/m4a',
+      'audio/mp3',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/mpga',
+      'audio/oga',
+      'audio/ogg',
+      'audio/wav',
+      'audio/webm'
+    ];
+    
+    // Validar formato do áudio antes de processar
+    if (!SUPPORTED_AUDIO_TYPES.includes(mimeType)) {
+      console.warn(`Formato de áudio não suportado: ${mimeType}. Tipos suportados: ${SUPPORTED_AUDIO_TYPES.join(', ')}`);
+      return {
+        success: false,
+        error: `Formato de áudio não suportado: ${mimeType}. Use um dos formatos: FLAC, M4A, MP3, MP4, MPEG, MPGA, OGA, OGG, WAV, WEBM.`
+      };
+    }
     
     // Processar o áudio
     const result = await ipcMain.handle('process-audio', event, { audioData, mimeType });
@@ -1668,6 +1734,29 @@ async function processAudioDirectly(audioData, mimeType) {
     }
     
     console.log('Processando áudio com OpenAI...');
+    
+    // Lista de formatos de áudio suportados pelo Whisper API
+    const SUPPORTED_AUDIO_TYPES = [
+      'audio/flac',
+      'audio/m4a',
+      'audio/mp3',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/mpga',
+      'audio/oga',
+      'audio/ogg',
+      'audio/wav',
+      'audio/webm'
+    ];
+    
+    // Validar formato do áudio antes de processar
+    if (!SUPPORTED_AUDIO_TYPES.includes(mimeType)) {
+      console.warn(`Formato de áudio não suportado: ${mimeType}. Tipos suportados: ${SUPPORTED_AUDIO_TYPES.join(', ')}`);
+      return {
+        success: false,
+        error: `Formato de áudio não suportado: ${mimeType}. Use um dos formatos: FLAC, M4A, MP3, MP4, MPEG, MPGA, OGA, OGG, WAV, WEBM.`
+      };
+    }
     
     // 1. Primeiro, transcrever o áudio usando Whisper
     const transcription = await transcribeAudioWithWhisper(openAIKey, audioData, mimeType);
