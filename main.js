@@ -25,6 +25,8 @@ const defaultConfig = {
   googleMapsKey: '',
   openAIKey: '',
   telegramToken: '',
+  telegramBotName: 'MulaFRotaBot', // Nome correto do bot do Telegram
+  telegramBotApiUrl: 'https://ceia.ia.br/api/telegram', // URL da API do bot para processar cadastros
   adminNumber: '',
   goldenRules: '',
   botPaused: false,
@@ -45,6 +47,17 @@ const defaultConfig = {
   hubPagesSlug: '',
   hubPagesPublicUrl: ''
 };
+
+// Função para gerar link do Telegram com carimbo
+// Para links genéricos (sem carimbo), use: `https://t.me/${telegramBotName}?start`
+// O bot deve processar ambos os formatos
+function generateTelegramInviteLink(config, inviteId) {
+  const telegramBotName = config.telegramBotName || 'MulaFRotaBot';
+  const storeId = config.hubPagesSlug || config.storeName?.replace(/\s+/g, '-').toLowerCase() || 'ceia-delivery';
+  // Garantir que inviteId não seja undefined
+  const safeInviteId = inviteId || `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `https://t.me/${telegramBotName}?start=${storeId}_${safeInviteId}`;
+}
 
 // Estado em tempo real
 const activeDrivers = new Map();
@@ -618,8 +631,8 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
     const storeId = config.hubPagesSlug || config.storeName?.replace(/\s+/g, '-').toLowerCase() || 'ceia-delivery';
     console.log('Store ID:', storeId);
     
-    // Link do Telegram com ID da loja
-    const telegramLink = `https://t.me/ceia_frota_bot?start=${storeId}_${inviteId}`;
+    // Gerar link do Telegram usando função auxiliar
+    const telegramLink = generateTelegramInviteLink(config, inviteId);
     console.log('Telegram link:', telegramLink);
     
     // Mensagem personalizada
@@ -715,8 +728,8 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
     // ID da loja (usar slug ou nome)
     const storeId = config.hubPagesSlug || 'ceia-delivery';
     
-    // Link do Telegram com ID da loja
-    const telegramLink = `https://t.me/ceia_frota_bot?start=${storeId}_${inviteId}`;
+    // Gerar link do Telegram usando função auxiliar
+    const telegramLink = generateTelegramInviteLink(config, inviteId);
     
     // Mensagem personalizada
     const message = `🚀 *CONVITE PARA FAZER PARTE DA FROTA CEIA DELIVERY* 🚀\n\n` +
