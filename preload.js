@@ -81,6 +81,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   processWhatsAppLocationMessage: (messageId, latitude, longitude, contextMessage) => 
     ipcRenderer.invoke('whatsapp-process-location-message', { messageId, latitude, longitude, contextMessage }),
   
+  // Chave do Google Maps
+  saveMapsKey: (mapsKey) => ipcRenderer.invoke('save-maps-key', mapsKey),
+  
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
