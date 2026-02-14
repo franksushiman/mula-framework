@@ -2483,51 +2483,70 @@
 
             <div id="golden-rules-panel" class="panel">
                 <div class="card">
-                    <div class="golden-rules-header">
-                        <i class="fas fa-crown golden-rules-icon"></i>
-                        <h2>Regras de Ouro</h2>
+                    <!-- 1. ONDE ESTOU? -->
+                    <h1 class="ceia-surface-title">Regras de Ouro</h1>
+
+                    <!-- 2. O QUE É ESTADO? -->
+                    <div class="ceia-surface-state">
+                        <div class="ceia-surface-state-label">Status das Regras</div>
+                        <div class="ceia-surface-state-value" id="golden-rules-count">0</div>
+                        <div class="ceia-surface-state-subtitle">
+                            regras ativas para guiar a operação
+                        </div>
                     </div>
-                    <p class="golden-rules-description">
-                        Princípios fundamentais que guiam a operação do seu restaurante. 
-                        Estas regras devem ser compartilhadas com toda a equipe e revisadas periodicamente.
-                    </p>
-                    
-                    <textarea id="golden-rules-text" class="golden-rules-textarea" 
-                              placeholder="Escreva aqui as regras importantes para a operação do seu negócio...
+
+                    <!-- 3. O QUE É FLUXO? -->
+                    <div class="ceia-surface-flow">
+                        <div class="ceia-surface-flow-title">Editar Regras</div>
+                        <div class="ceia-surface-card">
+                            <p style="color: var(--texto-secundario); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                                Princípios fundamentais que guiam a operação do seu restaurante. 
+                                Estas regras devem ser compartilhadas com toda a equipe e revisadas periodicamente.
+                            </p>
+                            
+                            <textarea id="golden-rules-text" class="form-input" 
+                                      style="min-height: 300px; font-family: monospace; font-size: 0.875rem; line-height: 1.6;"
+                                      placeholder="Escreva aqui as regras importantes para a operação do seu negócio...
 
 Exemplo:
 1. Sempre confirmar o endereço com o cliente antes de despachar
 2. Verificar o pedido na cozinha antes de embalar
 3. Manter comunicação clara com a frota
 4. ..."></textarea>
-                    
-                    <div class="golden-rules-actions">
-                        <button class="btn btn-primary" onclick="window.saveGoldenRules()">
-                            <i class="fas fa-save"></i> Salvar Regras
-                        </button>
-                        <button class="btn btn-secondary" onclick="window.loadGoldenRules()">
-                            <i class="fas fa-sync"></i> Carregar Regras
-                        </button>
-                        <button class="btn btn-success" onclick="window.exportGoldenRules()">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
-                        <button class="btn btn-error" onclick="document.getElementById('golden-rules-text').value = ''" style="margin-left: auto;">
-                            <i class="fas fa-trash"></i> Limpar
-                        </button>
+                            
+                            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="window.saveGoldenRules()">
+                                    <i class="fas fa-save"></i> Salvar Regras
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.loadGoldenRules()">
+                                    <i class="fas fa-sync"></i> Carregar Regras
+                                </button>
+                                <button class="btn btn-success" onclick="window.exportGoldenRules()">
+                                    <i class="fas fa-download"></i> Exportar
+                                </button>
+                                <button class="btn btn-error" onclick="document.getElementById('golden-rules-text').value = ''" style="margin-left: auto;">
+                                    <i class="fas fa-trash"></i> Limpar
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="golden-rules-tips">
-                        <h4>
-                            <i class="fas fa-lightbulb"></i> Dicas para boas regras
-                        </h4>
-                        <ul>
-                            <li><strong>Seja claro e objetivo:</strong> Use linguagem simples e direta</li>
-                            <li><strong>Foque em comportamentos:</strong> Descreva ações, não julgue pessoas</li>
-                            <li><strong>Inclua exemplos práticos:</strong> Mostre situações reais do dia a dia</li>
-                            <li><strong>Revise periodicamente:</strong> Atualize conforme a operação evolui</li>
-                            <li><strong>Compartilhe com a equipe:</strong> Todos devem conhecer e seguir as regras</li>
-                            <li><strong>Seja consistente:</strong> Aplique as regras igualmente para todos</li>
-                        </ul>
+
+                    <!-- 4. ONDE O SISTEMA FALA? -->
+                    <div class="ceia-surface-system-talk">
+                        <div class="ceia-surface-system-talk-title">
+                            <i class="fas fa-lightbulb"></i>
+                            Dicas para boas regras
+                        </div>
+                        <div class="ceia-surface-system-talk-content">
+                            <ul style="margin: 0; padding-left: 1.25rem; color: var(--texto-principal);">
+                                <li style="margin-bottom: 0.5rem;"><strong>Seja claro e objetivo:</strong> Use linguagem simples e direta</li>
+                                <li style="margin-bottom: 0.5rem;"><strong>Foque em comportamentos:</strong> Descreva ações, não julgue pessoas</li>
+                                <li style="margin-bottom: 0.5rem;"><strong>Inclua exemplos práticos:</strong> Mostre situações reais do dia a dia</li>
+                                <li style="margin-bottom: 0.5rem;"><strong>Revise periodicamente:</strong> Atualize conforme a operação evolui</li>
+                                <li style="margin-bottom: 0.5rem;"><strong>Compartilhe com a equipe:</strong> Todos devem conhecer e seguir as regras</li>
+                                <li><strong>Seja consistente:</strong> Aplique as regras igualmente para todos</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
