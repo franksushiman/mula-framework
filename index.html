@@ -2049,7 +2049,20 @@
                                 </div>
                                 <div>
                                     <label>OpenAI API Key</label>
-                                    <input type="text" id="k-ope" class="form-input" placeholder="Chave da OpenAI">
+                                    <div style="position: relative; width: 100%;">
+                                        <input type="password" id="k-ope" class="form-input" placeholder="Chave da OpenAI" style="padding-right: 50px;">
+                                        <button type="button" id="toggle-openai-key" class="btn btn-secondary" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; font-size: 14px;" title="Mostrar chave">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div style="margin-top: 8px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                                        <span id="openai-key-status" style="display: inline-flex; align-items: center; gap: 4px;">
+                                            <i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Não verificada
+                                        </span>
+                                        <span style="font-size: 12px; color: var(--texto-secundario);">
+                                            Formato: sk-...
+                                        </span>
+                                    </div>
                                 </div>
                                 <div>
                                     <label>Telegram Bot Token</label>
@@ -2384,11 +2397,70 @@ Exemplo:
                 }
             }
 
+            // Função para mostrar/ocultar chave OpenAI
+            function toggleOpenAIKeyVisibility() {
+                const openAIKeyInput = document.getElementById('k-ope');
+                const toggleButton = document.getElementById('toggle-openai-key');
+                
+                if (openAIKeyInput && toggleButton) {
+                    if (openAIKeyInput.type === 'password') {
+                        openAIKeyInput.type = 'text';
+                        toggleButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                        toggleButton.title = 'Ocultar chave';
+                    } else {
+                        openAIKeyInput.type = 'password';
+                        toggleButton.innerHTML = '<i class="fas fa-eye"></i>';
+                        toggleButton.title = 'Mostrar chave';
+                    }
+                }
+            }
+
+            // Função para verificar status da chave OpenAI
+            function checkOpenAIKeyStatus() {
+                const openAIKeyInput = document.getElementById('k-ope');
+                const statusIndicator = document.getElementById('openai-key-status');
+                
+                if (!openAIKeyInput || !statusIndicator) return;
+                
+                const key = openAIKeyInput.value.trim();
+                
+                if (key.length === 0) {
+                    statusIndicator.innerHTML = '<i class="fas fa-times-circle" style="color: var(--vermelho-sobrio);"></i> Não configurada';
+                    statusIndicator.title = 'Chave OpenAI não configurada';
+                } else if (key.length < 20) {
+                    statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--ambar);"></i> Inválida';
+                    statusIndicator.title = 'Chave OpenAI parece muito curta';
+                } else if (key.startsWith('sk-')) {
+                    statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
+                    statusIndicator.title = 'Chave OpenAI configurada e válida';
+                } else {
+                    statusIndicator.innerHTML = '<i class="fas fa-question-circle" style="color: var(--texto-secundario);"></i> Desconhecida';
+                    statusIndicator.title = 'Formato de chave OpenAI não reconhecido';
+                }
+            }
+
+            // Configurar botão de mostrar/ocultar chave OpenAI
+            const toggleButton = document.getElementById('toggle-openai-key');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', toggleOpenAIKeyVisibility);
+            }
+
+            // Configurar verificação de status da chave OpenAI
+            const openAIKeyInput = document.getElementById('k-ope');
+            if (openAIKeyInput) {
+                openAIKeyInput.addEventListener('input', checkOpenAIKeyStatus);
+                openAIKeyInput.addEventListener('change', checkOpenAIKeyStatus);
+            }
+
             // Observar mudanças no config
             const originalSaveConfig = window.saveConfig;
             window.saveConfig = function() {
                 const result = originalSaveConfig.apply(this, arguments);
                 setTimeout(updateMenuCount, 100);
+                
+                // Verificar status da chave OpenAI após salvar
+                setTimeout(checkOpenAIKeyStatus, 100);
+                
                 return result;
             };
 
@@ -2402,6 +2474,16 @@ Exemplo:
             setTimeout(() => {
                 updateMenuCount();
                 updateGoldenRulesCount();
+                checkOpenAIKeyStatus();
+                
+                // Verificar se há uma chave OpenAI já configurada
+                if (window.config && window.config.openAIKey) {
+                    const openAIKeyInput = document.getElementById('k-ope');
+                    if (openAIKeyInput) {
+                        openAIKeyInput.value = window.config.openAIKey;
+                        checkOpenAIKeyStatus();
+                    }
+                }
             }, 500);
         });
     </script>
