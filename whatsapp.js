@@ -439,9 +439,53 @@ function setupClientListeners() {
                                     });
                                 });
                                 
-                                // Processar o áudio em segundo plano - desabilitado temporariamente
-                                // para evitar erros de handler duplicado
-                                console.log('Áudio recebido, processamento desabilitado temporariamente');
+                                // Processar o áudio em segundo plano
+                                // Usar uma abordagem que evita o erro de handler duplicado
+                                setTimeout(() => {
+                                    try {
+                                        // Enviar evento para processar o áudio
+                                        // O main process já tem o handler 'whatsapp-process-audio-message' configurado
+                                        // Vamos usar ipcRenderer.invoke se estivermos no contexto do renderer
+                                        // Mas note: whatsapp.js roda no main process, não no renderer
+                                        // Então precisamos acessar o ipcMain de forma diferente
+                                        
+                                        // Verificar se estamos no contexto do Electron main process
+                                        if (typeof require !== 'undefined') {
+                                            const { ipcMain } = require('electron');
+                                            
+                                            // Verificar se o handler já está registrado
+                                            // Se não estiver, registrar
+                                            const handlerExists = ipcMain.eventNames().includes('whatsapp-process-audio-message');
+                                            
+                                            if (!handlerExists) {
+                                                // O handler já está registrado no main.js, então não precisamos fazer nada
+                                                // Apenas chamar o handler existente
+                                                console.log('Handler de áudio já registrado no main.js');
+                                            }
+                                            
+                                            // Em vez de chamar ipcMain.handle diretamente (que registra um handler),
+                                            // vamos enviar um evento para o main process processar
+                                            // Mas note: ipcMain.handle não pode ser chamado aqui
+                                            // Vamos usar uma abordagem diferente: enviar para o frontend processar
+                                            
+                                            // Enviar notificação para o frontend
+                                            const { BrowserWindow } = require('electron');
+                                            BrowserWindow.getAllWindows().forEach(win => {
+                                                win.webContents.send('whatsapp-audio-to-process', {
+                                                    messageId: msg.id.id,
+                                                    audioData: audioData,
+                                                    mimeType: mimeType,
+                                                    from: msg.from,
+                                                    timestamp: msg.timestamp
+                                                });
+                                            });
+                                            
+                                            console.log('Áudio enviado para processamento via frontend');
+                                        }
+                                    } catch (processError) {
+                                        console.error('Erro ao processar áudio em segundo plano:', processError);
+                                    }
+                                }, 1000);
                                 
                             } catch (ipcError) {
                                 console.error('Erro ao enviar áudio para processamento IPC:', ipcError);
@@ -484,9 +528,29 @@ function setupClientListeners() {
                                 });
                             });
                             
-                            // Processar a localização em segundo plano - desabilitado temporariamente
-                            // para evitar erros de handler duplicado
-                            console.log('Localização recebida, processamento desabilitado temporariamente');
+                            // Processar a localização em segundo plano
+                            setTimeout(() => {
+                                try {
+                                    // Enviar notificação para o frontend
+                                    if (typeof require !== 'undefined') {
+                                        const { BrowserWindow } = require('electron');
+                                        BrowserWindow.getAllWindows().forEach(win => {
+                                            win.webContents.send('whatsapp-location-to-process', {
+                                                messageId: msg.id.id,
+                                                latitude: latitude,
+                                                longitude: longitude,
+                                                contextMessage: contextMessage,
+                                                from: msg.from,
+                                                timestamp: msg.timestamp
+                                            });
+                                        });
+                                        
+                                        console.log('Localização enviada para processamento via frontend');
+                                    }
+                                } catch (processError) {
+                                    console.error('Erro ao processar localização em segundo plano:', processError);
+                                }
+                            }, 1000);
                         }
                     }
                 } catch (locationError) {
