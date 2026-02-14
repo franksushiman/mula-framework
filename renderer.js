@@ -46,33 +46,39 @@ window.delDriver = function(phone) {
     }
 };
 
-window.saveC = function() {
-    // Atualizar window.config com os valores atuais
-    window.config.googleMapsKey = document.getElementById('k-goo')?.value || '';
-    window.config.openAIKey = document.getElementById('k-ope')?.value || '';
-    window.config.telegramToken = document.getElementById('k-tel')?.value || '';
-    window.config.restaurantAddress = document.getElementById('addr')?.value || '';
-    window.config.adminNumber = document.getElementById('k-adm')?.value || '';
-    // Nota: goldenRules agora está em sua própria aba
+// Função canônica para salvar configurações gerais
+window.saveConfigGeneral = function() {
+    // Coletar dados do formulário
+    const configData = {
+        googleMapsKey: document.getElementById('k-goo')?.value || '',
+        openAIKey: document.getElementById('k-ope')?.value || '',
+        telegramToken: document.getElementById('k-tel')?.value || '',
+        restaurantAddress: document.getElementById('addr')?.value || '',
+        adminNumber: document.getElementById('k-adm')?.value || ''
+    };
     
-    // Salvar configurações do Telegram
+    // Coletar configurações do Telegram
     const botToken = document.getElementById('telegram-bot-token')?.value || '';
     const chatId = document.getElementById('telegram-chat-id')?.value || '';
     const motoboysChannel = document.getElementById('telegram-motoboys-channel')?.value || '';
     
-    if (!window.config.telegram) window.config.telegram = {};
-    window.config.telegram.botToken = botToken;
-    window.config.telegram.chatId = chatId;
-    window.config.telegram.motoboysChannel = motoboysChannel;
+    if (botToken || chatId || motoboysChannel) {
+        configData.telegram = {
+            botToken: botToken,
+            chatId: chatId,
+            motoboysChannel: motoboysChannel
+        };
+    }
     
-    // Nota: Configurações de pagamentos removidas da interface do usuário
-    // O sistema gerencia automaticamente as configurações financeiras
-    
-    // Salvar
-    window.electronAPI.saveConfig(window.config).then(result => {
+    // Salvar via IPC
+    return window.electronAPI.saveConfig(configData).then(result => {
         window.showToast(result, 'success');
+        return result;
     });
 };
+
+// Alias para compatibilidade
+window.saveC = window.saveConfigGeneral;
 
 window.manualOrder = function() {
     window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info');
@@ -1733,54 +1739,43 @@ window.checkWhatsAppOnConfigOpen = function() {
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Mostrar que está carregando
         console.log('Iniciando aplicativo...');
         
-        // Configurar navegação - garantir que os eventos sejam adicionados corretamente
+        // Configurar navegação
         const navItems = document.querySelectorAll('.nav-item');
-        console.log('Itens de navegação encontrados:', navItems.length);
-        
         if (navItems.length === 0) {
             console.warn('Nenhum item de navegação encontrado');
         } else {
-            navItems.forEach((item, index) => {
-                // Remover event listeners antigos para evitar duplicação
-                const newItem = item.cloneNode(true);
-                item.parentNode.replaceChild(newItem, item);
-                
-                newItem.addEventListener('click', (e) => {
+            navItems.forEach((item) => {
+                item.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    const panelId = newItem.getAttribute('data-panel');
-                    console.log(`Navegação ${index}: ${panelId}`);
+                    const panelId = item.getAttribute('data-panel');
+                    console.log(`Navegação para: ${panelId}`);
                     window.nav(panelId);
                     
-                    // Verificar status do WhatsApp se for a aba de configurações
+                    // Ações específicas por painel
                     if (panelId === 'config-panel') {
                         setTimeout(() => {
                             window.checkWhatsAppStatus();
                         }, 100);
                     }
-                    // Carregar regras se for a aba de Regras de Ouro
                     if (panelId === 'golden-rules-panel') {
                         setTimeout(() => {
                             window.loadGoldenRules();
                         }, 100);
                     }
-                    // Inicializar cardápio se for a aba de Menu
                     if (panelId === 'menu-panel') {
                         setTimeout(() => {
                             window.initMenu();
                         }, 100);
                     }
                 });
-                console.log(`Evento adicionado ao item ${index}: ${newItem.getAttribute('data-panel')}`);
             });
         }
         
-        // Garantir que o painel home esteja ativo inicialmente
+        // Ativar painel home inicial
         setTimeout(() => {
-            // Remover active de todos os painéis primeiro
             document.querySelectorAll('.panel').forEach(panel => {
                 panel.classList.remove('active');
             });
@@ -1788,15 +1783,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 item.classList.remove('active');
             });
             
-            // Ativar home-panel e seu item de navegação
             const homePanel = document.getElementById('home-panel');
             const homeNavItem = document.querySelector('[data-panel="home-panel"]');
             if (homePanel && homeNavItem) {
                 homePanel.classList.add('active');
                 homeNavItem.classList.add('active');
-                console.log('Painel home ativado na inicialização');
-            } else {
-                console.error('Elementos do painel home não encontrados');
+                console.log('Painel home ativado');
             }
         }, 100);
 
@@ -1804,13 +1796,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btnPause = document.getElementById('btn-pause');
         if (btnPause) {
             btnPause.addEventListener('click', window.togglePause);
-        } else {
-            console.warn('Botão de pausa não encontrado');
         }
 
         // Carregar configuração
         window.config = await window.electronAPI.loadConfig();
-        console.log('Configuração carregada:', window.config);
+        console.log('Configuração carregada');
         
         // Preencher campos de configuração
         if (window.config) {
@@ -1818,8 +1808,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.value = value || '';
-                } else {
-                    console.warn(`Elemento #${id} não encontrado`);
                 }
             };
             setValue('k-goo', window.config.googleMapsKey);
@@ -1827,29 +1815,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             setValue('k-tel', window.config.telegramToken);
             setValue('addr', window.config.restaurantAddress);
             setValue('k-adm', window.config.adminNumber);
-            // Nota: goldenRules agora está em sua própria aba
-            // Apenas preencher o textarea se existir
+            
             const goldenRulesText = document.getElementById('golden-rules-text');
             if (goldenRulesText && window.config.goldenRules) {
                 goldenRulesText.value = window.config.goldenRules;
             }
             
-            // Preencher configurações do Telegram
             if (window.config.telegram) {
                 setValue('telegram-bot-token', window.config.telegram.botToken);
                 setValue('telegram-chat-id', window.config.telegram.chatId);
                 setValue('telegram-motoboys-channel', window.config.telegram.motoboysChannel || 'bot_embutido_ceia_frota');
             }
             
-            // Nota: Configurações de pagamentos removidas da interface do usuário
-            // Essas configurações são gerenciadas internamente pelo sistema
-            
             // Atualizar botão de pausa
             if (btnPause && window.config.botPaused) {
                 btnPause.innerHTML = '<i class="fas fa-play"></i> Retomar Loja';
                 btnPause.className = 'btn btn-success';
             }
-            // Atualizar botão de pausa do dashboard
             const dashboardPauseBtn = document.getElementById('btn-pause-dashboard');
             if (dashboardPauseBtn) {
                 if (window.config.botPaused) {
@@ -1867,14 +1849,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Driver position updated:', data);
             window.driverLastSeen[data.phone] = Date.now();
             window.renderFleet();
-            window.renderDashboardStats(); // Atualiza dashboard também
+            window.renderDashboardStats();
         });
 
-        // Listener para atualização do QR Code do WhatsApp
         window.electronAPI.onWhatsappQrUpdated((event, data) => {
             console.log('QR Code do WhatsApp atualizado');
             
-            // Atualizar QR Code na aba de configurações
             const qrContainerConfig = document.getElementById('whatsapp-qr-container-config');
             const qrImageConfig = document.getElementById('whatsapp-qr-image-config');
             
@@ -1883,10 +1863,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 qrContainerConfig.style.display = 'block';
             }
             
-            // Atualizar status
             window.checkWhatsAppStatus();
             
-            // Mostrar notificação
             if (document.getElementById('config-panel').classList.contains('active')) {
                 window.showToast('QR Code do WhatsApp atualizado!', 'success');
             }
@@ -1912,9 +1890,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.loadPrinters();
         window.initMap();
         window.updateDashboard();
-        window.renderDashboardStats(); // Novo dashboard
+        window.renderDashboardStats();
         
-        // Carregar configuração de impressora se existir
+        // Carregar configuração de impressora
         if (window.config.printerConfig) {
             const printerSelect = document.getElementById('printer-main');
             const autoPrintCheck = document.getElementById('auto-print');
@@ -1926,21 +1904,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
-        // Configurar atualização periódica do dashboard
+        // Atualização periódica do dashboard
         setInterval(() => {
             window.renderDashboardStats();
-        }, 30000); // Atualiza a cada 30 segundos
+        }, 30000);
         
         console.log('Aplicativo inicializado com sucesso');
         
-        // Mostrar toast de boas-vindas
         setTimeout(() => {
             window.showToast('Sistema Ceia carregado com sucesso!', 'success');
         }, 1000);
         
     } catch (error) {
         console.error('Erro durante a inicialização:', error);
-        // Mostrar erro na tela
         const errorDiv = document.getElementById('app-error');
         const errorMsg = document.getElementById('error-message');
         if (errorDiv && errorMsg) {

@@ -523,17 +523,27 @@ whatsappService.client.on('qr', (qr) => {
 });
 
 ipcMain.handle('whatsapp-get-qr', async () => {
-  if (currentQrCode) {
-    return { 
-      success: true, 
-      qrImage: currentQrCode,
-      message: 'QR Code disponível'
-    };
+  const service = getWhatsAppService();
+  // Verificar se o WhatsApp está inicializado
+  if (service.isWhatsAppInitialized && service.isWhatsAppInitialized()) {
+    if (currentQrCode) {
+      return { 
+        success: true, 
+        qrImage: currentQrCode,
+        message: 'QR Code disponível'
+      };
+    } else {
+      return { 
+        success: false, 
+        message: 'Aguardando QR Code do WhatsApp...',
+        note: 'O WhatsApp está inicializado mas ainda não gerou um QR Code.'
+      };
+    }
   } else {
     return { 
       success: false, 
-      message: 'Aguardando QR Code do WhatsApp...',
-      note: 'O WhatsApp ainda não gerou um QR Code. Aguarde alguns segundos.'
+      message: 'WhatsApp não inicializado',
+      note: 'Inicialize o WhatsApp primeiro para gerar um QR Code.'
     };
   }
 });
