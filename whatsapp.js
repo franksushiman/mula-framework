@@ -173,15 +173,16 @@ function restartWhatsApp() {
                 return;
             }
             
+            // Resetar o estado
+            isInitialized = false;
+            whatsappStatus.connected = false;
+            whatsappStatus.phone = null;
+            whatsappStatus.readyAt = null;
+            isInitializing = false;
+            
             // Tentar destruir o cliente atual
             client.destroy().then(() => {
-                console.log('✅ WhatsApp destruído, reinicializando...');
-                
-                // Resetar o estado
-                isInitialized = false;
-                whatsappStatus.connected = false;
-                whatsappStatus.phone = null;
-                whatsappStatus.readyAt = null;
+                console.log('✅ WhatsApp destruído, aguardando 3 segundos antes de reinicializar...');
                 
                 // Aguardar um momento antes de reinicializar
                 setTimeout(() => {
@@ -191,12 +192,42 @@ function restartWhatsApp() {
                         resolve();
                     }).catch(error => {
                         console.error('❌ Erro ao reinicializar WhatsApp:', error);
-                        reject(error);
+                        
+                        // Se for erro de "already running", tentar uma abordagem diferente
+                        if (error.message.includes('already running') || error.message.includes('userDataDir')) {
+                            console.warn('⚠️  Browser ainda rodando após destruição. Tentando abordagem alternativa...');
+                            
+                            // Usar uma estratégia mais agressiva: forçar nova sessão
+                            const fs = require('fs');
+                            const path = require('path');
+                            const { app } = require('electron');
+                            
+                            const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth', 'session-ceia-delivery');
+                            if (fs.existsSync(sessionPath)) {
+                                console.log('Removendo sessão antiga:', sessionPath);
+                                fs.rmSync(sessionPath, { recursive: true, force: true });
+                            }
+                            
+                            // Aguardar mais tempo e tentar novamente
+                            setTimeout(() => {
+                                client.initialize().then(() => {
+                                    console.log('✅ WhatsApp reinicializado após limpeza de sessão!');
+                                    resolve();
+                                }).catch(finalError => {
+                                    console.error('❌ Erro final ao reinicializar:', finalError);
+                                    reject(finalError);
+                                });
+                            }, 3000);
+                        } else {
+                            reject(error);
+                        }
                     });
-                }, 2000);
+                }, 3000);
             }).catch(error => {
                 console.error('❌ Erro ao destruir WhatsApp:', error);
-                // Mesmo se falhar ao destruir, tentar inicializar
+                
+                // Se não conseguir destruir, tentar inicializar mesmo assim
+                console.log('Tentando inicializar mesmo com erro na destruição...');
                 client.initialize().then(() => {
                     console.log('✅ WhatsApp inicializado após falha na destruição!');
                     resolve();
@@ -741,33 +772,95 @@ function initializeWhatsApp() {
             // Configurar listeners primeiro (apenas uma vez)
             setupClientListeners();
             
-            // Inicializar o cliente
-            console.log('Chamando client.initialize()...');
-            client.initialize().catch(error => {
-                isInitializing = false;
-                console.error('Erro ao chamar client.initialize():', error);
-                reject(new Error('Erro ao inicializar cliente: ' + error.message));
-            });
+            // Verificar se há sessão corrompida antes de tentar inicializar
+            const checkAndCleanSession = () => {
+                return new Promise((resolveClean) => {
+                    // Verificar se o erro de "already running" pode ser prevenido
+                    // Não fazemos limpeza preventiva aqui, apenas se ocorrer erro
+                    resolveClean();
+                });
+            };
             
-            // Aguardar o evento 'ready' ou timeout
-            const readyTimeout = setTimeout(() => {
-                isInitializing = false;
-                console.error('Timeout ao inicializar WhatsApp (60 segundos)');
-                reject(new Error('Timeout ao inicializar WhatsApp (60 segundos)'));
-            }, 60000);
-            
-            // Usar listeners permanentes em vez de once(), já que setupClientListeners
-            // já configurou os listeners permanentes
-            // Apenas precisamos monitorar quando o ready acontece
-            const checkReady = setInterval(() => {
-                if (isInitialized && whatsappStatus.connected) {
-                    clearInterval(checkReady);
-                    clearTimeout(readyTimeout);
+            checkAndCleanSession().then(() => {
+                // Inicializar o cliente
+                console.log('Chamando client.initialize()...');
+                
+                // Aguardar o evento 'ready' ou timeout
+                const readyTimeout = setTimeout(() => {
                     isInitializing = false;
-                    console.log('✅ WhatsApp inicializado com sucesso!');
-                    resolve();
-                }
-            }, 500);
+                    console.error('Timeout ao inicializar WhatsApp (90 segundos)');
+                    reject(new Error('Timeout ao inicializar WhatsApp (90 segundos)'));
+                }, 90000);
+                
+                // Tentar inicializar o cliente
+                client.initialize().then(() => {
+                    console.log('client.initialize() chamado com sucesso');
+                }).catch(error => {
+                    isInitializing = false;
+                    clearTimeout(readyTimeout);
+                    
+                    // Verificar se é o erro de "browser já rodando"
+                    if (error.message.includes('already running') || error.message.includes('userDataDir')) {
+                        console.warn('⚠️  Browser já está rodando. Tentando abordagem de recuperação...');
+                        
+                        // Tentar uma abordagem mais agressiva: limpar sessão e tentar novamente
+                        try {
+                            const fs = require('fs');
+                            const path = require('path');
+                            const { app } = require('electron');
+                            
+                            const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth', 'session-ceia-delivery');
+                            if (fs.existsSync(sessionPath)) {
+                                console.log('Removendo sessão corrompida:', sessionPath);
+                                fs.rmSync(sessionPath, { recursive: true, force: true });
+                            }
+                        } catch (cleanError) {
+                            console.warn('Não foi possível limpar sessão:', cleanError.message);
+                        }
+                        
+                        // Tentar destruir e reinicializar
+                        client.destroy().then(() => {
+                            console.log('✅ Browser anterior destruído. Aguardando 3 segundos...');
+                            
+                            // Aguardar um momento antes de tentar novamente
+                            setTimeout(() => {
+                                console.log('Tentando reinicializar após limpeza...');
+                                client.initialize().then(() => {
+                                    console.log('✅ WhatsApp reinicializado com sucesso após limpeza!');
+                                    // O evento 'ready' será disparado normalmente
+                                }).catch(retryError => {
+                                    console.error('❌ Erro ao reinicializar após limpeza:', retryError);
+                                    reject(new Error('Erro ao reinicializar WhatsApp: ' + retryError.message));
+                                });
+                            }, 3000);
+                        }).catch(destroyError => {
+                            console.error('❌ Erro ao destruir browser:', destroyError);
+                            reject(new Error('Erro ao destruir browser: ' + destroyError.message));
+                        });
+                    } else {
+                        console.error('Erro ao chamar client.initialize():', error);
+                        reject(new Error('Erro ao inicializar cliente: ' + error.message));
+                    }
+                });
+                
+                // Usar listeners permanentes em vez de once(), já que setupClientListeners
+                // já configurou os listeners permanentes
+                // Apenas precisamos monitorar quando o ready acontece
+                const checkReady = setInterval(() => {
+                    if (isInitialized && whatsappStatus.connected) {
+                        clearInterval(checkReady);
+                        clearTimeout(readyTimeout);
+                        isInitializing = false;
+                        console.log('✅ WhatsApp inicializado com sucesso!');
+                        resolve();
+                    }
+                }, 500);
+                
+            }).catch(cleanError => {
+                isInitializing = false;
+                console.error('Erro na verificação de sessão:', cleanError);
+                reject(new Error('Erro na verificação de sessão: ' + cleanError.message));
+            });
             
         } catch (error) {
             isInitializing = false;
@@ -791,6 +884,26 @@ function resetInitialization() {
     whatsappStatus.readyAt = null;
 }
 
+// Função para limpar sessão manualmente
+function clearWhatsAppSession() {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const { app } = require('electron');
+        
+        const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth', 'session-ceia-delivery');
+        if (fs.existsSync(sessionPath)) {
+            console.log('Limpando sessão WhatsApp:', sessionPath);
+            fs.rmSync(sessionPath, { recursive: true, force: true });
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Erro ao limpar sessão:', error);
+        return false;
+    }
+}
+
 // Exportar funções
 module.exports = {
     sendWhatsAppMessage,
@@ -799,5 +912,6 @@ module.exports = {
     initializeWhatsApp,
     isWhatsAppInitialized,
     resetInitialization,
+    clearWhatsAppSession,
     client
 };
