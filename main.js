@@ -517,10 +517,40 @@ ipcMain.handle('whatsapp-get-status', async () => {
   try {
     const service = getWhatsAppService();
     const status = service.getWhatsAppStatus();
+    
+    // Se não estiver conectado, tentar verificar se precisa inicializar
+    if (!status.connected) {
+      console.log('WhatsApp não está conectado, verificando se precisa inicializar...');
+      
+      // Verificar se o serviço está inicializado
+      if (service.isWhatsAppInitialized && !service.isWhatsAppInitialized()) {
+        console.log('WhatsApp não está inicializado, tentando inicializar...');
+        try {
+          await service.initializeWhatsApp();
+          // Aguardar um momento e obter status atualizado
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const newStatus = service.getWhatsAppStatus();
+          return newStatus;
+        } catch (initError) {
+          console.error('Erro ao tentar inicializar WhatsApp:', initError);
+          return {
+            ...status,
+            error: initError.message,
+            initializationError: true
+          };
+        }
+      }
+    }
+    
     return status;
   } catch (error) {
     console.error('Erro ao obter status WhatsApp:', error);
-    return { connected: false, error: error.message };
+    return { 
+      connected: false, 
+      error: error.message,
+      isInitialized: false,
+      status: 'error'
+    };
   }
 });
 
@@ -584,27 +614,64 @@ function processWhatsAppQr(qr) {
 }
 
 ipcMain.handle('whatsapp-get-qr', async () => {
-  const service = getWhatsAppService();
-  // Verificar se o WhatsApp está inicializado
-  if (service.isWhatsAppInitialized && service.isWhatsAppInitialized()) {
+  try {
+    const service = getWhatsAppService();
+    
+    // Se já temos QR Code, retornar
     if (currentQrCode) {
       return { 
         success: true, 
         qrImage: currentQrCode,
         message: 'QR Code disponível'
       };
-    } else {
-      return { 
-        success: false, 
-        message: 'Aguardando QR Code do WhatsApp...',
-        note: 'O WhatsApp está inicializado mas ainda não gerou um QR Code.'
-      };
     }
-  } else {
+    
+    // Se não temos QR Code, tentar inicializar o WhatsApp
+    console.log('Solicitando QR Code, inicializando WhatsApp...');
+    await service.initializeWhatsApp();
+    
+    // Aguardar QR Code por 10 segundos
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        resolve({ 
+          success: false, 
+          message: 'Aguardando QR Code do WhatsApp...',
+          note: 'O WhatsApp está inicializando. Tente novamente em alguns segundos.'
+        });
+      }, 10000);
+      
+      // Listener temporário para QR Code
+      const qrListener = (qr) => {
+        clearTimeout(timeout);
+        service.client.off('qr', qrListener);
+        
+        QRCode.toDataURL(qr, (err, url) => {
+          if (err) {
+            resolve({ 
+              success: false, 
+              message: 'Erro ao gerar QR Code: ' + err.message
+            });
+            return;
+          }
+          
+          currentQrCode = url;
+          resolve({ 
+            success: true, 
+            qrImage: url,
+            message: 'QR Code gerado com sucesso'
+          });
+        });
+      };
+      
+      service.client.on('qr', qrListener);
+    });
+    
+  } catch (error) {
+    console.error('Erro ao obter QR Code:', error);
     return { 
       success: false, 
-      message: 'WhatsApp não inicializado',
-      note: 'Inicialize o WhatsApp primeiro para gerar um QR Code.'
+      message: 'Erro ao inicializar WhatsApp: ' + error.message,
+      note: 'Verifique se o WhatsApp Web pode ser executado no seu sistema.'
     };
   }
 });
@@ -773,20 +840,44 @@ app.whenReady().then(() => {
   setTimeout(() => {
     console.log('Inicializando serviço WhatsApp...');
     try {
-      // Verificar se o WhatsApp já está inicializado
       const service = getWhatsAppService();
-      if (service && service.isWhatsAppInitialized && !service.isWhatsAppInitialized()) {
-        console.log('WhatsApp não está inicializado, tentando inicializar...');
-        service.initializeWhatsApp().catch(error => {
-          console.error('Erro ao inicializar WhatsApp:', error);
-        });
-      } else {
-        console.log('WhatsApp já está inicializado ou em processo de inicialização');
-      }
+      console.log('Serviço WhatsApp obtido, verificando status...');
+      
+      // Forçar inicialização do WhatsApp
+      service.initializeWhatsApp().then(() => {
+        console.log('✅ WhatsApp inicializado com sucesso!');
+        
+        // Verificar status após inicialização
+        setTimeout(() => {
+          const status = service.getWhatsAppStatus();
+          console.log('Status do WhatsApp após inicialização:', status);
+          
+          // Enviar status para a janela principal
+          BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('bot-status', {
+              online: status.connected,
+              timestamp: Date.now(),
+              message: status.message
+            });
+          });
+        }, 2000);
+        
+      }).catch(error => {
+        console.error('❌ Erro ao inicializar WhatsApp:', error);
+        
+        // Tentar novamente em 10 segundos
+        setTimeout(() => {
+          console.log('Tentando inicializar WhatsApp novamente...');
+          service.initializeWhatsApp().catch(err => {
+            console.error('❌ Erro na segunda tentativa:', err);
+          });
+        }, 10000);
+      });
+      
     } catch (error) {
       console.error('Erro ao inicializar serviço WhatsApp:', error);
     }
-  }, 5000); // Aumentar delay para 5 segundos para garantir que tudo está carregado
+  }, 3000); // Delay de 3 segundos
 
   app.on('activate', () => {
     // No macOS, é comum recriar uma janela quando o dock é clicado e não há outras janelas abertas
