@@ -72,6 +72,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onBotStatus: (callback) => ipcRenderer.on('bot-status', callback),
   onConfigUpdated: (callback) => ipcRenderer.on('config-updated', callback),
   onTelegramLocation: (callback) => ipcRenderer.on('telegram-location', callback),
+  onWhatsappQrUpdated: (callback) => ipcRenderer.on('whatsapp-qr-updated', callback),
   
   // Envio de eventos para o main
   notifyMotoboyApproved: (data) => ipcRenderer.send('notify-motoboy-approved', data),

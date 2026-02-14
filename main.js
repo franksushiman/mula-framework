@@ -268,20 +268,8 @@ ipcMain.handle('reservation-mark-notification-seen', async (event, reservationId
   return { success: true };
 });
 
-ipcMain.handle('whatsapp-get-status', async () => {
-  // Simulação: sempre online
-  return { online: true, phone: '+5511999999999' };
-});
-
-ipcMain.handle('whatsapp-get-qr', async () => {
-  try {
-    const qrDataUrl = await QRCode.toDataURL(`https://wa.me/qr/CEIA-${Date.now()}`);
-    return qrDataUrl;
-  } catch (error) {
-    console.error('Erro ao gerar QR code:', error);
-    return null;
-  }
-});
+// Remover o handler duplicado whatsapp-get-status que está acima
+// (O handler correto está mais abaixo, importado do whatsapp.js)
 
 ipcMain.handle('validate-telegram-token', async (event, token) => {
   try {
@@ -491,13 +479,43 @@ ipcMain.handle('whatsapp-restart', async () => {
   }
 });
 
-// Handler para obter QR Code (para mostrar no frontend se necessário)
+// Handler para obter QR Code do WhatsApp
+let currentQrCode = null;
+
+// Ouvir evento 'qr' do WhatsApp e armazenar o QR Code
+const whatsappService = require('./whatsapp.js');
+whatsappService.client.on('qr', (qr) => {
+  console.log('QR Code recebido, convertendo para imagem...');
+  // Converter QR Code para data URL
+  QRCode.toDataURL(qr, (err, url) => {
+    if (err) {
+      console.error('Erro ao converter QR Code:', err);
+      return;
+    }
+    currentQrCode = url;
+    console.log('QR Code convertido para imagem');
+    
+    // Enviar para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('whatsapp-qr-updated', { qrImage: url });
+    });
+  });
+});
+
 ipcMain.handle('whatsapp-get-qr', async () => {
-  // Nota: O QR Code é mostrado no terminal, mas podemos enviar para o frontend também
-  return { 
-    message: 'Verifique o terminal para escanear o QR Code',
-    note: 'O QR Code é exibido automaticamente no terminal quando necessário'
-  };
+  if (currentQrCode) {
+    return { 
+      success: true, 
+      qrImage: currentQrCode,
+      message: 'QR Code disponível'
+    };
+  } else {
+    return { 
+      success: false, 
+      message: 'Aguardando QR Code do WhatsApp...',
+      note: 'O WhatsApp ainda não gerou um QR Code. Aguarde alguns segundos.'
+    };
+  }
 });
 
 // Handler para testar conexão Bayleis (simulação mais realista)

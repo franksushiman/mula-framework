@@ -757,17 +757,30 @@ window.testWhatsAppConnection = function() {
                 statusText.innerHTML = `
                     <strong>✅ WhatsApp Conectado</strong><br>
                     Número: ${status.phone || 'N/A'}<br>
-                    Conectado desde: ${status.readyAt ? new Date(status.readyAt).toLocaleTimeString() : 'N/A'}
+                    Conectado desde: ${status.readyAt ? new Date(status.readyAt).toLocaleTimeString() : 'N/A'}<br>
+                    <small>Para reconectar, use "Gerar QR Code"</small>
                 `;
                 statusText.style.color = 'var(--verde-esperanca)';
                 window.showToast('WhatsApp conectado!', 'success');
+                
+                // Ocultar QR Code se estiver visível
+                const qrContainer = document.getElementById('whatsapp-qr-container');
+                if (qrContainer) {
+                    qrContainer.style.display = 'none';
+                }
             } else {
                 statusText.innerHTML = `
                     <strong>❌ WhatsApp Desconectado</strong><br>
-                    Verifique o terminal para escanear o QR Code
+                    Clique em "Gerar QR Code" para conectar<br>
+                    <small>O QR Code aparecerá abaixo</small>
                 `;
                 statusText.style.color = 'var(--vermelho-sobrio)';
-                window.showToast('WhatsApp desconectado', 'error');
+                window.showToast('WhatsApp desconectado. Gere um QR Code para conectar.', 'error');
+                
+                // Mostrar botão para gerar QR Code
+                setTimeout(() => {
+                    window.getWhatsAppQR();
+                }, 1000);
             }
         }
     });
@@ -791,8 +804,32 @@ window.sendWhatsAppTest = function() {
 
 window.getWhatsAppQR = function() {
     window.electronAPI.whatsappGetQr().then(result => {
-        window.showToast(result.message, 'info');
-        console.log('Nota:', result.note);
+        if (result.success && result.qrImage) {
+            // Mostrar QR Code na interface
+            const qrContainer = document.getElementById('whatsapp-qr-container');
+            const qrImage = document.getElementById('whatsapp-qr-image');
+            const statusDiv = document.getElementById('whatsapp-status');
+            const statusText = document.getElementById('whatsapp-status-text');
+            
+            if (qrContainer && qrImage) {
+                qrImage.src = result.qrImage;
+                qrContainer.style.display = 'block';
+                window.showToast('QR Code carregado! Escaneie com o WhatsApp.', 'success');
+            }
+            
+            if (statusDiv && statusText) {
+                statusDiv.style.display = 'block';
+                statusText.innerHTML = `
+                    <strong>📱 QR Code do WhatsApp</strong><br>
+                    Escaneie este código com o WhatsApp da loja<br>
+                    <small>No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho</small>
+                `;
+                statusText.style.color = 'var(--verde-esperanca)';
+            }
+        } else {
+            window.showToast(result.message || 'Aguardando QR Code...', 'info');
+            console.log('Nota:', result.note);
+        }
     });
 };
 
@@ -1229,6 +1266,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.driverLastSeen[data.phone] = Date.now();
             window.renderFleet();
             window.renderDashboardStats(); // Atualiza dashboard também
+        });
+
+        // Listener para atualização do QR Code do WhatsApp
+        window.electronAPI.onWhatsappQrUpdated((event, data) => {
+            console.log('QR Code do WhatsApp atualizado');
+            const qrContainer = document.getElementById('whatsapp-qr-container');
+            const qrImage = document.getElementById('whatsapp-qr-image');
+            const statusDiv = document.getElementById('whatsapp-status');
+            const statusText = document.getElementById('whatsapp-status-text');
+            
+            if (qrContainer && qrImage && data.qrImage) {
+                qrImage.src = data.qrImage;
+                qrContainer.style.display = 'block';
+                
+                if (statusDiv && statusText) {
+                    statusDiv.style.display = 'block';
+                    statusText.innerHTML = `
+                        <strong>📱 QR Code do WhatsApp (Atualizado)</strong><br>
+                        Escaneie este código com o WhatsApp da loja<br>
+                        <small>No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho</small>
+                    `;
+                    statusText.style.color = 'var(--verde-esperanca)';
+                }
+                
+                // Mostrar notificação
+                if (document.getElementById('config-panel').classList.contains('active')) {
+                    window.showToast('QR Code do WhatsApp atualizado!', 'success');
+                }
+            }
         });
 
         window.electronAPI.onDriverAccepted((event, data) => {

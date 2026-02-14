@@ -1717,6 +1717,9 @@
                                 <button class="btn btn-secondary" onclick="window.sendWhatsAppTest()" style="padding: 8px 15px; margin-left: 10px;">
                                     <i class="fas fa-paper-plane"></i> Enviar Teste
                                 </button>
+                                <button class="btn btn-secondary" onclick="window.getWhatsAppQR()" style="padding: 8px 15px; margin-left: 10px;">
+                                    <i class="fas fa-qrcode"></i> Gerar QR Code
+                                </button>
                                 <button class="btn btn-secondary" onclick="window.restartWhatsApp()" style="padding: 8px 15px; margin-left: 10px;">
                                     <i class="fas fa-sync-alt"></i> Reiniciar
                                 </button>
@@ -1724,11 +1727,19 @@
                             <div id="whatsapp-status" style="margin-top: 10px; padding: 10px; background: var(--branco-quente); border-radius: 6px; display: none;">
                                 <p id="whatsapp-status-text" style="margin: 0; font-size: 13px;"></p>
                             </div>
-                            <div id="whatsapp-qr-container" style="margin-top: 10px; text-align: center; display: none;">
-                                <img id="whatsapp-qr-image" src="" style="max-width: 200px; border: 1px solid var(--borda-quente); border-radius: 8px;">
-                                <p style="font-size: 12px; color: var(--texto-secundario); margin-top: 5px;">
-                                    Escaneie com seu app bancário para pagar
+                            <div id="whatsapp-qr-container" style="margin-top: 15px; text-align: center; display: none;">
+                                <div style="background: white; padding: 15px; border-radius: 12px; display: inline-block; border: 2px solid var(--verde-esperanca);">
+                                    <img id="whatsapp-qr-image" src="" style="max-width: 250px; height: auto;">
+                                </div>
+                                <p style="font-size: 13px; color: var(--texto-secundario); margin-top: 10px; line-height: 1.4;">
+                                    <strong>Como escanear:</strong><br>
+                                    1. Abra o WhatsApp no celular da loja<br>
+                                    2. Toque em <strong>Menu → Aparelhos conectados → Conectar um aparelho</strong><br>
+                                    3. Aponte a câmera para este código
                                 </p>
+                                <button class="btn btn-secondary" onclick="window.getWhatsAppQR()" style="margin-top: 10px; padding: 8px 16px;">
+                                    <i class="fas fa-sync"></i> Atualizar QR Code
+                                </button>
                             </div>
                         </div>
                     </div>
