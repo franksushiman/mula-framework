@@ -226,10 +226,7 @@ function getWhatsAppStatus() {
 let isInitialized = false;
 let isInitializing = false;
 let initializationTimeout = null;
-let readyListener = null;
-let authFailureListener = null;
-let disconnectedListener = null;
-let qrListener = null;
+let clientListenersConfigured = false;
 
 // Função para reiniciar a conexão
 function restartWhatsApp() {
@@ -310,16 +307,19 @@ function restartWhatsApp() {
     });
 }
 
-// Função para configurar listeners do cliente
+// Função para configurar listeners do cliente (apenas uma vez)
 function setupClientListeners() {
     try {
-        // Remover listeners antigos primeiro
-        if (client) {
-            client.removeAllListeners();
+        // Verificar se os listeners já foram configurados
+        if (clientListenersConfigured) {
+            console.log('Listeners do WhatsApp já configurados');
+            return;
         }
         
+        console.log('Configurando listeners do WhatsApp...');
+        
         // Configurar os listeners padrão
-        qrListener = (qr) => {
+        client.on('qr', (qr) => {
             console.log('\n=== QR CODE PARA CONEXÃO DO WHATSAPP ===');
             try {
                 qrcode.generate(qr, { small: true });
@@ -346,9 +346,9 @@ function setupClientListeners() {
                     });
                 }
             });
-        };
+        });
         
-        readyListener = () => {
+        client.on('ready', () => {
             console.log('✅ WhatsApp está pronto!');
             
             // Limpar timeout de inicialização
@@ -375,9 +375,13 @@ function setupClientListeners() {
             }).catch(error => {
                 console.error('Erro ao obter info:', error);
             });
-        };
+        });
         
-        authFailureListener = (error) => {
+        client.on('authenticated', () => {
+            console.log('🔐 WhatsApp autenticado!');
+        });
+        
+        client.on('auth_failure', (error) => {
             console.error('❌ Falha na autenticação do WhatsApp:', error);
             whatsappStatus.connected = false;
             isInitialized = false;
@@ -388,9 +392,9 @@ function setupClientListeners() {
                 clearTimeout(initializationTimeout);
                 initializationTimeout = null;
             }
-        };
+        });
         
-        disconnectedListener = (reason) => {
+        client.on('disconnected', (reason) => {
             console.log(`❌ WhatsApp desconectado: ${reason}`);
             whatsappStatus.connected = false;
             whatsappStatus.phone = null;
@@ -402,22 +406,15 @@ function setupClientListeners() {
                 clearTimeout(initializationTimeout);
                 initializationTimeout = null;
             }
-        };
-        
-        // Adicionar listeners
-        client.on('qr', qrListener);
-        client.on('ready', readyListener);
-        client.on('authenticated', () => {
-            console.log('🔐 WhatsApp autenticado!');
         });
-        client.on('auth_failure', authFailureListener);
-        client.on('disconnected', disconnectedListener);
+        
         client.on('message', async (msg) => {
             if (!msg.fromMe) {
                 console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 50) || 'sem corpo'}...`);
             }
         });
         
+        clientListenersConfigured = true;
         console.log('Listeners do WhatsApp configurados com sucesso');
     } catch (error) {
         console.error('Erro ao configurar listeners do WhatsApp:', error);
@@ -463,7 +460,7 @@ function initializeWhatsApp() {
         try {
             isInitializing = true;
             
-            // Configurar listeners primeiro
+            // Configurar listeners primeiro (apenas uma vez)
             setupClientListeners();
             
             // Inicializar o cliente
@@ -481,46 +478,18 @@ function initializeWhatsApp() {
                 reject(new Error('Timeout ao inicializar WhatsApp (60 segundos)'));
             }, 60000);
             
-            const onReady = () => {
-                clearTimeout(readyTimeout);
-                isInitializing = false;
-                isInitialized = true;
-                whatsappStatus.connected = true;
-                console.log('✅ WhatsApp inicializado com sucesso!');
-                client.off('ready', onReady);
-                client.off('auth_failure', onAuthFailure);
-                client.off('disconnected', onDisconnected);
-                resolve();
-            };
-            
-            const onAuthFailure = (error) => {
-                clearTimeout(readyTimeout);
-                isInitializing = false;
-                console.error('Falha na autenticação:', error);
-                client.off('ready', onReady);
-                client.off('auth_failure', onAuthFailure);
-                client.off('disconnected', onDisconnected);
-                reject(new Error('Falha na autenticação: ' + error));
-            };
-            
-            const onDisconnected = (reason) => {
-                clearTimeout(readyTimeout);
-                isInitializing = false;
-                console.error('WhatsApp desconectado durante inicialização:', reason);
-                client.off('ready', onReady);
-                client.off('auth_failure', onAuthFailure);
-                client.off('disconnected', onDisconnected);
-                reject(new Error('WhatsApp desconectado durante inicialização: ' + reason));
-            };
-            
-            client.once('ready', onReady);
-            client.once('auth_failure', onAuthFailure);
-            client.once('disconnected', onDisconnected);
-            
-            // Também configurar listener para 'authenticated'
-            client.once('authenticated', () => {
-                console.log('🔐 WhatsApp autenticado!');
-            });
+            // Usar listeners permanentes em vez de once(), já que setupClientListeners
+            // já configurou os listeners permanentes
+            // Apenas precisamos monitorar quando o ready acontece
+            const checkReady = setInterval(() => {
+                if (isInitialized && whatsappStatus.connected) {
+                    clearInterval(checkReady);
+                    clearTimeout(readyTimeout);
+                    isInitializing = false;
+                    console.log('✅ WhatsApp inicializado com sucesso!');
+                    resolve();
+                }
+            }, 500);
             
         } catch (error) {
             isInitializing = false;

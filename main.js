@@ -633,10 +633,15 @@ async function transcribeAudioWithWhisper(apiKey, audioData, mimeType) {
       audioBuffer = audioData;
     }
     
-    // Criar FormData para enviar para a API
+    // Usar FormData do Node.js
+    const FormData = require('form-data');
     const formData = new FormData();
-    const blob = new Blob([audioBuffer], { type: mimeType || 'audio/ogg' });
-    formData.append('file', blob, 'audio.ogg');
+    
+    // Adicionar o arquivo de áudio
+    formData.append('file', audioBuffer, {
+      filename: 'audio.ogg',
+      contentType: mimeType || 'audio/ogg'
+    });
     formData.append('model', 'whisper-1');
     formData.append('response_format', 'json');
     
@@ -644,13 +649,21 @@ async function transcribeAudioWithWhisper(apiKey, audioData, mimeType) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
+        ...formData.getHeaders()
       },
       body: formData
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Erro Whisper API: ${errorData.error?.message || response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error?.message || errorText;
+      } catch {
+        errorMessage = errorText;
+      }
+      throw new Error(`Erro Whisper API: ${errorMessage}`);
     }
     
     const data = await response.json();
