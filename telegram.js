@@ -25,6 +25,7 @@ const userSessions = {};
 const USER_STEPS = {
     WAITING_NAME: 'WAITING_NAME',
     WAITING_PIX: 'WAITING_PIX',
+    WAITING_TYPE: 'WAITING_TYPE',
     WAITING_PLATE: 'WAITING_PLATE',
     WAITING_CONTACT: 'WAITING_CONTACT'
 };
@@ -172,8 +173,56 @@ function initializeTelegramBot() {
                     case USER_STEPS.WAITING_PIX:
                         // Salvar PIX
                         userData.pixKey = text.trim();
-                        session.step = USER_STEPS.WAITING_PLATE;
-                        ctx.reply('Anotado. Qual a **Placa e Modelo** da sua moto?\n\nExemplo: "ABC-1234 | Honda CG 160"');
+                        session.step = USER_STEPS.WAITING_TYPE;
+                        
+                        // Perguntar tipo de trabalho com botões
+                        ctx.reply('Certo! Como você vai trabalhar com a gente?', {
+                            reply_markup: {
+                                keyboard: [
+                                    ['💼 Fixo'],
+                                    ['🛵 Freelancer']
+                                ],
+                                resize_keyboard: true,
+                                one_time_keyboard: true
+                            }
+                        });
+                        break;
+                        
+                    case USER_STEPS.WAITING_TYPE:
+                        // Verificar se a resposta é válida
+                        const normalizedText = text.trim().toLowerCase();
+                        let driverType = null;
+                        
+                        if (normalizedText.includes('fixo') || normalizedText === '💼 fixo') {
+                            driverType = 'FIXO';
+                        } else if (normalizedText.includes('freelancer') || normalizedText === '🛵 freelancer') {
+                            driverType = 'FREELANCER';
+                        }
+                        
+                        if (driverType) {
+                            // Salvar tipo
+                            userData.type = driverType;
+                            session.step = USER_STEPS.WAITING_PLATE;
+                            
+                            // Remover teclado e perguntar placa/modelo
+                            ctx.reply(`Anotado. Qual a **Placa e Modelo** da sua moto?\n\nExemplo: "ABC-1234 | Honda CG 160"`, {
+                                reply_markup: {
+                                    remove_keyboard: true
+                                }
+                            });
+                        } else {
+                            // Resposta inválida, repetir pergunta
+                            ctx.reply('Por favor, escolha uma das opções abaixo:', {
+                                reply_markup: {
+                                    keyboard: [
+                                        ['💼 Fixo'],
+                                        ['🛵 Freelancer']
+                                    ],
+                                    resize_keyboard: true,
+                                    one_time_keyboard: true
+                                }
+                            });
+                        }
                         break;
                         
                     case USER_STEPS.WAITING_PLATE:
@@ -245,6 +294,7 @@ function initializeTelegramBot() {
                         chatId: chatId,
                         name: userData.name,
                         pixKey: userData.pixKey,
+                        type: userData.type || 'FREELANCER', // Incluir tipo
                         vehicle: userData.vehicle,
                         phone: phoneNumber,
                         telegramUserId: ctx.from.id,
@@ -256,10 +306,12 @@ function initializeTelegramBot() {
                 delete userSessions[chatId];
                 
                 // Mensagem de sucesso
+                const typeDisplay = userData.type === 'FIXO' ? '💼 Fixo' : '🛵 Freelancer';
                 ctx.reply(
                     `✅ Cadastro Concluído! 🚀\n\n` +
                     `Nome: ${userData.name}\n` +
                     `PIX: ${userData.pixKey}\n` +
+                    `Tipo: ${typeDisplay}\n` +
                     `Moto: ${userData.vehicle}\n` +
                     `Telefone: ${phoneNumber}\n\n` +
                     `Agora você pode ficar online para receber corridas.`,
