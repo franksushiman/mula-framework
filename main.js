@@ -442,6 +442,24 @@ ipcMain.handle('whatsapp-restart', async () => {
   }
 });
 
+ipcMain.handle('whatsapp-clear-session', async () => {
+  try {
+    const fs = require('fs-extra');
+    const path = require('path');
+    const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth', 'session-ceia-delivery');
+    
+    if (fs.existsSync(sessionPath)) {
+      fs.removeSync(sessionPath);
+      console.log('Sessão do WhatsApp limpa:', sessionPath);
+    }
+    
+    return { success: true, message: 'Sessão limpa. Reinicie o aplicativo.' };
+  } catch (error) {
+    console.error('Erro ao limpar sessão:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handler para obter QR Code do WhatsApp
 let currentQrCode = null;
 
@@ -481,142 +499,57 @@ ipcMain.handle('whatsapp-get-qr', async () => {
   }
 });
 
-// Handler para testar conexão Bayleis (simulação mais realista)
-ipcMain.handle('test-bayleis-connection', async (event, { apiKey, secretKey }) => {
+// Handlers para grupos de complementos do cardápio
+ipcMain.handle('menu-addon-group-save', async (event, groupData) => {
   try {
-    console.log('Testando conexão Bayleis...');
-    
-    // Validação básica das chaves
-    if (!apiKey || !secretKey) {
-      return {
-        success: false,
-        connected: false,
-        message: 'API Key e Secret Key são obrigatórias'
-      };
+    const config = loadConfig();
+    if (!config.menuData) {
+      config.menuData = { categories: [], addonGroups: [] };
+    }
+    if (!config.menuData.addonGroups) {
+      config.menuData.addonGroups = [];
     }
     
-    // Simular uma resposta da API Bayleis
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Verificar formato das chaves (simulação)
-    const isValidApiKey = apiKey.startsWith('bay_') || apiKey.startsWith('live_') || apiKey.startsWith('test_');
-    const isValidSecretKey = secretKey.length >= 32;
-    
-    if (!isValidApiKey || !isValidSecretKey) {
-      return {
-        success: false,
-        connected: false,
-        message: 'Chaves inválidas. Formato esperado: API Key começa com bay_, live_ ou test_'
-      };
+    // Gerar ID se for novo grupo
+    if (!groupData.id) {
+      groupData.id = Date.now().toString();
     }
     
-    // Simular dados da conta
-    const accountTypes = ['PJ', 'MEI', 'PF'];
-    const randomAccount = accountTypes[Math.floor(Math.random() * accountTypes.length)];
+    // Verificar se já existe
+    const existingIndex = config.menuData.addonGroups.findIndex(g => g.id === groupData.id);
+    if (existingIndex >= 0) {
+      config.menuData.addonGroups[existingIndex] = groupData;
+    } else {
+      config.menuData.addonGroups.push(groupData);
+    }
     
-    return {
-      success: true,
-      connected: true,
-      message: 'Conexão com Bayleis estabelecida',
-      account: {
-        type: randomAccount,
-        name: 'Restaurante Ceia',
-        balance: Math.random() * 1000,
-        status: 'active',
-        canReceivePayments: true
-      }
-    };
+    saveConfig(config);
+    return { success: true, group: groupData };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error.message,
-      message: 'Erro na conexão com Bayleis'
-    };
+    return { success: false, error: error.message };
   }
 });
 
-// Handler para criar QR Code de pagamento Bayleis
-ipcMain.handle('create-bayleis-payment', async (event, { apiKey, secretKey, amount, description }) => {
+ipcMain.handle('menu-addon-group-delete', async (event, groupId) => {
   try {
-    console.log(`Criando pagamento Bayleis: R$ ${amount} - ${description}`);
-    
-    // Validação básica
-    if (!apiKey || !secretKey) {
-      return { 
-        success: false, 
-        error: 'Chaves de API não fornecidas' 
-      };
+    const config = loadConfig();
+    if (config.menuData && config.menuData.addonGroups) {
+      config.menuData.addonGroups = config.menuData.addonGroups.filter(g => g.id !== groupId);
+      saveConfig(config);
     }
-    
-    if (!amount || amount <= 0) {
-      return { 
-        success: false, 
-        error: 'Valor inválido' 
-      };
-    }
-    
-    // Simular processamento
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    
-    // Gerar ID de pagamento
-    const paymentId = `bay_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    
-    // Gerar QR Code PIX real (simulação)
-    const pixKey = `ceia+${paymentId}@bayleis.com.br`;
-    const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}520400005303986540${amount.toFixed(2)}5802BR5900CEIA DELIVERY6008SAO PAULO62070503***6304`;
-    
-    // Gerar QR Code visual
-    const qrCodeUrl = await QRCode.toDataURL(pixPayload);
-    
-    return {
-      success: true,
-      paymentId,
-      qrCodeUrl,
-      pixPayload,
-      pixKey,
-      paymentUrl: `https://bayleis.com/pay/${paymentId}`,
-      expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutos
-      amount,
-      status: 'pending'
-    };
+    return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error.message 
-    };
+    return { success: false, error: error.message };
   }
 });
 
-// Handler para verificar status de pagamento Bayleis
-ipcMain.handle('check-bayleis-payment', async (event, { apiKey, secretKey, paymentId }) => {
+ipcMain.handle('menu-addon-group-list', async () => {
   try {
-    console.log(`Verificando pagamento Bayleis: ${paymentId}`);
-    
-    // Simular verificação
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
-    // Status aleatórios (simulação)
-    const statuses = [
-      { status: 'pending', message: 'Aguardando pagamento' },
-      { status: 'processing', message: 'Processando' },
-      { status: 'completed', message: 'Pagamento confirmado' },
-      { status: 'expired', message: 'QR Code expirado' }
-    ];
-    
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    return {
-      success: true,
-      paymentId,
-      status: randomStatus.status,
-      message: randomStatus.message,
-      checkedAt: new Date().toISOString()
-    };
+    const config = loadConfig();
+    const groups = config.menuData?.addonGroups || [];
+    return { success: true, groups };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error.message 
-    };
+    return { success: false, error: error.message, groups: [] };
   }
 });
 
