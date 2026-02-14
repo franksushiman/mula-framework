@@ -703,8 +703,17 @@ ipcMain.on('driver-pos', (event, { phone, lat, lng, vulgo }) => {
 });
 
 // Criar janela principal
+let mainWindow = null;
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  // Se já existe uma janela, focar nela em vez de criar outra
+  const existingWindows = BrowserWindow.getAllWindows();
+  if (existingWindows.length > 0) {
+    existingWindows[0].focus();
+    return existingWindows[0];
+  }
+  
+  const win = new BrowserWindow({
     width: 1400,
     height: 900,
     webPreferences: {
@@ -712,17 +721,29 @@ function createWindow() {
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js')
-    }
+    },
+    show: false // Não mostrar imediatamente
   });
 
-  mainWindow.loadFile('index.html');
+  win.loadFile('index.html');
+  
+  // Mostrar a janela quando o conteúdo estiver carregado
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
+  });
+
+  // Abrir DevTools apenas em desenvolvimento
+  if (process.env.NODE_ENV === 'development') {
+    win.webContents.openDevTools();
+  }
 
   // Simular atualizações periódicas de status
   setInterval(() => {
     const config = loadConfig();
     if (config.fleet && config.fleet.length > 0) {
       const randomDriver = config.fleet[Math.floor(Math.random() * config.fleet.length)];
-      mainWindow.webContents.send('driver-pos', { 
+      win.webContents.send('driver-pos', { 
         phone: randomDriver.phone,
         lat: -23.5505 + (Math.random() - 0.5) * 0.1,
         lng: -46.6333 + (Math.random() - 0.5) * 0.1,
@@ -731,12 +752,40 @@ function createWindow() {
     }
     
     // Atualizar status do bot
-    mainWindow.webContents.send('bot-status', {
+    win.webContents.send('bot-status', {
       online: true,
       timestamp: Date.now()
     });
   }, 30000);
+  
+  mainWindow = win;
+  return win;
 }
+
+// Inicializar o aplicativo
+app.whenReady().then(() => {
+  // Garantir que apenas uma janela seja criada
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+  
+  // Inicializar o WhatsApp após um breve delay para garantir que a janela está pronta
+  setTimeout(() => {
+    console.log('Inicializando serviço WhatsApp...');
+    try {
+      initializeWhatsAppService();
+    } catch (error) {
+      console.error('Erro ao inicializar serviço WhatsApp:', error);
+    }
+  }, 3000);
+
+  app.on('activate', () => {
+    // No macOS, é comum recriar uma janela quando o dock é clicado e não há outras janelas abertas
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
