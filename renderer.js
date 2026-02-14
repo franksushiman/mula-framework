@@ -5,7 +5,7 @@ window.pendingOrders = [];
 window.currentDrawMode = null;
 window.currentShape = null;
 
-// Sistema de Monitoramento de Wi-Fi
+// Sistema de Monitoramento de Wi-Fi (Refatorado para UX Operacional)
 window.networkMonitor = {
     intervalId: null,
     lastStatus: null,
@@ -45,22 +45,12 @@ window.networkMonitor = {
             return;
         }
         
-        // Animar o ícone de atualização
-        const refreshIcon = document.querySelector('.network-status-refresh i');
-        if (refreshIcon) {
-            refreshIcon.style.transition = 'transform 0.5s ease';
-            refreshIcon.style.transform = 'rotate(360deg)';
-            setTimeout(() => {
-                refreshIcon.style.transform = 'rotate(0deg)';
-            }, 500);
-        }
-        
         window.electronAPI.getNetworkStatus().then(result => {
-            this.updateUI(result);
+            this.updateDashboardUI(result);
             this.handleStatusChange(result);
         }).catch(error => {
             console.error('Erro ao verificar status da rede:', error);
-            this.updateUI({
+            this.updateDashboardUI({
                 connected: false,
                 ssid: 'Desconhecido',
                 signalStrength: -100,
@@ -70,107 +60,85 @@ window.networkMonitor = {
         });
     },
     
-    updateUI: function(status) {
-        const icon = document.getElementById('network-status-icon');
-        const text = document.getElementById('network-status-text');
-        const details = document.getElementById('network-status-details');
+    updateDashboardUI: function(status) {
+        const wifiIndicator = document.getElementById('dashboard-wifi-indicator');
+        const systemStatusText = document.getElementById('dashboard-system-status-text');
         
-        if (!icon || !text || !details) return;
+        if (!wifiIndicator || !systemStatusText) return;
         
-        let iconColor = 'var(--vermelho-sobrio)';
-        let statusText = 'Desconectado';
-        let statusClass = 'error';
-        let iconClass = 'fas fa-wifi';
+        // Determinar estado da conexão baseado nas regras
+        let statusClass = 'offline';
+        let statusIcon = '🔴';
+        let statusText = 'Offline';
+        let tooltipText = 'Desconectado';
         
-        if (status.status === 'no-internet') {
-            iconColor = 'var(--ambar)';
-            statusText = 'Sem Internet';
-            statusClass = 'no-internet';
-            iconClass = 'fas fa-globe';
-        } else if (status.connected) {
-            if (status.signalPercentage >= 70) {
-                iconColor = 'var(--verde-esperanca)';
-                statusText = 'Excelente';
-                statusClass = 'excellent';
-            } else if (status.signalPercentage >= 40) {
-                iconColor = 'var(--ambar)';
-                statusText = 'Instável';
-                statusClass = 'unstable';
-            } else {
-                iconColor = 'var(--vermelho-sobrio)';
-                statusText = 'Fraco';
-                statusClass = 'weak';
-            }
-        }
-        
-        // Atualizar ícone
-        icon.className = iconClass;
-        icon.style.color = iconColor;
-        
-        // Atualizar texto principal
-        if (status.status === 'no-internet') {
-            text.textContent = 'Wi-Fi: Sem Internet';
-        } else {
-            text.textContent = status.connected ? 
-                `Wi-Fi: ${statusText}` : 
-                'Wi-Fi: Desconectado';
-        }
-        
-        // Atualizar detalhes
         if (status.connected || status.status === 'no-internet') {
-            details.textContent = `SSID: ${status.ssid || 'Desconhecido'} | Sinal: ${status.signalPercentage}%`;
-            if (status.status === 'no-internet') {
-                details.title = `Conectado a: ${status.ssid || 'Desconhecido'} - ${status.signalPercentage}% de sinal (Sem internet)`;
+            // Conectado (com ou sem internet)
+            if (status.signalPercentage > 20) {
+                statusClass = 'online';
+                statusIcon = '🟢';
+                statusText = 'Online';
             } else {
-                details.title = `Conectado a: ${status.ssid || 'Desconhecido'} - ${status.signalPercentage}% de sinal (${status.signalStrength} dBm)`;
+                statusClass = 'unstable';
+                statusIcon = '🟡';
+                statusText = 'Instável';
+            }
+            
+            // Tooltip com detalhes técnicos
+            const ssid = status.ssid || 'Desconhecido';
+            const signal = status.signalPercentage || 0;
+            const dbm = status.signalStrength || -100;
+            tooltipText = `Rede: ${ssid} | Sinal: ${dbm} dBm (${signal}%)`;
+            
+            // Atualizar texto do sistema se estiver online
+            if (systemStatusText) {
+                systemStatusText.textContent = 'Sistema operacional pronto';
             }
         } else {
-            details.textContent = 'SSID: --- | Sinal: ---';
-            details.title = 'Rede Wi-Fi não disponível';
+            // Offline
+            statusClass = 'offline';
+            statusIcon = '🔴';
+            statusText = 'Offline';
+            tooltipText = 'Desconectado da rede';
+            
+            // Alerta de dissonância: atualizar texto central
+            if (systemStatusText) {
+                systemStatusText.textContent = '⚠️ Aguardando Conexão';
+            }
         }
         
-        // Adicionar tooltip ao ícone
-        if (status.status === 'no-internet') {
-            icon.title = `Conectado a: ${status.ssid || 'Desconhecido'} - Sem acesso à internet`;
-        } else if (status.connected) {
-            icon.title = `Conectado a: ${status.ssid || 'Desconhecido'} - ${status.signalPercentage}% de sinal`;
-        } else {
-            icon.title = 'Desconectado da rede Wi-Fi';
-        }
+        // Atualizar o indicador no dashboard
+        wifiIndicator.className = 'dashboard-wifi-indicator ' + statusClass;
+        wifiIndicator.querySelector('.wifi-status-icon').textContent = statusIcon;
+        wifiIndicator.querySelector('.wifi-status-text').textContent = statusText;
+        wifiIndicator.title = tooltipText;
     },
     
     handleStatusChange: function(newStatus) {
         // Verificar se houve mudança significativa no status
         if (this.lastStatus) {
-            // Verificar mudança de conectividade com internet
-            const hadInternet = this.lastStatus.connected || this.lastStatus.status === 'no-internet';
-            const hasInternet = newStatus.connected || newStatus.status === 'no-internet';
+            // Verificar mudança de conectividade
+            const wasConnected = this.lastStatus.connected || this.lastStatus.status === 'no-internet';
+            const isConnected = newStatus.connected || newStatus.status === 'no-internet';
             
-            if (hadInternet !== hasInternet) {
-                if (!hasInternet) {
+            if (wasConnected !== isConnected) {
+                if (!isConnected) {
                     window.showToast('⚠️ Internet desconectada! Verifique sua conexão.', 'error');
-                } else if (!hadInternet && hasInternet) {
+                } else if (!wasConnected && isConnected) {
                     window.showToast('✅ Internet reconectada com sucesso!', 'success');
                 }
             }
             
-            // Verificar mudança de status Wi-Fi
-            if (this.lastStatus.status !== newStatus.status) {
-                if (newStatus.status === 'no-internet') {
-                    window.showToast('⚠️ Conectado ao Wi-Fi, mas sem internet!', 'warning');
-                } else if (newStatus.status === 'weak' && this.lastStatus.status !== 'weak') {
-                    window.showToast('⚠️ Sinal Wi-Fi fraco! Pode afetar a conexão.', 'warning');
+            // Verificar mudança de sinal para instável
+            if (isConnected && wasConnected) {
+                const wasStable = (this.lastStatus.signalPercentage || 0) > 20;
+                const isStable = (newStatus.signalPercentage || 0) > 20;
+                
+                if (wasStable && !isStable) {
+                    window.showToast('⚠️ Sinal Wi-Fi instável! Pode afetar a conexão.', 'warning');
+                } else if (!wasStable && isStable) {
+                    window.showToast('✅ Sinal Wi-Fi estabilizado!', 'success');
                 }
-            }
-        }
-        
-        // Verificar se o sinal caiu para um nível crítico
-        if ((newStatus.connected || newStatus.status === 'no-internet') && 
-            this.lastStatus && 
-            (this.lastStatus.connected || this.lastStatus.status === 'no-internet')) {
-            
-            if (newStatus.signalPercentage < 30 && this.lastStatus.signalPercentage >= 30) {
-                window.showToast('⚠️ Sinal Wi-Fi muito fraco! Considere aproximar do roteador.', 'warning');
             }
         }
         
@@ -2648,11 +2616,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.updateDashboard();
         window.renderDashboardStats();
         
-        // Inicializar monitor de rede Wi-Fi
+        // Inicializar monitor de rede Wi-Fi (refatorado)
         if (window.networkMonitor && window.networkMonitor.init && window.electronAPI && window.electronAPI.getNetworkStatus) {
             setTimeout(() => {
                 window.networkMonitor.init();
-            }, 2000); // Aguardar 2 segundos para o sistema estabilizar
+            }, 1000); // Aguardar 1 segundo para o sistema estabilizar
         } else {
             console.warn('Monitor de rede não disponível');
         }
