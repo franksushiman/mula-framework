@@ -35,34 +35,20 @@ window.renderFleet = function() {
 };
 
 window.addDriver = function() {
-    const name = prompt('Nome do motoboy:');
-    const code = prompt('Vulgo (código único):');
-    const phone = prompt('Telefone:');
-    const vehicle = prompt('Veículo/Placa:');
-    if (name && code && phone) {
-        const newDriver = { name, code, phone, vehicle };
-        
-        // Adicionar à frota no config
-        if (!window.config.fleet) window.config.fleet = [];
-        window.config.fleet.push(newDriver);
-        
-        // Salvar configuração
-        window.electronAPI.saveConfig(window.config).then(result => {
-            window.showToast('Motoboy adicionado com sucesso!', 'success');
-            window.renderFleet();
-        });
-    }
+    // Abrir modal de adição de motoboy em vez de prompt
+    window.showToast('Use o formulário de convite na aba Frota para adicionar motoboys.', 'info');
+    // Navegar para a aba Frota
+    window.nav('fleet-panel');
 };
 
 window.delDriver = function(phone) {
-    if (confirm('Tem certeza que deseja remover este motoboy?')) {
-        if (window.config.fleet) {
-            window.config.fleet = window.config.fleet.filter(driver => driver.phone !== phone);
-            window.electronAPI.saveConfig(window.config).then(result => {
-                window.showToast('Motoboy removido!', 'success');
-                window.renderFleet();
-            });
-        }
+    // Remover sem confirmação
+    if (window.config.fleet) {
+        window.config.fleet = window.config.fleet.filter(driver => driver.phone !== phone);
+        window.electronAPI.saveConfig(window.config).then(result => {
+            window.showToast('Motoboy removido!', 'success');
+            window.renderFleet();
+        });
     }
 };
 
@@ -104,20 +90,6 @@ window.saveTelegramConfig = window.saveConfig;
 
 window.manualOrder = function() {
     window.showToast('A aba de pedidos foi removida. Use o dashboard para monitoramento.', 'info');
-    // Opcional: ainda permitir criar pedidos para testes
-    /*
-    const order = {
-        id: Date.now(),
-        cliente: prompt('Nome do cliente:'),
-        endereco: prompt('Endereço:'),
-        total: parseFloat(prompt('Total R$:')),
-        taxa: parseFloat(prompt('Taxa de entrega R$:')),
-        status: 'pending'
-    };
-    window.pendingOrders.push(order);
-    window.renderOrders();
-    window.showToast('Pedido criado!', 'success');
-    */
 };
 
 window.updateDashboard = function() {
@@ -388,14 +360,13 @@ window.cancelMenuItemEdit = function() {
 
 // Excluir item
 window.deleteMenuItem = function(index) {
-    if (confirm('Tem certeza que deseja excluir este item do cardápio?')) {
-        window.menuItems.splice(index, 1);
-        window.config.menuItems = window.menuItems;
-        window.electronAPI.saveConfig(window.config).then(() => {
-            window.showToast('Item removido', 'success');
-            window.renderMenuTable();
-        });
-    }
+    // Excluir sem confirmação
+    window.menuItems.splice(index, 1);
+    window.config.menuItems = window.menuItems;
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Item removido', 'success');
+        window.renderMenuTable();
+    });
 };
 
 // Sistema de Complementos (mantido para compatibilidade)
@@ -575,13 +546,12 @@ window.editCategory = function(categoryIndex, event) {
 
 window.deleteCategory = function(categoryIndex, event) {
     event.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir esta categoria? Todos os produtos serão removidos.')) {
-        window.config.menuData.categories.splice(categoryIndex, 1);
-        window.electronAPI.saveConfig(window.config).then(() => {
-            window.showToast('Categoria excluída!', 'success');
-            window.renderMenuCategories();
-        });
-    }
+    // Excluir sem confirmação
+    window.config.menuData.categories.splice(categoryIndex, 1);
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Categoria excluída!', 'success');
+        window.renderMenuCategories();
+    });
 };
 
 // Funções para Produtos
@@ -789,13 +759,12 @@ window.editProduct = function(categoryIndex, productIndex, event) {
 
 window.deleteProduct = function(categoryIndex, productIndex, event) {
     event.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-        window.config.menuData.categories[categoryIndex].products.splice(productIndex, 1);
-        window.electronAPI.saveConfig(window.config).then(() => {
-            window.showToast('Produto excluído!', 'success');
-            window.renderMenuCategories();
-        });
-    }
+    // Excluir sem confirmação
+    window.config.menuData.categories[categoryIndex].products.splice(productIndex, 1);
+    window.electronAPI.saveConfig(window.config).then(() => {
+        window.showToast('Produto excluído!', 'success');
+        window.renderMenuCategories();
+    });
 };
 
 // Drag and Drop para produtos
@@ -1045,16 +1014,15 @@ window.editAddonGroup = function(groupId) {
 };
 
 window.deleteAddonGroup = function(groupId) {
-    if (confirm('Tem certeza que deseja excluir este grupo de complementos?')) {
-        window.electronAPI.menuAddonGroupDelete(groupId).then(result => {
-            if (result.success) {
-                window.showToast('Grupo excluído!', 'success');
-                window.renderAddonGroups();
-            } else {
-                window.showToast('Erro ao excluir grupo: ' + result.error, 'error');
-            }
-        });
-    }
+    // Excluir sem confirmação
+    window.electronAPI.menuAddonGroupDelete(groupId).then(result => {
+        if (result.success) {
+            window.showToast('Grupo excluído!', 'success');
+            window.renderAddonGroups();
+        } else {
+            window.showToast('Erro ao excluir grupo: ' + result.error, 'error');
+        }
+    });
 };
 
 window.renderAddonGroupsForProduct = function(selectedGroups) {
@@ -1117,12 +1085,11 @@ window.toggleM = function(index) {
 };
 
 window.delM = function(index) {
-    if (confirm('Excluir este item do cardápio?')) {
-        if (window.config.menu) {
-            window.config.menu.splice(index, 1);
-            // Não chamar renderT() pois não é mais necessário
-            window.showToast('Item removido!', 'success');
-        }
+    // Excluir sem confirmação
+    if (window.config.menu) {
+        window.config.menu.splice(index, 1);
+        // Não chamar renderT() pois não é mais necessário
+        window.showToast('Item removido!', 'success');
     }
 };
 
@@ -1819,34 +1786,32 @@ window.generateWhatsAppQR = function() {
 };
 
 window.restartWhatsAppConnection = function() {
-    if (confirm('Tem certeza que deseja reiniciar a conexão do WhatsApp? Isso desconectará a sessão atual.')) {
-        window.electronAPI.whatsappRestart().then(result => {
-            if (result.success) {
-                window.showToast('Reiniciando conexão WhatsApp...', 'info');
-                // Atualizar status após alguns segundos
-                setTimeout(() => {
-                    window.checkWhatsAppStatus();
-                }, 3000);
-            } else {
-                window.showToast('Erro ao reiniciar: ' + (result.error || 'Desconhecido'), 'error');
-            }
-        }).catch(error => {
-            console.error('Erro ao reiniciar WhatsApp:', error);
-            window.showToast('Erro ao reiniciar conexão', 'error');
-        });
-    }
+    // Reiniciar sem confirmação
+    window.electronAPI.whatsappRestart().then(result => {
+        if (result.success) {
+            window.showToast('Reiniciando conexão WhatsApp...', 'info');
+            // Atualizar status após alguns segundos
+            setTimeout(() => {
+                window.checkWhatsAppStatus();
+            }, 3000);
+        } else {
+            window.showToast('Erro ao reiniciar: ' + (result.error || 'Desconhecido'), 'error');
+        }
+    }).catch(error => {
+        console.error('Erro ao reiniciar WhatsApp:', error);
+        window.showToast('Erro ao reiniciar conexão', 'error');
+    });
 };
 
 window.clearWhatsAppSession = function() {
-    if (confirm('Isso irá limpar completamente a sessão do WhatsApp. Você precisará escanear o QR Code novamente. Continuar?')) {
-        window.electronAPI.whatsappClearSession().then(result => {
-            if (result.success) {
-                window.showToast('Sessão limpa! Reinicie o aplicativo.', 'success');
-            } else {
-                window.showToast('Erro ao limpar sessão: ' + result.error, 'error');
-            }
-        });
-    }
+    // Limpar sessão sem confirmação
+    window.electronAPI.whatsappClearSession().then(result => {
+        if (result.success) {
+            window.showToast('Sessão limpa! Reinicie o aplicativo.', 'success');
+        } else {
+            window.showToast('Erro ao limpar sessão: ' + result.error, 'error');
+        }
+    });
 };
 
 // Função para verificar status do WhatsApp (simplificada - apenas para dashboard)
@@ -1869,10 +1834,10 @@ window.saveConfig = function() {
 };
 
 window.closeCashier = function() {
-    const countedCash = parseFloat(prompt('Dinheiro contado no caixa:'));
-    if (isNaN(countedCash)) return;
-    const operatorName = prompt('Nome do operador:');
-    if (!operatorName) return;
+    window.showToast('Use o dashboard para fechar o caixa com os dados do sistema.', 'info');
+    // Em vez de prompt, usar dados do sistema
+    const countedCash = window.pendingOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const operatorName = 'Sistema';
     
     window.electronAPI.cashierClose({ countedCash, operatorName, ordersFromRenderer: window.pendingOrders }).then(result => {
         window.showToast(result.message, 'success');

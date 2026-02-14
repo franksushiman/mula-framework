@@ -444,17 +444,20 @@ ipcMain.handle('export-backup', async () => {
 });
 
 ipcMain.handle('import-backup', async (event) => {
-  const { canceled, filePaths } = await dialog.showOpenDialog({
-    properties: ['openFile'],
-    filters: [{ name: 'JSON', extensions: ['json'] }]
-  });
+  // Importar backup sem diálogo - usar caminho padrão
+  const backupDir = app.getPath('userData');
+  const backupFiles = fs.readdirSync(backupDir).filter(file => file.startsWith('backup-') && file.endsWith('.json'));
   
-  if (canceled || filePaths.length === 0) {
-    return { success: false, message: 'Importação cancelada' };
+  if (backupFiles.length === 0) {
+    return { success: false, message: 'Nenhum backup encontrado' };
   }
   
+  // Usar o backup mais recente
+  const latestBackup = backupFiles.sort().reverse()[0];
+  const backupPath = path.join(backupDir, latestBackup);
+  
   try {
-    const backupData = readJSON(filePaths[0]);
+    const backupData = readJSON(backupPath);
     
     if (backupData.config) saveConfig(backupData.config);
     if (backupData.fleet) writeJSON(fleetPath, backupData.fleet);
@@ -462,7 +465,7 @@ ipcMain.handle('import-backup', async (event) => {
     if (backupData.tables) writeJSON(tablesPath, backupData.tables);
     if (backupData.reservations) writeJSON(reservationsPath, backupData.reservations);
     
-    return { success: true, message: 'Backup importado com sucesso' };
+    return { success: true, message: `Backup importado com sucesso: ${latestBackup}` };
   } catch (error) {
     return { success: false, message: `Erro ao importar: ${error.message}` };
   }
