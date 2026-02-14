@@ -1662,10 +1662,9 @@
                                        id="fleet-invite-phone" 
                                        placeholder="(11) 99999-9999" 
                                        class="form-input"
-                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                        style="width: 100%; margin-bottom: 1rem;">
                                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                                    <button class="btn btn-success" onclick="window.sendTelegramInviteToWhatsApp()">
+                                    <button class="btn btn-success" id="btn-enviar-convite">
                                         <i class="fab fa-telegram"></i> Enviar Convite Telegram
                                     </button>
                                     <span style="font-size: 0.875rem; color: var(--texto-secundario);">

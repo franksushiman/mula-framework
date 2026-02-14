@@ -2652,7 +2652,77 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         console.log('Aplicativo inicializado com sucesso');
         
+        // Conectar botão de envio de convite
         setTimeout(() => {
+            const btnEnviarConvite = document.getElementById('btn-enviar-convite');
+            const inputTelefone = document.getElementById('fleet-invite-phone');
+            
+            if (btnEnviarConvite && inputTelefone) {
+                console.log('✅ Botão e campo de telefone encontrados');
+                
+                btnEnviarConvite.addEventListener('click', async () => {
+                    const phone = inputTelefone.value.trim();
+                    
+                    console.log('🟡 Botão clicado, enviando para backend:', phone);
+                    
+                    if (!phone) {
+                        window.showToast('Digite um número de WhatsApp!', 'error');
+                        return;
+                    }
+                    
+                    // Validar formato do telefone (mínimo 10 dígitos)
+                    const cleanPhone = phone.replace(/\D/g, '');
+                    if (cleanPhone.length < 10) {
+                        window.showToast('Número de telefone inválido!', 'error');
+                        return;
+                    }
+                    
+                    window.showToast('Enviando convite via WhatsApp...', 'info');
+                    
+                    // Verificar se a API está disponível
+                    if (!window.electronAPI || !window.electronAPI.enviarConviteEntregador) {
+                        console.error('❌ electronAPI.enviarConviteEntregador não disponível');
+                        window.showToast('Erro: API não disponível', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        console.log('🟡 Chamando electronAPI.enviarConviteEntregador com:', cleanPhone);
+                        const result = await window.electronAPI.enviarConviteEntregador(cleanPhone);
+                        console.log('✅ Resultado do envio:', result);
+                        
+                        if (result && result.success) {
+                            window.showToast('✅ Convite enviado com sucesso!', 'success');
+                            
+                            // Mostrar preview do link (se disponível)
+                            const preview = document.getElementById('invite-preview');
+                            if (preview) {
+                                const linkEl = preview.querySelector('.preview-link');
+                                if (linkEl) {
+                                    linkEl.textContent = result.telegramLink || 'Link do Telegram gerado';
+                                    preview.classList.remove('hidden');
+                                }
+                            }
+                            
+                            // Atualizar a lista de convites pendentes
+                            if (window.renderFleetInvites) {
+                                window.renderFleetInvites();
+                            }
+                            
+                            // Limpar o campo do telefone
+                            inputTelefone.value = '';
+                        } else {
+                            window.showToast(`❌ Erro: ${result?.error || 'Erro desconhecido'}`, 'error');
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao enviar convite:', error);
+                        window.showToast(`❌ Erro ao enviar: ${error.message}`, 'error');
+                    }
+                });
+            } else {
+                console.warn('⚠️ Botão ou campo de telefone não encontrados');
+            }
+            
             window.showToast('Sistema Ceia carregado com sucesso!', 'success');
             // Carregar convites pendentes se estiver na aba da frota
             if (document.getElementById('fleet-panel').classList.contains('active')) {

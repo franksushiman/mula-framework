@@ -68,6 +68,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // WhatsApp - Limpar sessão
   whatsappClearSession: () => ipcRenderer.invoke('whatsapp-clear-session'),
   
+  // Enviar convite para entregador
+  enviarConviteEntregador: (phoneNumber) => ipcRenderer.invoke('enviar-convite-entregador', phoneNumber),
+  
   // Importação de cardápio via IA
   openMenuImport: () => ipcRenderer.invoke('open-menu-import'),
   

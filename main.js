@@ -671,7 +671,7 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
   }
 });
 
-// Handler para enviar convite do entregador (simplificado para a UI)
+// Handler para enviar convite do entregador
 ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   console.log(`[BACKEND] Handler 'enviar-convite-entregador' chamado com telefone: ${phoneNumber}`);
   
@@ -692,15 +692,16 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   }
   
   try {
-    // Usar a função existente send-telegram-invite-to-whatsapp
-    console.log(`[BACKEND] Encaminhando para send-telegram-invite-to-whatsapp: ${numericPhone}`);
+    console.log(`[BACKEND] Processando convite para: ${numericPhone}`);
     
-    // Obter a função de serviço do WhatsApp
+    // Obter o serviço do WhatsApp
     const service = getWhatsAppService();
     const config = loadConfig();
     
     // Verificar se o WhatsApp está conectado
     const status = service.getWhatsAppStatus();
+    console.log(`[BACKEND] Status do WhatsApp:`, status);
+    
     if (!status.connected) {
       throw new Error('WhatsApp não está conectado. Aguarde a inicialização completa.');
     }
@@ -728,6 +729,8 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
                    `• Número do WhatsApp\n\n` +
                    `Assim que cadastrado, você poderá compartilhar sua localização em tempo real e ficar online para receber corridas!`;
     
+    console.log(`[BACKEND] Enviando mensagem via WhatsApp para ${numericPhone}...`);
+    
     // Enviar via WhatsApp
     await service.sendWhatsAppMessage(numericPhone, message);
     
@@ -745,6 +748,8 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
     });
     saveConfig(config);
     
+    console.log(`[BACKEND] Convite enviado com sucesso para ${numericPhone}`);
+    
     return { 
       success: true, 
       message: 'Convite enviado com sucesso!',
@@ -757,31 +762,12 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   } catch (error) {
     console.error(`[BACKEND] Erro ao processar convite: ${error.message}`);
     
-    // Em caso de erro, tentar uma simulação para não quebrar a UI
-    console.log('[BACKEND] Tentando simulação de envio...');
-    
-    // Simular um atraso de rede
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simular sucesso (apenas para demonstração)
-    const success = Math.random() > 0.3; // 70% de chance de sucesso
-    
-    if (success) {
-      const successMsg = `Convite simulado enviado para +${numericPhone}`;
-      console.log(`[BACKEND] ${successMsg}`);
-      
-      return {
-        success: true,
-        message: successMsg,
-        phone: numericPhone,
-        timestamp: new Date().toISOString(),
-        simulated: true
-      };
-    } else {
-      const errorMsg = `Falha simulada ao enviar para ${numericPhone}`;
-      console.error(`[BACKEND] ${errorMsg}`);
-      throw new Error(errorMsg);
-    }
+    // Retornar erro para o frontend
+    return {
+      success: false,
+      error: error.message,
+      phone: numericPhone
+    };
   }
 });
 
