@@ -915,13 +915,13 @@ app.whenReady().then(() => {
       const service = getWhatsAppService();
       console.log('Serviço WhatsApp obtido, verificando status...');
       
-      // Verificar se já está conectado
+      // Verificar status atual
       const status = service.getWhatsAppStatus();
       console.log('Status atual do WhatsApp:', status);
       
+      // Se já está conectado, apenas enviar status
       if (status.connected) {
         console.log('✅ WhatsApp já está conectado!');
-        // Enviar status para a janela principal
         BrowserWindow.getAllWindows().forEach(win => {
           win.webContents.send('bot-status', {
             online: true,
@@ -932,14 +932,29 @@ app.whenReady().then(() => {
         return;
       }
       
-      // Se não está conectado, tentar inicializar
-      console.log('WhatsApp não está conectado, tentando inicializar...');
-      
-      // Verificar se já está inicializando
-      if (status.isInitialized === true || status.status === 'connected') {
-        console.log('WhatsApp já está inicializado ou conectado, pulando...');
+      // Se está inicializando, não tentar inicializar novamente
+      if (status.isInitializing || status.status === 'initializing') {
+        console.log('WhatsApp já está em processo de inicialização, aguardando...');
+        
+        // Aguardar e verificar se conecta
+        setTimeout(() => {
+          const newStatus = service.getWhatsAppStatus();
+          if (newStatus.connected) {
+            console.log('✅ WhatsApp conectado após espera!');
+            BrowserWindow.getAllWindows().forEach(win => {
+              win.webContents.send('bot-status', {
+                online: true,
+                timestamp: Date.now(),
+                message: newStatus.message
+              });
+            });
+          }
+        }, 10000); // Aguardar 10 segundos
         return;
       }
+      
+      // Se não está conectado nem inicializando, tentar inicializar
+      console.log('WhatsApp não está conectado, tentando inicializar...');
       
       service.initializeWhatsApp().then(() => {
         console.log('✅ WhatsApp inicializado com sucesso!');
@@ -969,7 +984,7 @@ app.whenReady().then(() => {
     } catch (error) {
       console.error('Erro ao verificar serviço WhatsApp:', error);
     }
-  }, 5000); // Aumentar delay para 5 segundos
+  }, 3000); // Delay de 3 segundos
 
   app.on('activate', () => {
     // No macOS, é comum recriar uma janela quando o dock é clicado e não há outras janelas abertas

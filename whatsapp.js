@@ -113,9 +113,29 @@ function getWhatsAppStatus() {
     // Verificar se o cliente está realmente conectado
     let actuallyConnected = whatsappStatus.connected;
     
-    // Verificação adicional: se está inicializado mas não tem readyAt recente
-    if (isInitialized && !whatsappStatus.readyAt) {
-        actuallyConnected = false;
+    // Se está inicializado e tem readyAt, está conectado
+    if (isInitialized && whatsappStatus.readyAt) {
+        actuallyConnected = true;
+    }
+    
+    // Determinar status
+    let status;
+    if (actuallyConnected) {
+        status = 'connected';
+    } else if (isInitializing) {
+        status = 'initializing';
+    } else {
+        status = 'disconnected';
+    }
+    
+    // Mensagem apropriada
+    let message;
+    if (actuallyConnected) {
+        message = `Conectado como ${whatsappStatus.phone || 'número desconhecido'}`;
+    } else if (isInitializing) {
+        message = 'Inicializando...';
+    } else {
+        message = 'Desconectado';
     }
     
     return {
@@ -125,10 +145,8 @@ function getWhatsAppStatus() {
         isInitialized: isInitialized,
         isInitializing: isInitializing,
         timestamp: new Date(),
-        status: actuallyConnected ? 'connected' : (isInitializing ? 'initializing' : 'disconnected'),
-        message: actuallyConnected ? 
-            `Conectado como ${whatsappStatus.phone || 'número desconhecido'}` : 
-            (isInitializing ? 'Inicializando...' : 'Desconectado')
+        status: status,
+        message: message
     };
 }
 
