@@ -5,6 +5,194 @@ window.pendingOrders = [];
 window.currentDrawMode = null;
 window.currentShape = null;
 
+// Sistema de Monitoramento de Wi-Fi
+window.networkMonitor = {
+    intervalId: null,
+    lastStatus: null,
+    isInitialized: false,
+    
+    init: function() {
+        if (this.isInitialized) {
+            console.log('Monitor de rede já inicializado');
+            return;
+        }
+        
+        console.log('Inicializando monitor de rede Wi-Fi...');
+        // Verificação imediata ao iniciar
+        this.checkNetworkStatus();
+        
+        // Configurar verificação periódica a cada 20 segundos
+        this.intervalId = setInterval(() => {
+            this.checkNetworkStatus();
+        }, 20000);
+        
+        // Adicionar evento para atualizar ao focar na janela
+        window.addEventListener('focus', () => {
+            this.checkNetworkStatus();
+        });
+        
+        // Adicionar evento para limpar quando a janela for fechada
+        window.addEventListener('beforeunload', () => {
+            this.stop();
+        });
+        
+        this.isInitialized = true;
+    },
+    
+    checkNetworkStatus: function() {
+        if (!window.electronAPI || !window.electronAPI.getNetworkStatus) {
+            console.warn('API de rede não disponível');
+            return;
+        }
+        
+        // Animar o ícone de atualização
+        const refreshIcon = document.querySelector('.network-status-refresh i');
+        if (refreshIcon) {
+            refreshIcon.style.transition = 'transform 0.5s ease';
+            refreshIcon.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                refreshIcon.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+        
+        window.electronAPI.getNetworkStatus().then(result => {
+            this.updateUI(result);
+            this.handleStatusChange(result);
+        }).catch(error => {
+            console.error('Erro ao verificar status da rede:', error);
+            this.updateUI({
+                connected: false,
+                ssid: 'Desconhecido',
+                signalStrength: -100,
+                signalPercentage: 0,
+                status: 'error'
+            });
+        });
+    },
+    
+    updateUI: function(status) {
+        const icon = document.getElementById('network-status-icon');
+        const text = document.getElementById('network-status-text');
+        const details = document.getElementById('network-status-details');
+        
+        if (!icon || !text || !details) return;
+        
+        let iconColor = 'var(--vermelho-sobrio)';
+        let statusText = 'Desconectado';
+        let statusClass = 'error';
+        let iconClass = 'fas fa-wifi';
+        
+        if (status.status === 'no-internet') {
+            iconColor = 'var(--ambar)';
+            statusText = 'Sem Internet';
+            statusClass = 'no-internet';
+            iconClass = 'fas fa-globe';
+        } else if (status.connected) {
+            if (status.signalPercentage >= 70) {
+                iconColor = 'var(--verde-esperanca)';
+                statusText = 'Excelente';
+                statusClass = 'excellent';
+            } else if (status.signalPercentage >= 40) {
+                iconColor = 'var(--ambar)';
+                statusText = 'Instável';
+                statusClass = 'unstable';
+            } else {
+                iconColor = 'var(--vermelho-sobrio)';
+                statusText = 'Fraco';
+                statusClass = 'weak';
+            }
+        }
+        
+        // Atualizar ícone
+        icon.className = iconClass;
+        icon.style.color = iconColor;
+        
+        // Atualizar texto principal
+        if (status.status === 'no-internet') {
+            text.textContent = 'Wi-Fi: Sem Internet';
+        } else {
+            text.textContent = status.connected ? 
+                `Wi-Fi: ${statusText}` : 
+                'Wi-Fi: Desconectado';
+        }
+        
+        // Atualizar detalhes
+        if (status.connected || status.status === 'no-internet') {
+            details.textContent = `SSID: ${status.ssid || 'Desconhecido'} | Sinal: ${status.signalPercentage}%`;
+            if (status.status === 'no-internet') {
+                details.title = `Conectado a: ${status.ssid || 'Desconhecido'} - ${status.signalPercentage}% de sinal (Sem internet)`;
+            } else {
+                details.title = `Conectado a: ${status.ssid || 'Desconhecido'} - ${status.signalPercentage}% de sinal (${status.signalStrength} dBm)`;
+            }
+        } else {
+            details.textContent = 'SSID: --- | Sinal: ---';
+            details.title = 'Rede Wi-Fi não disponível';
+        }
+        
+        // Adicionar tooltip ao ícone
+        if (status.status === 'no-internet') {
+            icon.title = `Conectado a: ${status.ssid || 'Desconhecido'} - Sem acesso à internet`;
+        } else if (status.connected) {
+            icon.title = `Conectado a: ${status.ssid || 'Desconhecido'} - ${status.signalPercentage}% de sinal`;
+        } else {
+            icon.title = 'Desconectado da rede Wi-Fi';
+        }
+    },
+    
+    handleStatusChange: function(newStatus) {
+        // Verificar se houve mudança significativa no status
+        if (this.lastStatus) {
+            // Verificar mudança de conectividade com internet
+            const hadInternet = this.lastStatus.connected || this.lastStatus.status === 'no-internet';
+            const hasInternet = newStatus.connected || newStatus.status === 'no-internet';
+            
+            if (hadInternet !== hasInternet) {
+                if (!hasInternet) {
+                    window.showToast('⚠️ Internet desconectada! Verifique sua conexão.', 'error');
+                } else if (!hadInternet && hasInternet) {
+                    window.showToast('✅ Internet reconectada com sucesso!', 'success');
+                }
+            }
+            
+            // Verificar mudança de status Wi-Fi
+            if (this.lastStatus.status !== newStatus.status) {
+                if (newStatus.status === 'no-internet') {
+                    window.showToast('⚠️ Conectado ao Wi-Fi, mas sem internet!', 'warning');
+                } else if (newStatus.status === 'weak' && this.lastStatus.status !== 'weak') {
+                    window.showToast('⚠️ Sinal Wi-Fi fraco! Pode afetar a conexão.', 'warning');
+                }
+            }
+        }
+        
+        // Verificar se o sinal caiu para um nível crítico
+        if ((newStatus.connected || newStatus.status === 'no-internet') && 
+            this.lastStatus && 
+            (this.lastStatus.connected || this.lastStatus.status === 'no-internet')) {
+            
+            if (newStatus.signalPercentage < 30 && this.lastStatus.signalPercentage >= 30) {
+                window.showToast('⚠️ Sinal Wi-Fi muito fraco! Considere aproximar do roteador.', 'warning');
+            }
+        }
+        
+        // Atualizar último status
+        this.lastStatus = {...newStatus};
+    },
+    
+    stop: function() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+        
+        // Remover event listeners
+        window.removeEventListener('focus', this.checkNetworkStatus);
+        window.removeEventListener('beforeunload', this.stop);
+        
+        this.isInitialized = false;
+        console.log('Monitor de rede parado');
+    }
+};
+
 // Função de compatibilidade para renderT (definida antes de qualquer uso)
 window.renderT = function() {
     // Esta função não é mais usada no novo sistema de cardápio
@@ -2459,6 +2647,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.initMap();
         window.updateDashboard();
         window.renderDashboardStats();
+        
+        // Inicializar monitor de rede Wi-Fi
+        if (window.networkMonitor && window.networkMonitor.init && window.electronAPI && window.electronAPI.getNetworkStatus) {
+            setTimeout(() => {
+                window.networkMonitor.init();
+            }, 2000); // Aguardar 2 segundos para o sistema estabilizar
+        } else {
+            console.warn('Monitor de rede não disponível');
+        }
         
         // Carregar configuração de impressora
         if (window.config.printerConfig) {

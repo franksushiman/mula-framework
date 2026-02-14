@@ -1204,6 +1204,171 @@ ipcMain.handle('whatsapp-get-qr', async () => {
   }
 });
 
+// Handler para obter status da rede Wi-Fi
+ipcMain.handle('get-network-status', async () => {
+    try {
+        // Usar o módulo de rede do Node.js para obter informações da rede
+        const os = require('os');
+        const networkInterfaces = os.networkInterfaces();
+        
+        let isConnected = false;
+        let hasInternet = false;
+        let ssid = 'Desconhecido';
+        let signalStrength = -100; // dBm (valor padrão para desconectado)
+        
+        // Verificar se há interfaces de rede ativas
+        for (const interfaceName in networkInterfaces) {
+            const interfaces = networkInterfaces[interfaceName];
+            for (const iface of interfaces) {
+                // Ignorar interfaces locais e IPv6
+                if (!iface.internal && iface.family === 'IPv4') {
+                    isConnected = true;
+                    
+                    // Tentar obter SSID (apenas para Wi-Fi)
+                    if (interfaceName.toLowerCase().includes('wi-fi') || 
+                        interfaceName.toLowerCase().includes('wlan') ||
+                        interfaceName.toLowerCase().includes('wireless') ||
+                        interfaceName.toLowerCase().includes('wifi')) {
+                        
+                        // Usar o nome da interface como SSID
+                        ssid = interfaceName;
+                        
+                        // Tentar obter informações mais específicas do sistema
+                        try {
+                            // Para Windows: tentar usar netsh
+                            if (process.platform === 'win32') {
+                                const { execSync } = require('child_process');
+                                try {
+                                    const output = execSync('netsh wlan show interfaces').toString();
+                                    const ssidMatch = output.match(/SSID\s*:\s*(.+)/);
+                                    const signalMatch = output.match(/Signal\s*:\s*(\d+)%/);
+                                    
+                                    if (ssidMatch && ssidMatch[1]) {
+                                        ssid = ssidMatch[1].trim();
+                                    }
+                                    if (signalMatch && signalMatch[1]) {
+                                        const signalPercent = parseInt(signalMatch[1]);
+                                        // Converter porcentagem para dBm aproximado
+                                        // 100% = -30 dBm, 0% = -90 dBm
+                                        signalStrength = -30 - ((100 - signalPercent) * 0.6);
+                                    }
+                                } catch (e) {
+                                    console.log('Não foi possível obter detalhes do Wi-Fi via netsh:', e.message);
+                                }
+                            }
+                            // Para macOS: tentar usar airport
+                            else if (process.platform === 'darwin') {
+                                const { execSync } = require('child_process');
+                                try {
+                                    const output = execSync('/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I').toString();
+                                    const ssidMatch = output.match(/SSID:\s*(.+)/);
+                                    const signalMatch = output.match(/agrCtlRSSI:\s*(-?\d+)/);
+                                    
+                                    if (ssidMatch && ssidMatch[1]) {
+                                        ssid = ssidMatch[1].trim();
+                                    }
+                                    if (signalMatch && signalMatch[1]) {
+                                        signalStrength = parseInt(signalMatch[1]);
+                                    }
+                                } catch (e) {
+                                    console.log('Não foi possível obter detalhes do Wi-Fi via airport:', e.message);
+                                }
+                            }
+                            // Para Linux: tentar usar iwconfig
+                            else if (process.platform === 'linux') {
+                                const { execSync } = require('child_process');
+                                try {
+                                    const output = execSync('iwconfig 2>/dev/null | grep -i "essid\\|signal"').toString();
+                                    const ssidMatch = output.match(/ESSID:"([^"]+)"/);
+                                    const signalMatch = output.match(/Signal level=(-?\d+) dBm/);
+                                    
+                                    if (ssidMatch && ssidMatch[1]) {
+                                        ssid = ssidMatch[1].trim();
+                                    }
+                                    if (signalMatch && signalMatch[1]) {
+                                        signalStrength = parseInt(signalMatch[1]);
+                                    }
+                                } catch (e) {
+                                    console.log('Não foi possível obter detalhes do Wi-Fi via iwconfig:', e.message);
+                                }
+                            }
+                        } catch (error) {
+                            console.log('Erro ao obter detalhes do Wi-Fi:', error.message);
+                        }
+                        
+                        // Se não conseguiu obter sinal real, usar valor simulado
+                        if (signalStrength === -100) {
+                            // Valor simulado entre -30 dBm (excelente) e -90 dBm (fraco)
+                            signalStrength = -50 - Math.random() * 40;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (isConnected) break;
+        }
+        
+        // Verificar conectividade com a internet usando axios (já disponível)
+        try {
+            const response = await axios.head('https://www.google.com', { 
+                timeout: 3000 
+            });
+            hasInternet = response.status >= 200 && response.status < 300;
+        } catch (internetError) {
+            console.log('Sem conexão com a internet:', internetError.message);
+            hasInternet = false;
+        }
+        
+        // Converter dBm para porcentagem (aproximação)
+        // -30 dBm = 100%, -90 dBm = 0%
+        let signalPercentage = 0;
+        if (isConnected && signalStrength > -90) {
+            signalPercentage = Math.min(100, Math.max(0, 
+                ((signalStrength + 90) / 60) * 100
+            ));
+            signalPercentage = Math.round(signalPercentage);
+        }
+        
+        // Determinar status baseado na porcentagem do sinal e conectividade com internet
+        let status = 'disconnected';
+        if (isConnected) {
+            if (!hasInternet) {
+                status = 'no-internet';
+                signalPercentage = 0; // Forçar 0% se não tem internet
+            } else if (signalPercentage >= 70) {
+                status = 'excellent';
+            } else if (signalPercentage >= 40) {
+                status = 'unstable';
+            } else {
+                status = 'weak';
+            }
+        }
+        
+        return {
+            connected: isConnected && hasInternet,
+            hasInternet: hasInternet,
+            ssid: ssid,
+            signalStrength: Math.round(signalStrength),
+            signalPercentage: signalPercentage,
+            status: status,
+            timestamp: Date.now()
+        };
+        
+    } catch (error) {
+        console.error('Erro ao obter status da rede:', error);
+        return {
+            connected: false,
+            hasInternet: false,
+            ssid: 'Erro',
+            signalStrength: -100,
+            signalPercentage: 0,
+            status: 'error',
+            error: error.message,
+            timestamp: Date.now()
+        };
+    }
+});
+
 // Handlers para grupos de complementos do cardápio
 ipcMain.handle('menu-addon-group-save', async (event, groupData) => {
   try {

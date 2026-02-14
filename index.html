@@ -1065,6 +1065,72 @@
             display: none !important;
         }
         
+        /* Estilos para o indicador de status de rede */
+        .network-status-indicator {
+            transition: all 0.3s ease;
+            cursor: help;
+        }
+        
+        .network-status-indicator:hover {
+            background: rgba(0,0,0,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .network-status-icon {
+            transition: all 0.3s ease;
+        }
+        
+        .network-status-indicator:hover .network-status-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        /* Transição suave para mudanças de status */
+        .network-status-text, .network-status-details {
+            transition: color 0.3s ease;
+        }
+        
+        /* Animações para o ícone de Wi-Fi */
+        @keyframes pulse-green {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes pulse-yellow {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes pulse-red {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .network-status-icon.excellent i {
+            animation: pulse-green 2s infinite;
+        }
+        
+        .network-status-icon.unstable i {
+            animation: pulse-yellow 1.5s infinite;
+        }
+        
+        .network-status-icon.weak i,
+        .network-status-icon.error i {
+            animation: pulse-red 1s infinite;
+        }
+        
+        /* Animação de rotação para atualização */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .network-status-refresh.rotating i {
+            animation: rotate 0.5s linear;
+        }
+        
         /* Estilos para o Cardápio */
         .menu-accordion {
             border: 1px solid var(--borda-quente);
@@ -1438,6 +1504,24 @@
                 <button id="btn-pause" class="btn btn-secondary" style="width: 100%;">
                     <i class="fas fa-pause"></i> Pausar Loja
                 </button>
+            </div>
+            
+            <!-- Indicador de Status de Rede -->
+            <div class="network-status-indicator" onclick="window.networkMonitor.checkNetworkStatus()" style="position: absolute; bottom: 80px; left: 20px; right: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <div class="network-status-icon" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-wifi" style="font-size: 16px; color: var(--verde-esperanca);" id="network-status-icon"></i>
+                </div>
+                <div class="network-status-info" style="flex: 1; overflow: hidden;">
+                    <div class="network-status-text" style="font-size: 12px; color: var(--texto-sobre-terra); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="network-status-text">
+                        Verificando rede...
+                    </div>
+                    <div class="network-status-details" style="font-size: 10px; color: rgba(250,247,242,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="network-status-details">
+                        SSID: --- | Sinal: ---
+                    </div>
+                </div>
+                <div class="network-status-refresh" style="opacity: 0.5; font-size: 10px;">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
             </div>
         </aside>
 
