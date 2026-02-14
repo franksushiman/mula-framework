@@ -65,11 +65,8 @@ window.saveC = function() {
     window.config.telegram.chatId = chatId;
     window.config.telegram.motoboysChannel = motoboysChannel;
     
-    // Salvar configurações de pagamentos (apenas chave PIX)
-    const pixRecebimentoKey = document.getElementById('pix-recebimento-key')?.value || '';
-    
-    if (!window.config.payments) window.config.payments = {};
-    window.config.payments.pixKey = pixRecebimentoKey;
+    // Nota: Configurações de pagamentos removidas da interface do usuário
+    // O sistema gerencia automaticamente as configurações financeiras
     
     // Salvar
     window.electronAPI.saveConfig(window.config).then(result => {
@@ -632,104 +629,23 @@ window.hideMotoboysChannel = function() {
     }
 };
 
-// Funções para Pagamentos (simplificadas)
-window.showPaymentSettings = function() {
-    window.showToast('Configurações de pagamento gerenciadas pelo sistema.', 'info');
+// Funções para Relatório Financeiro (apenas resultado)
+window.showFinancialReport = function() {
+    window.showToast('Relatório financeiro disponível no painel administrativo.', 'info');
+    // Em uma implementação real, isso abriria um modal ou navegaria para um painel de relatórios
+    // que mostra apenas dados consolidados, sem configurações técnicas
 };
 
-// Funções para WhatsApp
-window.testWhatsAppConnection = function() {
-    window.electronAPI.whatsappGetStatus().then(status => {
-        const statusDiv = document.getElementById('whatsapp-status');
-        const statusText = document.getElementById('whatsapp-status-text');
-        if (statusDiv && statusText) {
-            statusDiv.style.display = 'block';
-            if (status.connected) {
-                statusText.innerHTML = `
-                    <strong>✅ WhatsApp Conectado</strong><br>
-                    Número: ${status.phone || 'N/A'}<br>
-                    Conectado desde: ${status.readyAt ? new Date(status.readyAt).toLocaleTimeString() : 'N/A'}<br>
-                    <small>Para reconectar, use "Gerar QR Code"</small>
-                `;
-                statusText.style.color = 'var(--verde-esperanca)';
-                window.showToast('WhatsApp conectado!', 'success');
-                
-                // Ocultar QR Code se estiver visível
-                const qrContainer = document.getElementById('whatsapp-qr-container');
-                if (qrContainer) {
-                    qrContainer.style.display = 'none';
-                }
-            } else {
-                statusText.innerHTML = `
-                    <strong>❌ WhatsApp Desconectado</strong><br>
-                    Clique em "Gerar QR Code" para conectar<br>
-                    <small>O QR Code aparecerá abaixo</small>
-                `;
-                statusText.style.color = 'var(--vermelho-sobrio)';
-                window.showToast('WhatsApp desconectado. Gere um QR Code para conectar.', 'error');
-                
-                // Mostrar botão para gerar QR Code
-                setTimeout(() => {
-                    window.getWhatsAppQR();
-                }, 1000);
-            }
-        }
+// Função para verificar status do WhatsApp (simplificada - apenas para dashboard)
+window.checkWhatsAppStatusForDashboard = function() {
+    // Esta função é usada apenas internamente pelo dashboard
+    // Não expõe detalhes técnicos ao usuário
+    return window.electronAPI.whatsappGetStatus().then(status => {
+        return {
+            online: status.connected || false,
+            simpleStatus: status.connected ? 'conectado' : 'desconectado'
+        };
     });
-};
-
-window.sendWhatsAppTest = function() {
-    const phone = prompt('Número para teste (com DDD, ex: 11999999999):');
-    if (!phone) return;
-    
-    const message = prompt('Mensagem de teste:', 'Teste do sistema Ceia Delivery');
-    if (!message) return;
-    
-    window.electronAPI.whatsappSend({ phone, message }).then(result => {
-        if (result.success) {
-            window.showToast('✅ Mensagem WhatsApp enviada com sucesso!', 'success');
-        } else {
-            window.showToast(`❌ Erro: ${result.error}`, 'error');
-        }
-    });
-};
-
-window.getWhatsAppQR = function() {
-    window.electronAPI.whatsappGetQr().then(result => {
-        if (result.success && result.qrImage) {
-            // Mostrar QR Code na interface
-            const qrContainer = document.getElementById('whatsapp-qr-container');
-            const qrImage = document.getElementById('whatsapp-qr-image');
-            const statusDiv = document.getElementById('whatsapp-status');
-            const statusText = document.getElementById('whatsapp-status-text');
-            
-            if (qrContainer && qrImage) {
-                qrImage.src = result.qrImage;
-                qrContainer.style.display = 'block';
-                window.showToast('QR Code carregado! Escaneie com o WhatsApp.', 'success');
-            }
-            
-            if (statusDiv && statusText) {
-                statusDiv.style.display = 'block';
-                statusText.innerHTML = `
-                    <strong>📱 QR Code do WhatsApp</strong><br>
-                    Escaneie este código com o WhatsApp da loja<br>
-                    <small>No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho</small>
-                `;
-                statusText.style.color = 'var(--verde-esperanca)';
-            }
-        } else {
-            window.showToast(result.message || 'Aguardando QR Code...', 'info');
-            console.log('Nota:', result.note);
-        }
-    });
-};
-
-window.restartWhatsApp = function() {
-    if (confirm('Reiniciar a conexão do WhatsApp?')) {
-        window.electronAPI.whatsappRestart().then(result => {
-            window.showToast(result.message, 'info');
-        });
-    }
 };
 
 // Funções adicionais (mantidas para compatibilidade)
@@ -819,23 +735,23 @@ window.renderDashboardStats = async function() {
             }
         }
         
-        // Atualiza status do WhatsApp
+        // Atualiza status do WhatsApp (simplificado)
         const whatsappDot = document.getElementById('whatsapp-status-dot');
         const whatsappText = document.getElementById('whatsapp-status-text');
         
         if (whatsappDot && whatsappText) {
-            // Verificar status do WhatsApp
-            window.electronAPI.whatsappGetStatus().then(result => {
+            // Verificar status do WhatsApp de forma simplificada
+            window.checkWhatsAppStatusForDashboard().then(result => {
                 if (result.online) {
                     whatsappDot.className = 'status-dot online';
-                    whatsappText.textContent = `WhatsApp · ${result.phone || 'conectado'}`;
+                    whatsappText.textContent = 'WhatsApp · conectado';
                 } else {
                     whatsappDot.className = 'status-dot offline';
                     whatsappText.textContent = 'WhatsApp · desconectado';
                 }
             }).catch(error => {
                 whatsappDot.className = 'status-dot offline';
-                whatsappText.textContent = 'WhatsApp · erro';
+                whatsappText.textContent = 'WhatsApp · verificação';
                 console.error('Erro ao verificar status WhatsApp:', error);
             });
         }
@@ -848,7 +764,7 @@ window.renderDashboardStats = async function() {
                 pauseBtn.innerHTML = '<span class="pause-icone">▶️</span><span class="pause-texto">RETOMAR LOJA</span>';
             } else {
                 pauseBtn.classList.remove('paused');
-                pauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOja</span>';
+                pauseBtn.innerHTML = '<span class="pause-icone">⏸️</span><span class="pause-texto">PAUSAR LOJA</span>';
             }
         }
         
@@ -1126,17 +1042,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setValue('telegram-motoboys-channel', window.config.telegram.motoboysChannel || 'bot_embutido_ceia_frota');
             }
             
-            // Preencher configurações de pagamentos
-            if (window.config.payments) {
-                setValue('pix-recebimento-key', window.config.payments.pixKey || '');
-            }
-            // Se não houver configuração de pagamentos, usar uma chave padrão
-            const pixInput = document.getElementById('pix-recebimento-key');
-            if (pixInput && !pixInput.value) {
-                // Gerar uma chave PIX padrão baseada no CNPJ/telefone da loja
-                const defaultPixKey = window.config.adminNumber?.replace(/\D/g, '') || '5511999999999';
-                pixInput.value = defaultPixKey;
-            }
+            // Nota: Configurações de pagamentos removidas da interface do usuário
+            // Essas configurações são gerenciadas internamente pelo sistema
             
             // Atualizar botão de pausa
             if (btnPause && window.config.botPaused) {

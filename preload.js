@@ -36,12 +36,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPrinters: () => ipcRenderer.invoke('get-printers'),
   printJob: (printer, html) => ipcRenderer.send('print-job', { printer, html }),
   
-  // Pagamentos
-  paymentCreatePix: (data) => ipcRenderer.invoke('payment-create-pix', data),
-  paymentCreateCard: (data) => ipcRenderer.invoke('payment-create-card', data),
-  paymentCheckStatus: (paymentId) => ipcRenderer.invoke('payment-check-status', paymentId),
-  paymentConfigsList: () => ipcRenderer.invoke('payment-configs-list'),
-  paymentValidateAndSave: (data) => ipcRenderer.invoke('payment-validate-and-save', data),
+  // Nota: APIs de pagamento removidas da interface do restaurante
+  // Essas funcionalidades estão disponíveis apenas no painel administrativo
   
   // IA
   aiParseMenu: (text) => ipcRenderer.invoke('ai-parse-menu', text),
