@@ -212,9 +212,12 @@ window.delDriver = function(phone) {
 window.saveConfig = function() {
     // Coletar todos os valores dos campos de configuração
     const configUpdates = {
-        googleMapsKey: document.getElementById('k-goo')?.value || '',
-        openAIKey: document.getElementById('k-ope')?.value || '',
-        telegramToken: document.getElementById('k-tel')?.value || '',
+        // Chaves de API (com trim para evitar espaços acidentais)
+        googleMapsKey: document.getElementById('k-goo')?.value?.trim() || '',
+        openAIKey: document.getElementById('k-ope')?.value?.trim() || '',
+        telegramToken: document.getElementById('k-tel')?.value?.trim() || '',
+        
+        // Configurações Gerais
         telegramBotName: document.getElementById('k-tel-bot')?.value || 'MulaFRotaBot',
         restaurantAddress: document.getElementById('addr')?.value || '',
         adminNumber: document.getElementById('k-adm')?.value || '',
@@ -247,9 +250,12 @@ window.loadConfigToForm = function() {
         }
     };
     
+    // Carregar chaves de API
     setValue('k-goo', window.config.googleMapsKey || '');
     setValue('k-ope', window.config.openAIKey || '');
     setValue('k-tel', window.config.telegramToken || '');
+    
+    // Carregar configurações gerais
     setValue('k-tel-bot', window.config.telegramBotName || 'MulaFRotaBot');
     setValue('addr', window.config.restaurantAddress || '');
     setValue('k-adm', window.config.adminNumber || '');
