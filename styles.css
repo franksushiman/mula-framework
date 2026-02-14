@@ -389,35 +389,39 @@ body {
   transition: all var(--speed-action) var(--ease-ceia);
 }
 
-/* Cardápio - Tabela com edição inline */
+/* Cardápio - Tabela com edição inline (Anota.ai style) */
 .menu-table-container {
-  background: var(--bg-card);
-  border-radius: 8px;
+  background: var(--branco-quente);
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--stone-700);
+  border: 1px solid var(--borda-quente);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .menu-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .menu-table th {
-  background-color: var(--stone-800);
-  color: var(--stone-300);
+  background-color: var(--branco-quente);
+  color: var(--texto-secundario);
   font-weight: 600;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 16px 12px;
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 20px 16px;
   text-align: left;
-  border-bottom: 1px solid var(--stone-700);
+  border-bottom: 2px solid var(--borda-quente);
 }
 
 .menu-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid var(--stone-800);
-  color: var(--stone-200);
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--borda-quente);
+  color: var(--texto-principal);
+  font-size: 15px;
+  vertical-align: middle;
 }
 
 .menu-table tr:last-child td {
@@ -425,7 +429,7 @@ body {
 }
 
 .menu-table tr:hover {
-  background-color: var(--stone-800);
+  background-color: var(--cinza-fundo);
 }
 
 /* Linha pausada no cardápio */
@@ -527,26 +531,52 @@ input:checked + .menu-toggle-slider:before {
   background-color: var(--verde-claro);
 }
 
-/* Edição inline no cardápio */
+/* Edição inline no cardápio - Anota.ai style */
 .menu-editable {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 4px 8px;
-  color: inherit;
+  background: var(--branco-quente);
+  border: 2px solid var(--borda-quente);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--texto-principal);
   font: inherit;
   width: 100%;
   transition: all var(--speed-action) var(--ease-ceia);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .menu-editable:focus {
-  border-color: var(--stone-500);
-  background: var(--stone-900);
+  border-color: var(--verde-esperanca);
+  background: var(--branco-quente);
   outline: none;
+  box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
 }
 
 .menu-editable:hover:not(:focus) {
-  background: var(--stone-800);
+  border-color: var(--cinza-quente);
+  background: var(--branco-quente);
+}
+
+/* Inputs maiores para formulário de edição */
+.menu-editable[type="text"],
+.menu-editable[type="number"],
+.menu-editable[data-field="name"],
+.menu-editable[data-field="price"] {
+  height: 48px;
+  font-size: 16px;
+}
+
+textarea.menu-editable {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+select.menu-editable {
+  height: 48px;
+  font-size: 15px;
+  cursor: pointer;
 }
 
 /* Marca CEIA OS */
