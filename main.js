@@ -368,17 +368,23 @@ ipcMain.handle('import-backup', async (event) => {
 
 // WhatsApp service - inicializado apenas quando necessário
 let whatsappService = null;
-let whatsappInitialized = false;
 let currentQrCode = null;
 
 // Função para inicializar o WhatsApp apenas quando necessário
 function initializeWhatsAppService() {
-    if (whatsappInitialized) return whatsappService;
+    if (whatsappService && whatsappService.isWhatsAppInitialized && whatsappService.isWhatsAppInitialized()) {
+        return whatsappService;
+    }
     
     try {
+        // Se o serviço já existe mas não está inicializado, tente reinicializar
+        if (whatsappService && whatsappService.resetInitialization) {
+            whatsappService.resetInitialization();
+        }
+        
         whatsappService = require('./whatsapp.js');
         
-        // Configurar listener para QR Code apenas quando o WhatsApp for inicializado
+        // Configurar listener para QR Code
         whatsappService.client.on('qr', (qr) => {
             console.log('QR Code recebido, convertendo para imagem...');
             QRCode.toDataURL(qr, (err, url) => {
@@ -405,6 +411,7 @@ function initializeWhatsAppService() {
             restartWhatsApp: () => console.log('WhatsApp não disponível para reiniciar'),
             initializeWhatsApp: () => Promise.reject(new Error('WhatsApp não disponível')),
             isWhatsAppInitialized: () => false,
+            resetInitialization: () => {},
             client: { on: () => {} }
         };
         return whatsappService;
