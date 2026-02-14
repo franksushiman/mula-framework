@@ -60,23 +60,11 @@ window.saveConfig = function() {
         openAIKey: document.getElementById('k-ope')?.value || '',
         telegramToken: document.getElementById('k-tel')?.value || '',
         restaurantAddress: document.getElementById('addr')?.value || '',
-        adminNumber: document.getElementById('k-adm')?.value || '',
-        bayleisApiKey: document.getElementById('bayleis-api-key')?.value || '',
-        bayleisSecretKey: document.getElementById('bayleis-secret-key')?.value || ''
+        adminNumber: document.getElementById('k-adm')?.value || ''
     };
     
     // Atualizar window.config com os valores coletados
     Object.assign(window.config, configUpdates);
-    
-    // Coletar e atualizar configurações do Telegram
-    const botToken = document.getElementById('telegram-bot-token')?.value || '';
-    const chatId = document.getElementById('telegram-chat-id')?.value || '';
-    const motoboysChannel = document.getElementById('telegram-motoboys-channel')?.value || '';
-    
-    if (!window.config.telegram) window.config.telegram = {};
-    window.config.telegram.botToken = botToken;
-    window.config.telegram.chatId = chatId;
-    window.config.telegram.motoboysChannel = motoboysChannel;
     
     // Salvar via API
     return window.electronAPI.saveConfig(window.config).then(result => {
@@ -1650,6 +1638,54 @@ window.checkOpenAIKeyStatus = function() {
     }
 };
 
+// Função para testar a chave Google Maps
+window.testGoogleMapsKey = function() {
+    const googleMapsKeyInput = document.getElementById('k-goo');
+    const key = googleMapsKeyInput?.value.trim();
+    
+    if (!key) {
+        window.showToast('Digite uma chave Google Maps primeiro!', 'error');
+        return;
+    }
+    
+    window.showToast('Testando chave Google Maps...', 'info');
+    
+    // Usar a API do Google Maps para testar a chave
+    fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=Sao+Paulo&key=${key}`)
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+    })
+    .then(data => {
+        if (data.status === 'OK') {
+            console.log('Resposta do Google Maps:', data);
+            window.showToast('✅ Chave Google Maps válida! Conectado com sucesso.', 'success');
+            
+            // Atualizar status
+            const statusIndicator = document.getElementById('google-maps-key-status');
+            if (statusIndicator) {
+                statusIndicator.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Válida e testada';
+                statusIndicator.title = 'Chave Google Maps testada e funcionando';
+            }
+        } else {
+            throw new Error(`Status da API: ${data.status}`);
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao testar chave Google Maps:', error);
+        window.showToast(`❌ Erro ao testar chave: ${error.message}`, 'error');
+        
+        const statusIndicator = document.getElementById('google-maps-key-status');
+        if (statusIndicator) {
+            statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--vermelho-sobrio);"></i> Erro no teste';
+            statusIndicator.title = `Erro ao testar chave: ${error.message}`;
+        }
+    });
+};
+
 // Função para testar a chave OpenAI
 window.testOpenAIKey = function() {
     const openAIKeyInput = document.getElementById('k-ope');
@@ -2301,21 +2337,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                     element.value = value || '';
                 }
             };
-            setValue('k-goo', window.config.googleMapsKey);
-            setValue('k-ope', window.config.openAIKey);
-            setValue('k-tel', window.config.telegramToken);
-            setValue('addr', window.config.restaurantAddress);
-            setValue('k-adm', window.config.adminNumber);
+            setValue('k-goo', window.config.googleMapsKey || '');
+            setValue('k-ope', window.config.openAIKey || '');
+            setValue('k-tel', window.config.telegramToken || '');
+            setValue('addr', window.config.restaurantAddress || '');
+            setValue('k-adm', window.config.adminNumber || '');
+            
+            // Atualizar status das chaves
+            if (window.config.googleMapsKey) {
+                const statusEl = document.getElementById('google-maps-key-status');
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
+                }
+            }
+            if (window.config.openAIKey) {
+                const statusEl = document.getElementById('openai-key-status');
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: var(--verde-esperanca);"></i> Configurada';
+                }
+            }
             
             const goldenRulesText = document.getElementById('golden-rules-text');
             if (goldenRulesText && window.config.goldenRules) {
                 goldenRulesText.value = window.config.goldenRules;
-            }
-            
-            if (window.config.telegram) {
-                setValue('telegram-bot-token', window.config.telegram.botToken);
-                setValue('telegram-chat-id', window.config.telegram.chatId);
-                setValue('telegram-motoboys-channel', window.config.telegram.motoboysChannel || 'bot_embutido_ceia_frota');
             }
             
             // Atualizar botão de pausa

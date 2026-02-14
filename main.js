@@ -23,9 +23,9 @@ const defaultConfig = {
   storeName: 'Delivery Manager',
   restaurantAddress: '',
   googleMapsKey: '',
-  openaiKey: '',
-  telegramClientToken: '',
-  telegramClientBotUsername: '',
+  openAIKey: '',
+  telegramToken: '',
+  adminNumber: '',
   goldenRules: '',
   botPaused: false,
   fleet: [],
@@ -40,12 +40,6 @@ const defaultConfig = {
     sound: true,
     newOrder: true,
     motoboyArrived: true
-  },
-  paymentConfigs: {
-    asaas: {
-      is_active: false,
-      credentials: {}
-    }
   },
   hubPagesLogo: '',
   hubPagesSlug: '',
@@ -84,7 +78,17 @@ function writeJSON(filePath, data) {
 function loadConfig() {
   const config = readJSON(configPath, defaultConfig);
   // Mesclar com padrão para garantir novas propriedades
-  return { ...defaultConfig, ...config };
+  const merged = { ...defaultConfig, ...config };
+  
+  // Garantir compatibilidade com nomes antigos
+  if (merged.openaiKey && !merged.openAIKey) {
+    merged.openAIKey = merged.openaiKey;
+  }
+  if (merged.telegramClientToken && !merged.telegramToken) {
+    merged.telegramToken = merged.telegramClientToken;
+  }
+  
+  return merged;
 }
 
 // Salvar configuração
