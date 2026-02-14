@@ -1822,6 +1822,65 @@ async function processAudioDirectly(audioData, mimeType) {
   }
 }
 
+// Listener para cadastro de entregador via Telegram
+ipcMain.on('driver-registered', async (event, driverData) => {
+    console.log('🚗 Recebido driver-registered:', driverData);
+    try {
+        const config = loadConfig();
+        const fleet = config.fleet || [];
+        
+        // Verificar se já existe pelo telefone ou chatId
+        const existingIndex = fleet.findIndex(d => 
+            d.phone === driverData.phone || d.chatId === driverData.chatId
+        );
+        
+        const newDriver = {
+            id: `DRV-${Date.now()}`,
+            name: driverData.name,
+            phone: driverData.phone,
+            pixKey: driverData.pixKey,
+            type: driverData.type,
+            vehicle: driverData.vehicle,
+            telegramUserId: driverData.telegramUserId,
+            telegramUsername: driverData.username,
+            chatId: driverData.chatId,
+            status: 'pending', // precisa ser aprovado
+            registeredAt: driverData.registeredAt || Date.now(),
+            lastSeen: null,
+            online: false
+        };
+        
+        if (existingIndex >= 0) {
+            fleet[existingIndex] = { ...fleet[existingIndex], ...newDriver };
+            console.log('✅ Atualizado entregador existente:', newDriver.name);
+        } else {
+            fleet.push(newDriver);
+            console.log('✅ Novo entregador adicionado:', newDriver.name);
+        }
+        
+        config.fleet = fleet;
+        saveConfig(config);
+        
+        // Notificar frontend
+        BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('driver-registered-ack', {
+                success: true,
+                driver: newDriver,
+                message: `Entregador ${newDriver.name} registrado com sucesso!`
+            });
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao processar driver-registered:', error);
+        BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('driver-registered-ack', {
+                success: false,
+                error: error.message
+            });
+        });
+    }
+});
+
 // Listener para processar localização recebida do WhatsApp
 ipcMain.on('whatsapp-location-to-process', async (event, data) => {
   console.log(`Processando localização recebida via evento: ${data.messageId}`);

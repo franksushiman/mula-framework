@@ -289,17 +289,21 @@ function initializeTelegramBot() {
                 const userData = session.data;
                 
                 // Enviar dados para o backend via IPC
+                const driverData = {
+                    chatId: chatId,
+                    name: userData.name,
+                    pixKey: userData.pixKey,
+                    type: userData.type || 'FREELANCER',
+                    vehicle: userData.vehicle,
+                    phone: phoneNumber,
+                    telegramUserId: ctx.from.id,
+                    username: ctx.from.username,
+                    registeredAt: Date.now(),
+                    status: 'pending' // ou 'active'
+                };
+                console.log('📤 Enviando driver-registered:', driverData);
                 BrowserWindow.getAllWindows().forEach(win => {
-                    win.webContents.send('driver-registered', {
-                        chatId: chatId,
-                        name: userData.name,
-                        pixKey: userData.pixKey,
-                        type: userData.type || 'FREELANCER', // Incluir tipo
-                        vehicle: userData.vehicle,
-                        phone: phoneNumber,
-                        telegramUserId: ctx.from.id,
-                        username: ctx.from.username
-                    });
+                    win.webContents.send('driver-registered', driverData);
                 });
                 
                 // Limpar sessão
