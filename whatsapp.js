@@ -123,8 +123,9 @@ function getWhatsAppStatus() {
     };
 }
 
-// Variável para controlar se o WhatsApp foi inicializado
+// Variáveis para controlar o estado do WhatsApp
 let isInitialized = false;
+let isInitializing = false;
 
 // Função para reiniciar a conexão
 function restartWhatsApp() {
@@ -282,6 +283,15 @@ function initializeWhatsApp() {
     console.log('🚀 Inicializando WhatsApp Web...');
     return new Promise((resolve, reject) => {
         try {
+            // Verificar se já está inicializando
+            if (isInitializing) {
+                console.log('WhatsApp já está em processo de inicialização');
+                reject(new Error('WhatsApp já está sendo inicializado'));
+                return;
+            }
+            
+            isInitializing = true;
+            
             // Resetar estado
             isInitialized = false;
             whatsappStatus.connected = false;
@@ -292,18 +302,21 @@ function initializeWhatsApp() {
             // Inicializar o cliente
             console.log('Chamando client.initialize()...');
             client.initialize().catch(error => {
+                isInitializing = false;
                 console.error('Erro ao chamar client.initialize():', error);
                 reject(new Error('Erro ao inicializar cliente: ' + error.message));
             });
             
             // Aguardar o evento 'ready' ou timeout
             const readyTimeout = setTimeout(() => {
+                isInitializing = false;
                 console.error('Timeout ao inicializar WhatsApp (60 segundos)');
                 reject(new Error('Timeout ao inicializar WhatsApp (60 segundos)'));
             }, 60000);
             
             const onReady = () => {
                 clearTimeout(readyTimeout);
+                isInitializing = false;
                 isInitialized = true;
                 whatsappStatus.connected = true;
                 console.log('✅ WhatsApp inicializado com sucesso!');
@@ -315,6 +328,7 @@ function initializeWhatsApp() {
             
             const onAuthFailure = (error) => {
                 clearTimeout(readyTimeout);
+                isInitializing = false;
                 console.error('Falha na autenticação:', error);
                 client.off('ready', onReady);
                 client.off('auth_failure', onAuthFailure);
@@ -324,6 +338,7 @@ function initializeWhatsApp() {
             
             const onDisconnected = (reason) => {
                 clearTimeout(readyTimeout);
+                isInitializing = false;
                 console.error('WhatsApp desconectado durante inicialização:', reason);
                 client.off('ready', onReady);
                 client.off('auth_failure', onAuthFailure);
@@ -341,6 +356,7 @@ function initializeWhatsApp() {
             });
             
         } catch (error) {
+            isInitializing = false;
             console.error('Erro na função initializeWhatsApp:', error);
             reject(new Error('Erro ao inicializar WhatsApp: ' + error.message));
         }
