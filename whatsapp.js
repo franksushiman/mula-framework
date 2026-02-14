@@ -319,7 +319,27 @@ function setupClientListeners() {
                 // 4. Chamar a OpenAI para gerar resposta
                 let respostaIA;
                 if (aiService && aiService.gerarRespostaIA) {
-                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja);
+                    // Tentar obter a chave OpenAI do config (se disponível)
+                    let openAIKey = null;
+                    try {
+                        // Se estivermos no contexto do Electron, podemos acessar o config
+                        if (typeof require !== 'undefined') {
+                            const fs = require('fs');
+                            const path = require('path');
+                            const { app } = require('electron');
+                            
+                            const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
+                            if (fs.existsSync(configPath)) {
+                                const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                                openAIKey = configData.openAIKey || configData.openaiKey || null;
+                            }
+                        }
+                    } catch (configError) {
+                        console.warn('⚠️  Não foi possível ler a chave OpenAI do config:', configError.message);
+                    }
+                    
+                    // Chamar a função com a chave (se encontrada)
+                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
                 } else {
                     respostaIA = "Olá! Sou o assistente virtual do Ceia Delivery. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.";
                 }

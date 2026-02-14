@@ -3,38 +3,58 @@
 const { OpenAI } = require('openai');
 
 // Configurar a instância da OpenAI
-let openai;
-try {
-    // Carregar chave da API do ambiente ou usar fallback
-    const apiKey = process.env.OPENAI_API_KEY || '';
-    
-    if (!apiKey) {
-        console.warn('⚠️  OPENAI_API_KEY não encontrada nas variáveis de ambiente');
-        // Usar uma chave vazia, mas a função terá fallback
+let openai = null;
+
+// Função para configurar a OpenAI com a chave do config
+function configureOpenAI(apiKey) {
+    try {
+        if (!apiKey || apiKey.trim() === '') {
+            console.warn('⚠️  Chave OpenAI não fornecida');
+            openai = null;
+            return false;
+        }
+        
+        // Verificar se a chave parece válida
+        if (!apiKey.startsWith('sk-')) {
+            console.warn('⚠️  Formato de chave OpenAI inválido (deve começar com "sk-")');
+            openai = null;
+            return false;
+        }
+        
+        openai = new OpenAI({
+            apiKey: apiKey.trim(),
+            timeout: 30000, // 30 segundos timeout
+        });
+        
+        console.log('✅ OpenAI configurada com sucesso');
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao configurar OpenAI:', error.message);
+        openai = null;
+        return false;
     }
-    
-    openai = new OpenAI({
-        apiKey: apiKey,
-        timeout: 30000, // 30 segundos timeout
-    });
-    
-    console.log('✅ OpenAI configurada com sucesso');
-} catch (error) {
-    console.error('❌ Erro ao configurar OpenAI:', error.message);
-    openai = null;
 }
+
+// Inicializar com chave vazia - será configurada quando necessário
+console.log('🤖 Serviço de IA carregado (aguardando configuração)');
 
 /**
  * Gera uma resposta usando IA para mensagens do WhatsApp
  * @param {string} mensagemUsuario - A mensagem recebida do cliente
  * @param {string} contextoLoja - Informações sobre a loja (cardápio, horários, etc.)
+ * @param {string} apiKey - Chave da API da OpenAI (opcional, se não fornecida, tenta usar a configurada)
  * @returns {Promise<string>} - Resposta gerada pela IA
  */
-async function gerarRespostaIA(mensagemUsuario, contextoLoja) {
+async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
     try {
+        // Se uma chave foi fornecida, configurar a OpenAI com ela
+        if (apiKey && apiKey.trim() !== '' && apiKey.startsWith('sk-')) {
+            configureOpenAI(apiKey);
+        }
+        
         // Verificar se a OpenAI está configurada
         if (!openai) {
-            throw new Error('OpenAI não configurada');
+            throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
         }
         
         // System Prompt: Definir o comportamento da IA
@@ -121,7 +141,8 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja) {
     }
 }
 
-// Exportar a função principal
+// Exportar funções
 module.exports = {
-    gerarRespostaIA
+    gerarRespostaIA,
+    configureOpenAI
 };

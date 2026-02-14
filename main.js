@@ -489,6 +489,25 @@ function initializeWhatsAppService() {
         // Carregar o módulo WhatsApp
         whatsappService = require('./whatsapp.js');
         
+        // Configurar a chave OpenAI no serviço de IA (se disponível)
+        try {
+            const config = loadConfig();
+            const openAIKey = config.openAIKey || config.openaiKey;
+            if (openAIKey && openAIKey.trim() !== '' && openAIKey.startsWith('sk-')) {
+                console.log('🔑 Configurando chave OpenAI no serviço de IA...');
+                // Passar a chave para o serviço de IA
+                const aiService = require('./ai_service');
+                // A função configureOpenAI deve ser exportada
+                if (aiService.configureOpenAI) {
+                    aiService.configureOpenAI(openAIKey);
+                }
+            } else {
+                console.warn('⚠️  Chave OpenAI não configurada ou inválida no config');
+            }
+        } catch (configError) {
+            console.warn('⚠️  Não foi possível configurar chave OpenAI:', configError.message);
+        }
+        
         // Inicializar o WhatsApp se não estiver inicializado
         if (!whatsappService.isWhatsAppInitialized || !whatsappService.isWhatsAppInitialized()) {
             console.log('WhatsApp não está inicializado, tentando inicializar...');
