@@ -1501,6 +1501,7 @@ window.testPrint = function() {
 
 // Funções auxiliares para o novo componente de frota
 // Função para enviar convite do Telegram via WhatsApp (única função de convite)
+// IMPORTANTE: O link deve vir sempre do backend, nunca ser gerado no frontend
 window.sendTelegramInviteToWhatsApp = function() {
     console.log('sendTelegramInviteToWhatsApp chamada');
     const phoneInput = document.getElementById('fleet-invite-phone');
@@ -1542,6 +1543,7 @@ window.sendTelegramInviteToWhatsApp = function() {
             if (preview) {
                 const linkEl = preview.querySelector('.preview-link');
                 if (linkEl) {
+                    // Usar EXATAMENTE o link retornado pelo backend
                     linkEl.textContent = result.telegramLink || 'Link do Telegram gerado';
                     preview.classList.remove('hidden');
                 }
@@ -1567,7 +1569,14 @@ window.copyInviteLink = function() {
     const linkEl = document.querySelector('.preview-link');
     if (!linkEl) return;
     
-    navigator.clipboard.writeText(linkEl.textContent);
+    // Copiar exatamente o texto do link que veio do backend
+    const linkText = linkEl.textContent;
+    if (!linkText || linkText.trim() === '') {
+        window.showToast('Nenhum link disponível para copiar', 'error');
+        return;
+    }
+    
+    navigator.clipboard.writeText(linkText);
     window.showToast('Link copiado para a área de transferência!', 'success');
 };
 
@@ -1736,6 +1745,7 @@ window.renderFleetNew = function() {
 };
 
 // Funções para Telegram - Removida duplicação, usando window.saveConfig
+// NOTA: Não gerar links no frontend - sempre usar o link retornado pelo backend
 
 
 window.hideMotoboysChannel = function() {
@@ -2664,65 +2674,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btnEnviarConvite && inputTelefone) {
                 console.log('✅ Botão e campo de telefone encontrados');
                 
-                btnEnviarConvite.addEventListener('click', async () => {
-                    const phone = inputTelefone.value.trim();
-                    
-                    console.log('🟡 Botão clicado, enviando para backend:', phone);
-                    
-                    if (!phone) {
-                        window.showToast('Digite um número de WhatsApp!', 'error');
-                        return;
-                    }
-                    
-                    // Validar formato do telefone (mínimo 10 dígitos)
-                    const cleanPhone = phone.replace(/\D/g, '');
-                    if (cleanPhone.length < 10) {
-                        window.showToast('Número de telefone inválido!', 'error');
-                        return;
-                    }
-                    
-                    window.showToast('Enviando convite via WhatsApp...', 'info');
-                    
-                    // Verificar se a API está disponível
-                    if (!window.electronAPI || !window.electronAPI.enviarConviteEntregador) {
-                        console.error('❌ electronAPI.enviarConviteEntregador não disponível');
-                        window.showToast('Erro: API não disponível', 'error');
-                        return;
-                    }
-                    
-                    try {
-                        console.log('🟡 Chamando electronAPI.enviarConviteEntregador com:', cleanPhone);
-                        const result = await window.electronAPI.enviarConviteEntregador(cleanPhone);
-                        console.log('✅ Resultado do envio:', result);
-                        
-                        if (result && result.success) {
-                            window.showToast('✅ Convite enviado com sucesso!', 'success');
-                            
-                            // Mostrar preview do link (se disponível)
-                            const preview = document.getElementById('invite-preview');
-                            if (preview) {
-                                const linkEl = preview.querySelector('.preview-link');
-                                if (linkEl) {
-                                    linkEl.textContent = result.telegramLink || 'Link do Telegram gerado';
-                                    preview.classList.remove('hidden');
-                                }
-                            }
-                            
-                            // Atualizar a lista de convites pendentes
-                            if (window.renderFleetInvites) {
-                                window.renderFleetInvites();
-                            }
-                            
-                            // Limpar o campo do telefone
-                            inputTelefone.value = '';
-                        } else {
-                            window.showToast(`❌ Erro: ${result?.error || 'Erro desconhecido'}`, 'error');
-                        }
-                    } catch (error) {
-                        console.error('❌ Erro ao enviar convite:', error);
-                        window.showToast(`❌ Erro ao enviar: ${error.message}`, 'error');
-                    }
-                });
+                // Usar a função já existente window.sendTelegramInviteToWhatsApp
+                // que já está configurada para usar o link do backend
+                btnEnviarConvite.addEventListener('click', window.sendTelegramInviteToWhatsApp);
             } else {
                 console.warn('⚠️ Botão ou campo de telefone não encontrados');
             }
