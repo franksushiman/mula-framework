@@ -1593,20 +1593,17 @@
                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                                        style="width: 100%; margin-bottom: 1rem;">
                                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                                    <button class="btn btn-primary" onclick="window.sendFleetInvite()">
-                                        <i class="fas fa-link"></i> Convite Padrão
-                                    </button>
                                     <button class="btn btn-success" onclick="window.sendTelegramInviteToWhatsApp()">
                                         <i class="fab fa-telegram"></i> Enviar Convite Telegram
                                     </button>
                                     <span style="font-size: 0.875rem; color: var(--texto-secundario);">
-                                        O bot do Telegram coletará PIX, placa, CPF, etc.
+                                        O bot do Telegram coletará PIX, placa, CPF, etc. A sincronização com o site é automática.
                                     </span>
                                 </div>
                             </div>
                             <div id="invite-preview" class="hidden" style="margin-top: 1rem; padding: 1rem; background: var(--cinza-fundo); border-radius: 8px;">
-                                <div style="font-size: 0.875rem; color: var(--texto-secundario); margin-bottom: 0.5rem;">Link enviado:</div>
-                                <code class="preview-link" style="font-family: monospace; font-size: 0.875rem; color: var(--terra); word-break: break-all; display: block; margin-bottom: 0.5rem;">https://ceia.ia.br/cadastro/abc123</code>
+                                <div style="font-size: 0.875rem; color: var(--texto-secundario); margin-bottom: 0.5rem;">Link do Telegram enviado:</div>
+                                <code class="preview-link" style="font-family: monospace; font-size: 0.875rem; color: var(--terra); word-break: break-all; display: block; margin-bottom: 0.5rem;">https://t.me/ceia_frota_bot?start=...</code>
                                 <button class="btn btn-secondary" onclick="window.copyInviteLink()" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">
                                     <i class="fas fa-copy"></i> Copiar Link
                                 </button>
@@ -1671,7 +1668,7 @@
                         <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">🛵</div>
                         <h3 style="color: var(--terra); margin-bottom: 0.5rem;">Nenhum motoboy na rede ainda</h3>
                         <p style="color: var(--texto-secundario); margin-bottom: 0.25rem;">Convide o primeiro entregador usando o campo acima.</p>
-                        <p style="color: var(--texto-secundario); font-size: 0.875rem;">O motoboy recebe um link e se cadastra pelo celular.</p>
+                        <p style="color: var(--texto-secundario); font-size: 0.875rem;">O motoboy recebe um link do Telegram e se cadastra pelo celular.</p>
                     </div>
                 </div>
             </div>

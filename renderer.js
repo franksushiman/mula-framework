@@ -1351,21 +1351,48 @@ window.testPrint = function() {
 };
 
 // Funções auxiliares para o novo componente de frota
-window.sendFleetInvite = function() {
-    const phone = document.getElementById('fleet-invite-phone').value;
-    if (!phone) {
-        window.showToast('Digite um telefone!', 'error');
+// Função para enviar convite do Telegram via WhatsApp (única função de convite)
+window.sendTelegramInviteToWhatsApp = function() {
+    const phoneInput = document.getElementById('fleet-invite-phone');
+    if (!phoneInput) {
+        window.showToast('Campo de telefone não encontrado!', 'error');
         return;
     }
-    window.electronAPI.fleetInviteCreate({ phone, slug: 'default' }).then(result => {
-        window.showToast(`Convite criado: ${result.inviteId}`, 'success');
-        // Mostrar preview do link
-        const preview = document.getElementById('invite-preview');
-        const linkEl = preview.querySelector('.preview-link');
-        if (preview && linkEl) {
-            linkEl.textContent = `https://ceia.ia.br/cadastro/${result.inviteId}`;
-            preview.classList.remove('hidden');
+    
+    const phone = phoneInput.value.trim();
+    if (!phone) {
+        window.showToast('Digite um número de WhatsApp!', 'error');
+        return;
+    }
+    
+    // Validar formato do telefone (mínimo 10 dígitos)
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+        window.showToast('Número de telefone inválido!', 'error');
+        return;
+    }
+    
+    window.showToast('Enviando convite via WhatsApp...', 'info');
+    
+    window.electronAPI.sendTelegramInviteToWhatsApp(cleanPhone).then(result => {
+        if (result.success) {
+            window.showToast('✅ Convite enviado com sucesso!', 'success');
+            
+            // Mostrar preview do link
+            const preview = document.getElementById('invite-preview');
+            const linkEl = preview.querySelector('.preview-link');
+            if (preview && linkEl) {
+                linkEl.textContent = result.telegramLink || 'Link do Telegram gerado';
+                preview.classList.remove('hidden');
+            }
+            
+            // Atualizar a lista de convites pendentes
+            window.renderFleetInvites();
+        } else {
+            window.showToast(`❌ Erro: ${result.error}`, 'error');
         }
+    }).catch(error => {
+        window.showToast(`❌ Erro ao enviar: ${error.message}`, 'error');
     });
 };
 
@@ -1827,7 +1854,7 @@ window.checkWhatsAppStatusForDashboard = function() {
 
 // Funções adicionais (mantidas para compatibilidade)
 window.inviteDriver = function() {
-    window.sendFleetInvite();
+    window.sendTelegramInviteToWhatsApp();
 };
 
 window.saveConfig = function() {
