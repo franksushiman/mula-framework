@@ -217,14 +217,20 @@ window.saveConfig = function() {
         telegramToken: document.getElementById('k-tel')?.value || '',
         telegramBotName: document.getElementById('k-tel-bot')?.value || 'MulaFRotaBot',
         restaurantAddress: document.getElementById('addr')?.value || '',
-        adminNumber: document.getElementById('k-adm')?.value || ''
+        adminNumber: document.getElementById('k-adm')?.value || '',
+        storeName: document.getElementById('store-name-input')?.value || window.config.storeName || 'Delivery Manager',
+        hubPagesSlug: document.getElementById('hub-pages-slug')?.value || window.config.hubPagesSlug || '',
+        hubPagesPublicUrl: document.getElementById('hub-pages-public-url')?.value || window.config.hubPagesPublicUrl || ''
     };
+    
+    console.log('Salvando configurações:', configUpdates);
     
     // Atualizar window.config com os valores coletados
     Object.assign(window.config, configUpdates);
     
     // Salvar via API
     return window.electronAPI.saveConfig(window.config).then(result => {
+        console.log('Resultado do salvamento:', result);
         window.showToast('Configurações salvas com sucesso!', 'success');
         return result;
     });
@@ -247,6 +253,9 @@ window.loadConfigToForm = function() {
     setValue('k-tel-bot', window.config.telegramBotName || 'MulaFRotaBot');
     setValue('addr', window.config.restaurantAddress || '');
     setValue('k-adm', window.config.adminNumber || '');
+    setValue('store-name-input', window.config.storeName || 'Delivery Manager');
+    setValue('hub-pages-slug', window.config.hubPagesSlug || '');
+    setValue('hub-pages-public-url', window.config.hubPagesPublicUrl || '');
     
     // Atualizar status das chaves
     window.checkGoogleMapsKeyStatus();
