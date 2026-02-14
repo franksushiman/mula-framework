@@ -308,110 +308,12 @@ function setupClientListeners() {
             
             console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 100) || 'sem corpo'}...`);
             
-            try {
-                // 2. Simular "Digitando..." para parecer humano
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                
-                // 3. Contexto da loja - tentar obter do config
-                let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+            // 2. Verificar o tipo da mensagem para evitar race condition
+            // Se for áudio, processar apenas o áudio e não responder com texto
+            if (msg.type === 'ptt' || msg.type === 'audio' || msg.hasMedia) {
+                console.log(`🎵 Áudio detectado de ${msg.from}. Processando apenas áudio...`);
                 
                 try {
-                    // Tentar obter informações reais do config
-                    if (typeof require !== 'undefined') {
-                        const fs = require('fs');
-                        const path = require('path');
-                        const { app } = require('electron');
-                        
-                        const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
-                        if (fs.existsSync(configPath)) {
-                            const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                            
-                            // Verificar se há informações reais configuradas
-                            const hasRealInfo = configData.restaurantAddress || 
-                                               (configData.menuItems && configData.menuItems.length > 0) ||
-                                               configData.storeName;
-                            
-                            if (hasRealInfo) {
-                                // Construir contexto com informações reais
-                                let contextParts = [];
-                                
-                                if (configData.storeName && configData.storeName !== 'Delivery Manager') {
-                                    contextParts.push(`Estabelecimento: ${configData.storeName}`);
-                                }
-                                
-                                if (configData.restaurantAddress) {
-                                    contextParts.push(`Endereço: ${configData.restaurantAddress}`);
-                                }
-                                
-                                if (configData.menuItems && configData.menuItems.length > 0) {
-                                    const sampleItems = configData.menuItems.slice(0, 3).map(item => 
-                                        `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
-                                    ).join(', ');
-                                    contextParts.push(`Cardápio: ${sampleItems}${configData.menuItems.length > 3 ? '...' : ''}`);
-                                }
-                                
-                                if (contextParts.length > 0) {
-                                    contextoLoja = contextParts.join('. ');
-                                }
-                            }
-                        }
-                    }
-                } catch (configError) {
-                    console.warn('⚠️  Não foi possível ler contexto do config:', configError.message);
-                }
-                
-                // 4. Chamar a OpenAI para gerar resposta
-                let respostaIA;
-                if (aiService && aiService.gerarRespostaIA) {
-                    // Tentar obter a chave OpenAI do config (se disponível)
-                    let openAIKey = null;
-                    try {
-                        // Se estivermos no contexto do Electron, podemos acessar o config
-                        if (typeof require !== 'undefined') {
-                            const fs = require('fs');
-                            const path = require('path');
-                            const { app } = require('electron');
-                            
-                            const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
-                            if (fs.existsSync(configPath)) {
-                                const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                                openAIKey = configData.openAIKey || configData.openaiKey || null;
-                            }
-                        }
-                    } catch (configError) {
-                        console.warn('⚠️  Não foi possível ler a chave OpenAI do config:', configError.message);
-                    }
-                    
-                    // Chamar a função com a chave (se encontrada)
-                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
-                } else {
-                    respostaIA = "Olá! Sou o assistente virtual do Ceia Delivery. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.";
-                }
-                
-                // 5. Responder
-                await msg.reply(respostaIA);
-                await chat.clearState(); // Para de digitar
-                
-                console.log(`✅ Resposta enviada para ${msg.from}: ${respostaIA.substring(0, 50)}...`);
-                
-            } catch (erro) {
-                console.error('❌ Erro ao processar mensagem com IA:', erro);
-                
-                // Tentar enviar uma mensagem de fallback
-                try {
-                    await msg.reply("Desculpe, tive um problema ao processar sua mensagem. Por favor, tente novamente ou ligue para nosso restaurante.");
-                } catch (fallbackError) {
-                    console.error('❌ Erro ao enviar mensagem de fallback:', fallbackError);
-                }
-            }
-            
-            // Processamento de mídia (áudio, localização) continua funcionando em paralelo
-            // Verificar se é uma mensagem de áudio
-            if (msg.hasMedia) {
-                try {
-                    console.log(`🎵 Mensagem de áudio detectada de ${msg.from}`);
-                    
                     // Baixar a mídia
                     const media = await msg.downloadMedia();
                     
@@ -440,35 +342,10 @@ function setupClientListeners() {
                                 });
                                 
                                 // Processar o áudio em segundo plano
-                                // Usar uma abordagem que evita o erro de handler duplicado
                                 setTimeout(() => {
                                     try {
-                                        // Enviar evento para processar o áudio
-                                        // O main process já tem o handler 'whatsapp-process-audio-message' configurado
-                                        // Vamos usar ipcRenderer.invoke se estivermos no contexto do renderer
-                                        // Mas note: whatsapp.js roda no main process, não no renderer
-                                        // Então precisamos acessar o ipcMain de forma diferente
-                                        
-                                        // Verificar se estamos no contexto do Electron main process
+                                        // Enviar notificação para o frontend
                                         if (typeof require !== 'undefined') {
-                                            const { ipcMain } = require('electron');
-                                            
-                                            // Verificar se o handler já está registrado
-                                            // Se não estiver, registrar
-                                            const handlerExists = ipcMain.eventNames().includes('whatsapp-process-audio-message');
-                                            
-                                            if (!handlerExists) {
-                                                // O handler já está registrado no main.js, então não precisamos fazer nada
-                                                // Apenas chamar o handler existente
-                                                console.log('Handler de áudio já registrado no main.js');
-                                            }
-                                            
-                                            // Em vez de chamar ipcMain.handle diretamente (que registra um handler),
-                                            // vamos enviar um evento para o main process processar
-                                            // Mas note: ipcMain.handle não pode ser chamado aqui
-                                            // Vamos usar uma abordagem diferente: enviar para o frontend processar
-                                            
-                                            // Enviar notificação para o frontend
                                             const { BrowserWindow } = require('electron');
                                             BrowserWindow.getAllWindows().forEach(win => {
                                                 win.webContents.send('whatsapp-audio-to-process', {
@@ -495,9 +372,12 @@ function setupClientListeners() {
                 } catch (mediaError) {
                     console.error('Erro ao processar mídia de áudio:', mediaError);
                 }
+                
+                // IMPORTANTE: Retornar aqui para não processar como texto
+                return;
             }
             
-            // Verificar se é uma mensagem de localização
+            // 3. Verificar se é uma mensagem de localização
             if (msg.type === 'location') {
                 try {
                     console.log(`📍 Mensagem de localização detectada de ${msg.from}`);
@@ -555,6 +435,108 @@ function setupClientListeners() {
                     }
                 } catch (locationError) {
                     console.error('Erro ao processar localização:', locationError);
+                }
+                
+                // IMPORTANTE: Retornar aqui para não processar como texto
+                return;
+            }
+            
+            // 4. A partir daqui, apenas mensagens de texto são processadas
+            try {
+                // Simular "Digitando..." para parecer humano
+                const chat = await msg.getChat();
+                await chat.sendStateTyping();
+                
+                // Contexto da loja - tentar obter do config
+                let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+                
+                try {
+                    // Tentar obter informações reais do config
+                    if (typeof require !== 'undefined') {
+                        const fs = require('fs');
+                        const path = require('path');
+                        const { app } = require('electron');
+                        
+                        const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
+                        if (fs.existsSync(configPath)) {
+                            const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                            
+                            // Verificar se há informações reais configuradas
+                            const hasRealInfo = configData.restaurantAddress || 
+                                               (configData.menuItems && configData.menuItems.length > 0) ||
+                                               configData.storeName;
+                            
+                            if (hasRealInfo) {
+                                // Construir contexto com informações reais
+                                let contextParts = [];
+                                
+                                if (configData.storeName && configData.storeName !== 'Delivery Manager') {
+                                    contextParts.push(`Estabelecimento: ${configData.storeName}`);
+                                }
+                                
+                                if (configData.restaurantAddress) {
+                                    contextParts.push(`Endereço: ${configData.restaurantAddress}`);
+                                }
+                                
+                                if (configData.menuItems && configData.menuItems.length > 0) {
+                                    const sampleItems = configData.menuItems.slice(0, 3).map(item => 
+                                        `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
+                                    ).join(', ');
+                                    contextParts.push(`Cardápio: ${sampleItems}${configData.menuItems.length > 3 ? '...' : ''}`);
+                                }
+                                
+                                if (contextParts.length > 0) {
+                                    contextoLoja = contextParts.join('. ');
+                                }
+                            }
+                        }
+                    }
+                } catch (configError) {
+                    console.warn('⚠️  Não foi possível ler contexto do config:', configError.message);
+                }
+                
+                // Chamar a OpenAI para gerar resposta
+                let respostaIA;
+                if (aiService && aiService.gerarRespostaIA) {
+                    // Tentar obter a chave OpenAI do config (se disponível)
+                    let openAIKey = null;
+                    try {
+                        // Se estivermos no contexto do Electron, podemos acessar o config
+                        if (typeof require !== 'undefined') {
+                            const fs = require('fs');
+                            const path = require('path');
+                            const { app } = require('electron');
+                            
+                            const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
+                            if (fs.existsSync(configPath)) {
+                                const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+                                openAIKey = configData.openAIKey || configData.openaiKey || null;
+                            }
+                        }
+                    } catch (configError) {
+                        console.warn('⚠️  Não foi possível ler a chave OpenAI do config:', configError.message);
+                    }
+                    
+                    // Chamar a função com a chave (se encontrada)
+                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
+                } else {
+                    respostaIA = "Olá! Sou o assistente virtual do Ceia Delivery. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.";
+                }
+                
+                // Responder
+                await msg.reply(respostaIA);
+                await chat.clearState(); // Para de digitar
+                
+                console.log(`✅ Resposta enviada para ${msg.from}: ${respostaIA.substring(0, 50)}...`);
+                
+            } catch (erro) {
+                console.error('❌ Erro ao processar mensagem com IA:', erro);
+                
+                // Tentar enviar uma mensagem de fallback
+                try {
+                    await msg.reply("Desculpe, tive um problema ao processar sua mensagem. Por favor, tente novamente ou ligue para nosso restaurante.");
+                } catch (fallbackError) {
+                    console.error('❌ Erro ao enviar mensagem de fallback:', fallbackError);
                 }
             }
         });
