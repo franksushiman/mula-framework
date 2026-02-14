@@ -288,7 +288,10 @@ window.closeCategoryModal = function() {
 window.saveCategory = function() {
     const name = document.getElementById('category-name').value.trim();
     if (!name) {
-        window.showToast('Digite um nome para a categoria', 'error');
+        window.showErrorWithInstruction(
+            'Nome da categoria não pode estar vazio.',
+            'Digite um nome para identificar esta categoria no cardápio.'
+        );
         return;
     }
     
@@ -311,6 +314,11 @@ window.saveCategory = function() {
         window.showToast('Categoria salva com sucesso!', 'success');
         window.closeCategoryModal();
         window.renderMenuCategories();
+    }).catch(error => {
+        window.showErrorWithInstruction(
+            'Erro ao salvar categoria.',
+            'Verifique sua conexão e tente novamente.'
+        );
     });
 };
 
@@ -439,11 +447,17 @@ window.saveProduct = function() {
     const price = parseFloat(document.getElementById('product-price').value);
     
     if (!name) {
-        window.showToast('Digite um nome para o produto', 'error');
+        window.showErrorWithInstruction(
+            'Nome do produto não pode estar vazio.',
+            'Digite um nome que os clientes reconhecerão.'
+        );
         return;
     }
     if (isNaN(price) || price < 0) {
-        window.showToast('Digite um preço válido', 'error');
+        window.showErrorWithInstruction(
+            'Preço inválido.',
+            'Digite um valor numérico maior ou igual a zero. Use ponto para decimais.'
+        );
         return;
     }
     
@@ -496,6 +510,11 @@ window.saveProduct = function() {
         window.showToast('Produto salvo com sucesso!', 'success');
         window.closeProductModal();
         window.renderMenuCategories();
+    }).catch(error => {
+        window.showErrorWithInstruction(
+            'Erro ao salvar produto.',
+            'Verifique sua conexão e tente novamente.'
+        );
     });
 };
 
