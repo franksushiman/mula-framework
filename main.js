@@ -583,21 +583,6 @@ function processWhatsAppQr(qr) {
   });
 }
 
-// Inicializar o serviço do WhatsApp quando o aplicativo iniciar
-app.whenReady().then(() => {
-  createWindow();
-  
-  // Inicializar o WhatsApp após um breve delay para garantir que a janela está pronta
-  setTimeout(() => {
-    console.log('Inicializando serviço WhatsApp...');
-    initializeWhatsAppService();
-  }, 2000);
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
 ipcMain.handle('whatsapp-get-qr', async () => {
   const service = getWhatsAppService();
   // Verificar se o WhatsApp está inicializado
@@ -752,14 +737,6 @@ function createWindow() {
     });
   }, 30000);
 }
-
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
