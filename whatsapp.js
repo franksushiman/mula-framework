@@ -116,24 +116,76 @@ function getWhatsAppStatus() {
     };
 }
 
+// Variável para controlar se o WhatsApp foi inicializado
+let isInitialized = false;
+
 // Função para reiniciar a conexão
 function restartWhatsApp() {
     console.log('🔄 Reiniciando conexão WhatsApp...');
     return new Promise((resolve, reject) => {
         try {
+            // Verificar se o cliente está disponível
+            if (!client) {
+                reject(new Error('Cliente WhatsApp não disponível'));
+                return;
+            }
+            
+            // Destruir o cliente atual
             client.destroy().then(() => {
-                isInitialized = false;
                 console.log('✅ WhatsApp destruído, reinicializando...');
+                
+                // Resetar o estado
+                isInitialized = false;
+                whatsappStatus.connected = false;
+                whatsappStatus.phone = null;
+                whatsappStatus.readyAt = null;
+                
+                // Aguardar um momento antes de reinicializar
                 setTimeout(() => {
-                    initializeWhatsApp()
-                        .then(() => {
-                            console.log('✅ WhatsApp reinicializado com sucesso!');
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error('❌ Erro ao reinicializar WhatsApp:', error);
-                            reject(error);
-                        });
+                    // Criar um novo cliente
+                    // Nota: O cliente já foi destruído, precisamos criar um novo
+                    // Mas como o módulo exporta o cliente existente, vamos apenas inicializar
+                    // O cliente já foi redefinido no topo do arquivo
+                    client.initialize();
+                    
+                    // Configurar listeners para o novo cliente
+                    setupClientListeners();
+                    
+                    // Aguardar a inicialização
+                    const readyTimeout = setTimeout(() => {
+                        reject(new Error('Timeout ao reinicializar WhatsApp (30 segundos)'));
+                    }, 30000);
+                    
+                    const onReady = () => {
+                        clearTimeout(readyTimeout);
+                        isInitialized = true;
+                        console.log('✅ WhatsApp reinicializado com sucesso!');
+                        client.off('ready', onReady);
+                        client.off('auth_failure', onAuthFailure);
+                        client.off('disconnected', onDisconnected);
+                        resolve();
+                    };
+                    
+                    const onAuthFailure = (error) => {
+                        clearTimeout(readyTimeout);
+                        client.off('ready', onReady);
+                        client.off('auth_failure', onAuthFailure);
+                        client.off('disconnected', onDisconnected);
+                        reject(new Error('Falha na autenticação: ' + error));
+                    };
+                    
+                    const onDisconnected = (reason) => {
+                        clearTimeout(readyTimeout);
+                        client.off('ready', onReady);
+                        client.off('auth_failure', onAuthFailure);
+                        client.off('disconnected', onDisconnected);
+                        reject(new Error('WhatsApp desconectado durante reinicialização: ' + reason));
+                    };
+                    
+                    client.once('ready', onReady);
+                    client.once('auth_failure', onAuthFailure);
+                    client.once('disconnected', onDisconnected);
+                    
                 }, 2000);
             }).catch(error => {
                 console.error('❌ Erro ao destruir WhatsApp:', error);
@@ -146,8 +198,52 @@ function restartWhatsApp() {
     });
 }
 
-// Variável para controlar se o WhatsApp foi inicializado
-let isInitialized = false;
+// Função para configurar listeners do cliente
+function setupClientListeners() {
+    // Remover listeners antigos primeiro
+    client.removeAllListeners();
+    
+    // Configurar os listeners padrão
+    client.on('qr', (qr) => {
+        console.log('\n=== QR CODE PARA CONEXÃO DO WHATSAPP ===');
+        qrcode.generate(qr, { small: true });
+        console.log('Por favor, escaneie o QR Code acima com o WhatsApp da loja.');
+        console.log('No celular: WhatsApp → Menu → Aparelhos conectados → Conectar um aparelho\n');
+    });
+    
+    client.on('ready', () => {
+        console.log('✅ WhatsApp está pronto!');
+        whatsappStatus.connected = true;
+        whatsappStatus.readyAt = new Date();
+        
+        // Obter informações do número conectado
+        client.getState().then(state => {
+            console.log(`Estado: ${state}`);
+        });
+        
+        client.info.then(info => {
+            whatsappStatus.phone = info.wid.user;
+            console.log(`📱 Conectado como: ${whatsappStatus.phone}`);
+        });
+    });
+    
+    client.on('authenticated', () => {
+        console.log('🔐 WhatsApp autenticado!');
+    });
+    
+    client.on('disconnected', (reason) => {
+        console.log(`❌ WhatsApp desconectado: ${reason}`);
+        whatsappStatus.connected = false;
+        whatsappStatus.phone = null;
+        isInitialized = false;
+    });
+    
+    client.on('message', async (msg) => {
+        if (!msg.fromMe) {
+            console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body.substring(0, 50)}...`);
+        }
+    });
+}
 
 // Função para inicializar o WhatsApp manualmente
 function initializeWhatsApp() {
@@ -159,6 +255,10 @@ function initializeWhatsApp() {
     console.log('🚀 Inicializando WhatsApp Web...');
     return new Promise((resolve, reject) => {
         try {
+            // Configurar listeners primeiro
+            setupClientListeners();
+            
+            // Inicializar o cliente
             client.initialize();
             
             // Aguardar o evento 'ready' ou timeout
@@ -218,5 +318,6 @@ module.exports = {
     restartWhatsApp,
     initializeWhatsApp,
     isWhatsAppInitialized,
+    resetInitialization,
     client
 };

@@ -402,17 +402,22 @@ let currentQrCode = null;
 
 // Função para inicializar o WhatsApp apenas quando necessário
 function initializeWhatsAppService() {
-    if (whatsappService && whatsappService.isWhatsAppInitialized && whatsappService.isWhatsAppInitialized()) {
-        return whatsappService;
-    }
-    
     try {
-        // Se o serviço já existe mas não está inicializado, tente reinicializar
-        if (whatsappService && whatsappService.resetInitialization) {
-            whatsappService.resetInitialization();
+        // Se o serviço já existe, verificar se está inicializado
+        if (whatsappService && whatsappService.isWhatsAppInitialized && whatsappService.isWhatsAppInitialized()) {
+            return whatsappService;
         }
         
+        // Carregar o módulo WhatsApp
         whatsappService = require('./whatsapp.js');
+        
+        // Inicializar o WhatsApp se não estiver inicializado
+        if (!whatsappService.isWhatsAppInitialized || !whatsappService.isWhatsAppInitialized()) {
+            console.log('WhatsApp não está inicializado, tentando inicializar...');
+            whatsappService.initializeWhatsApp().catch(error => {
+                console.error('Erro ao inicializar WhatsApp:', error);
+            });
+        }
         
         // Configurar listener para QR Code
         whatsappService.client.on('qr', (qr) => {
@@ -498,7 +503,8 @@ ipcMain.handle('get-telegram-updates', async (event, botToken) => {
 ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
   console.log(`📱 IPC: Tentando enviar WhatsApp para ${phone}...`);
   try {
-    const response = await whatsappService.sendWhatsAppMessage(phone, message);
+    const service = getWhatsAppService();
+    const response = await service.sendWhatsAppMessage(phone, message);
     return { success: true, data: response };
   } catch (error) {
     console.error('Erro ao enviar WhatsApp:', error);
@@ -509,7 +515,8 @@ ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
 // Handler para obter status do WhatsApp
 ipcMain.handle('whatsapp-get-status', async () => {
   try {
-    const status = whatsappService.getWhatsAppStatus();
+    const service = getWhatsAppService();
+    const status = service.getWhatsAppStatus();
     return status;
   } catch (error) {
     console.error('Erro ao obter status WhatsApp:', error);
@@ -576,13 +583,20 @@ function processWhatsAppQr(qr) {
   });
 }
 
-// Ouvir evento 'qr' do WhatsApp e armazenar o QR Code
-// A variável whatsappService já foi importada acima, então usamos ela
-if (whatsappService && whatsappService.client) {
-  whatsappService.client.on('qr', (qr) => {
-    processWhatsAppQr(qr).catch(console.error);
+// Inicializar o serviço do WhatsApp quando o aplicativo iniciar
+app.whenReady().then(() => {
+  createWindow();
+  
+  // Inicializar o WhatsApp após um breve delay para garantir que a janela está pronta
+  setTimeout(() => {
+    console.log('Inicializando serviço WhatsApp...');
+    initializeWhatsAppService();
+  }, 2000);
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-}
+});
 
 ipcMain.handle('whatsapp-get-qr', async () => {
   const service = getWhatsAppService();
