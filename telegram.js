@@ -20,6 +20,15 @@ function loadConfig() {
 let bot = null;
 let config = null;
 
+// Gestão de estado para cadastro de entregadores
+const userSessions = {};
+const USER_STEPS = {
+    WAITING_NAME: 'WAITING_NAME',
+    WAITING_PIX: 'WAITING_PIX',
+    WAITING_PLATE: 'WAITING_PLATE',
+    WAITING_CONTACT: 'WAITING_CONTACT'
+};
+
 // Inicializar bot Telegram
 function initializeTelegramBot() {
     try {
@@ -109,11 +118,172 @@ function initializeTelegramBot() {
         
         // Comando /start para novos entregadores
         bot.start((ctx) => {
+            const chatId = ctx.chat.id;
             const startPayload = ctx.startPayload; // Parâmetro após /start
             console.log(`Novo entregador ${ctx.from.id} iniciou com payload: ${startPayload}`);
             
-            // Lógica de cadastro (pode ser integrada com o sistema existente)
-            ctx.reply('👋 Bem-vindo à frota Ceia Delivery! Para começar, compartilhe sua localização para ficar online.');
+            // Verificar se o usuário já está cadastrado
+            // Aqui você pode integrar com o sistema existente para verificar se o chatId já está na frota
+            // Por enquanto, vamos sempre iniciar o cadastro para novos usuários
+            
+            // Limpar sessão anterior se existir
+            delete userSessions[chatId];
+            
+            // Iniciar novo cadastro
+            userSessions[chatId] = {
+                step: USER_STEPS.WAITING_NAME,
+                data: {}
+            };
+            
+            ctx.reply('👋 Bem-vindo à frota Ceia Delivery! Vamos fazer seu cadastro.\n\nPrimeiro, qual é seu **Nome Completo**?');
+        });
+        
+        // Listener para mensagens de texto (respostas do wizard)
+        bot.on('text', async (ctx) => {
+            const chatId = ctx.chat.id;
+            const text = ctx.message.text;
+            
+            // Verificar se é comando /cancelar
+            if (text.toLowerCase() === '/cancelar') {
+                delete userSessions[chatId];
+                ctx.reply('Cadastro cancelado. Use /start para começar novamente.');
+                return;
+            }
+            
+            // Verificar se o usuário está em um fluxo de cadastro
+            const session = userSessions[chatId];
+            if (!session) {
+                // Se não está em cadastro, tratar como mensagem normal
+                return;
+            }
+            
+            const step = session.step;
+            const userData = session.data;
+            
+            try {
+                switch (step) {
+                    case USER_STEPS.WAITING_NAME:
+                        // Salvar nome
+                        userData.name = text.trim();
+                        session.step = USER_STEPS.WAITING_PIX;
+                        ctx.reply(`Prazer, ${userData.name}! Qual sua chave **PIX** para pagamentos?`);
+                        break;
+                        
+                    case USER_STEPS.WAITING_PIX:
+                        // Salvar PIX
+                        userData.pixKey = text.trim();
+                        session.step = USER_STEPS.WAITING_PLATE;
+                        ctx.reply('Anotado. Qual a **Placa e Modelo** da sua moto?\n\nExemplo: "ABC-1234 | Honda CG 160"');
+                        break;
+                        
+                    case USER_STEPS.WAITING_PLATE:
+                        // Salvar placa e modelo
+                        userData.vehicle = text.trim();
+                        session.step = USER_STEPS.WAITING_CONTACT;
+                        
+                        // Solicitar contato via botão
+                        ctx.reply('Quase lá! Toque no botão abaixo para confirmar seu número de celular.', {
+                            reply_markup: {
+                                keyboard: [
+                                    [{
+                                        text: '📱 Compartilhar meu número',
+                                        request_contact: true
+                                    }]
+                                ],
+                                resize_keyboard: true,
+                                one_time_keyboard: true
+                            }
+                        });
+                        break;
+                        
+                    default:
+                        // Estado não reconhecido
+                        delete userSessions[chatId];
+                        ctx.reply('Ocorreu um erro no cadastro. Use /start para começar novamente.');
+                        break;
+                }
+            } catch (error) {
+                console.error('Erro no processamento do wizard:', error);
+                delete userSessions[chatId];
+                ctx.reply('Ocorreu um erro. Use /start para tentar novamente.');
+            }
+        });
+        
+        // Listener para contatos (compartilhamento de número)
+        bot.on('contact', async (ctx) => {
+            const chatId = ctx.chat.id;
+            const contact = ctx.message.contact;
+            const session = userSessions[chatId];
+            
+            // Verificar se estamos esperando contato
+            if (!session || session.step !== USER_STEPS.WAITING_CONTACT) {
+                return;
+            }
+            
+            // Verificar se o contato pertence ao usuário que enviou a mensagem
+            if (contact.user_id !== ctx.from.id) {
+                ctx.reply('Por favor, compartilhe seu próprio número de telefone.');
+                return;
+            }
+            
+            // Salvar telefone
+            session.data.phone = contact.phone_number;
+            
+            // Formatar número (remover + se presente)
+            let phoneNumber = session.data.phone;
+            if (phoneNumber.startsWith('+')) {
+                phoneNumber = phoneNumber.substring(1);
+            }
+            
+            // Finalizar cadastro
+            try {
+                const userData = session.data;
+                
+                // Enviar dados para o backend via IPC
+                BrowserWindow.getAllWindows().forEach(win => {
+                    win.webContents.send('driver-registered', {
+                        chatId: chatId,
+                        name: userData.name,
+                        pixKey: userData.pixKey,
+                        vehicle: userData.vehicle,
+                        phone: phoneNumber,
+                        telegramUserId: ctx.from.id,
+                        username: ctx.from.username
+                    });
+                });
+                
+                // Limpar sessão
+                delete userSessions[chatId];
+                
+                // Mensagem de sucesso
+                ctx.reply(
+                    `✅ Cadastro Concluído! 🚀\n\n` +
+                    `Nome: ${userData.name}\n` +
+                    `PIX: ${userData.pixKey}\n` +
+                    `Moto: ${userData.vehicle}\n` +
+                    `Telefone: ${phoneNumber}\n\n` +
+                    `Agora você pode ficar online para receber corridas.`,
+                    {
+                        reply_markup: {
+                            keyboard: [
+                                [{
+                                    text: '📍 Ficar Online',
+                                    request_location: true
+                                }]
+                            ],
+                            resize_keyboard: true,
+                            one_time_keyboard: false
+                        }
+                    }
+                );
+                
+                console.log(`✅ Novo entregador cadastrado: ${userData.name} (${phoneNumber})`);
+                
+            } catch (error) {
+                console.error('Erro ao finalizar cadastro:', error);
+                delete userSessions[chatId];
+                ctx.reply('Erro ao salvar cadastro. Use /start para tentar novamente.');
+            }
         });
         
         // Comando /help
@@ -123,7 +293,7 @@ function initializeTelegramBot() {
                 '/start - Iniciar cadastro\n' +
                 '/online - Ficar disponível para corridas\n' +
                 '/offline - Sair do radar\n' +
-                '/pix - Configurar chave PIX\n' +
+                '/cancelar - Cancelar cadastro em andamento\n' +
                 '\nPara compartilhar localização em tempo real, toque no clipe 📎 e selecione "Localização" → "Compartilhar localização em tempo real".'
             );
         });
@@ -131,6 +301,17 @@ function initializeTelegramBot() {
         // Comando /online (check-in manual)
         bot.command('online', (ctx) => {
             ctx.reply('Para ficar online, compartilhe sua localização (fixa ou em tempo real). Toque no clipe 📎 e selecione "Localização".');
+        });
+        
+        // Comando /cancelar - Cancelar cadastro em andamento
+        bot.command('cancelar', (ctx) => {
+            const chatId = ctx.chat.id;
+            if (userSessions[chatId]) {
+                delete userSessions[chatId];
+                ctx.reply('Cadastro cancelado. Use /start para começar novamente.');
+            } else {
+                ctx.reply('Não há cadastro em andamento para cancelar.');
+            }
         });
         
         // Comando /offline
