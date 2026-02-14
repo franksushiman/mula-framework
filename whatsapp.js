@@ -55,85 +55,8 @@ client.on('disconnected', (reason) => {
     whatsappStatus.phone = null;
 });
 
-// Evento: Mensagem recebida (opcional para logs)
-client.on('message', async (msg) => {
-    // Log apenas de mensagens que não são do próprio sistema
-    if (!msg.fromMe) {
-        console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 50) || 'sem corpo'}...`);
-        
-        // Verificar se é uma mensagem de áudio
-        if (msg.hasMedia) {
-            try {
-                console.log(`🎵 Mensagem de áudio detectada de ${msg.from}`);
-                
-                // Baixar a mídia
-                const media = await msg.downloadMedia();
-                
-                if (media) {
-                    console.log(`Áudio baixado: ${media.mimetype}, ${media.data.length} bytes`);
-                    
-                    // Preparar dados para processamento
-                    const audioData = media.data; // Base64
-                    const mimeType = media.mimetype;
-                    
-                    // Enviar para processamento via IPC (se estiver no contexto do Electron)
-                    if (typeof require !== 'undefined') {
-                        const { ipcMain } = require('electron');
-                        
-                        // Tentar enviar para o processo principal
-                        try {
-                            // Notificar o frontend sobre o áudio recebido
-                            const { BrowserWindow } = require('electron');
-                            BrowserWindow.getAllWindows().forEach(win => {
-                                win.webContents.send('whatsapp-audio-received', {
-                                    from: msg.from,
-                                    messageId: msg.id.id,
-                                    timestamp: msg.timestamp,
-                                    mimeType: mimeType,
-                                    dataSize: audioData.length
-                                });
-                            });
-                            
-                            // Processar o áudio em segundo plano
-                            setTimeout(async () => {
-                                try {
-                                    // Chamar o handler de processamento de áudio
-                                    const result = await ipcMain.handle('whatsapp-process-audio-message', 
-                                        { messageId: msg.id.id, audioData, mimeType });
-                                    
-                                    console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
-                                    
-                                    // Se for um pedido, notificar o sistema
-                                    if (result.success && result.analysis && result.analysis.intent === 'pedido') {
-                                        console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
-                                        
-                                        // Notificar o frontend sobre o pedido detectado
-                                        BrowserWindow.getAllWindows().forEach(win => {
-                                            win.webContents.send('whatsapp-order-detected', {
-                                                from: msg.from,
-                                                messageId: msg.id.id,
-                                                analysis: result.analysis,
-                                                transcription: result.transcription
-                                            });
-                                        });
-                                    }
-                                    
-                                } catch (processError) {
-                                    console.error('Erro ao processar áudio em segundo plano:', processError);
-                                }
-                            }, 1000);
-                            
-                        } catch (ipcError) {
-                            console.error('Erro ao enviar áudio para processamento IPC:', ipcError);
-                        }
-                    }
-                }
-            } catch (mediaError) {
-                console.error('Erro ao processar mídia de áudio:', mediaError);
-            }
-        }
-    }
-});
+// Evento: Mensagem recebida (configurado apenas uma vez em setupClientListeners)
+// Removido para evitar duplicação
 
 // Função para enviar mensagem
 async function sendWhatsAppMessage(phone, message) {
@@ -399,6 +322,75 @@ function setupClientListeners() {
         client.on('message', async (msg) => {
             if (!msg.fromMe) {
                 console.log(`📩 Mensagem recebida de ${msg.from}: ${msg.body?.substring(0, 50) || 'sem corpo'}...`);
+                
+                // Verificar se é uma mensagem de áudio
+                if (msg.hasMedia) {
+                    try {
+                        console.log(`🎵 Mensagem de áudio detectada de ${msg.from}`);
+                        
+                        // Baixar a mídia
+                        const media = await msg.downloadMedia();
+                        
+                        if (media) {
+                            console.log(`Áudio baixado: ${media.mimetype}, ${media.data.length} bytes`);
+                            
+                            // Preparar dados para processamento
+                            const audioData = media.data; // Base64
+                            const mimeType = media.mimetype;
+                            
+                            // Enviar para processamento via IPC (se estiver no contexto do Electron)
+                            if (typeof require !== 'undefined') {
+                                const { ipcMain } = require('electron');
+                                
+                                // Notificar o frontend sobre o áudio recebido
+                                const { BrowserWindow } = require('electron');
+                                BrowserWindow.getAllWindows().forEach(win => {
+                                    win.webContents.send('whatsapp-audio-received', {
+                                        from: msg.from,
+                                        messageId: msg.id.id,
+                                        timestamp: msg.timestamp,
+                                        mimeType: mimeType,
+                                        dataSize: audioData.length
+                                    });
+                                });
+                                
+                                // Processar o áudio em segundo plano
+                                setTimeout(async () => {
+                                    try {
+                                        // Chamar o handler de processamento de áudio
+                                        const result = await ipcMain.handle('whatsapp-process-audio-message', 
+                                            { messageId: msg.id.id, audioData, mimeType });
+                                        
+                                        console.log(`Resultado do processamento de áudio: ${result.success ? 'Sucesso' : 'Falha'}`);
+                                        
+                                        // Se for um pedido, notificar o sistema
+                                        if (result.success && result.analysis && result.analysis.intent === 'pedido') {
+                                            console.log(`🎯 Pedido detectado no áudio: ${result.analysis.transcription.substring(0, 100)}...`);
+                                            
+                                            // Notificar o frontend sobre o pedido detectado
+                                            BrowserWindow.getAllWindows().forEach(win => {
+                                                win.webContents.send('whatsapp-order-detected', {
+                                                    from: msg.from,
+                                                    messageId: msg.id.id,
+                                                    analysis: result.analysis,
+                                                    transcription: result.transcription
+                                                });
+                                            });
+                                        }
+                                        
+                                    } catch (processError) {
+                                        console.error('Erro ao processar áudio em segundo plano:', processError);
+                                    }
+                                }, 1000);
+                                
+                            } catch (ipcError) {
+                                console.error('Erro ao enviar áudio para processamento IPC:', ipcError);
+                            }
+                        }
+                    } catch (mediaError) {
+                        console.error('Erro ao processar mídia de áudio:', mediaError);
+                    }
+                }
                 
                 // Verificar se é uma mensagem de localização
                 if (msg.type === 'location') {
