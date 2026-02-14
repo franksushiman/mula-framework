@@ -1676,42 +1676,32 @@
                             </div>
                         </div>
                         
-                        <!-- Bayleis (Pagamentos) -->
+                        <!-- Pagamentos (Configuração Simplificada) -->
                         <div style="background: var(--cinza-fundo); padding: 15px; border-radius: 8px;">
                             <h4 style="color: var(--texto-principal); margin-bottom: 10px;">
-                                <i class="fas fa-credit-card"></i> Bayleis (Pagamentos PIX)
+                                <i class="fas fa-credit-card"></i> Pagamentos
                             </h4>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                                 <div>
-                                    <label>API Key Bayleis</label>
-                                    <input type="text" id="bayleis-api-key" class="form-input" placeholder="bay_... ou live_...">
-                                    <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        Começa com bay_, live_ ou test_
-                                    </small>
+                                    <label>Status dos Pagamentos</label>
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                                        <span class="status-dot online" style="margin: 0;"></span>
+                                        <span style="color: var(--verde-esperanca); font-weight: 600;">Ativo</span>
+                                        <span style="color: var(--texto-secundario); font-size: 13px; margin-left: auto;">
+                                            PIX e Cartão disponíveis
+                                        </span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label>Secret Key Bayleis</label>
-                                    <input type="text" id="bayleis-secret-key" class="form-input" placeholder="Chave secreta">
+                                <div style="grid-column: span 1;">
+                                    <label>Chave PIX para Recebimento</label>
+                                    <input type="text" id="pix-recebimento-key" class="form-input" placeholder="Chave PIX (CPF/CNPJ/Telefone/Email)" readonly style="background-color: var(--cinza-fundo);">
                                     <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        Mínimo 32 caracteres
-                                    </small>
-                                </div>
-                                <div style="grid-column: span 2;">
-                                    <label>Chave PIX da Conta</label>
-                                    <input type="text" id="bayleis-pix-key" class="form-input" placeholder="CPF/CNPJ/Telefone/Email">
-                                    <small style="color: var(--texto-secundario); font-size: 12px;">
-                                        Chave PIX cadastrada no Bayleis
+                                        Chave configurada no sistema
                                     </small>
                                 </div>
                             </div>
                             <div style="margin-top: 10px;">
-                                <button class="btn btn-primary" onclick="window.testBayleisConnection()" style="padding: 8px 15px;">
-                                    <i class="fas fa-plug"></i> Testar Conexão
-                                </button>
-                                <button class="btn btn-success" onclick="window.createBayleisPayment()" style="padding: 8px 15px; margin-left: 10px;">
-                                    <i class="fas fa-qrcode"></i> Criar PIX
-                                </button>
-                                <button class="btn btn-secondary" onclick="window.testWhatsAppConnection()" style="padding: 8px 15px; margin-left: 10px;">
+                                <button class="btn btn-secondary" onclick="window.testWhatsAppConnection()" style="padding: 8px 15px;">
                                     <i class="fab fa-whatsapp"></i> Status WhatsApp
                                 </button>
                                 <button class="btn btn-secondary" onclick="window.sendWhatsAppTest()" style="padding: 8px 15px; margin-left: 10px;">
@@ -1719,9 +1709,6 @@
                                 </button>
                                 <button class="btn btn-secondary" onclick="window.getWhatsAppQR()" style="padding: 8px 15px; margin-left: 10px;">
                                     <i class="fas fa-qrcode"></i> Gerar QR Code
-                                </button>
-                                <button class="btn btn-secondary" onclick="window.restartWhatsApp()" style="padding: 8px 15px; margin-left: 10px;">
-                                    <i class="fas fa-sync-alt"></i> Reiniciar
                                 </button>
                             </div>
                             <div id="whatsapp-status" style="margin-top: 10px; padding: 10px; background: var(--branco-quente); border-radius: 6px; display: none;">

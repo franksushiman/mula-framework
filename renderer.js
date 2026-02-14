@@ -65,15 +65,11 @@ window.saveC = function() {
     window.config.telegram.chatId = chatId;
     window.config.telegram.motoboysChannel = motoboysChannel;
     
-    // Salvar configurações do Bayleis (Pagamentos)
-    const bayleisApiKey = document.getElementById('bayleis-api-key')?.value || '';
-    const bayleisSecretKey = document.getElementById('bayleis-secret-key')?.value || '';
-    const bayleisPixKey = document.getElementById('bayleis-pix-key')?.value || '';
+    // Salvar configurações de pagamentos (apenas chave PIX)
+    const pixRecebimentoKey = document.getElementById('pix-recebimento-key')?.value || '';
     
-    if (!window.config.bayleis) window.config.bayleis = {};
-    window.config.bayleis.apiKey = bayleisApiKey;
-    window.config.bayleis.secretKey = bayleisSecretKey;
-    window.config.bayleis.pixKey = bayleisPixKey;
+    if (!window.config.payments) window.config.payments = {};
+    window.config.payments.pixKey = pixRecebimentoKey;
     
     // Salvar
     window.electronAPI.saveConfig(window.config).then(result => {
@@ -636,114 +632,9 @@ window.hideMotoboysChannel = function() {
     }
 };
 
-// Funções para Bayleis (Pagamentos)
-window.testBayleisConnection = function() {
-    const apiKey = document.getElementById('bayleis-api-key').value;
-    const secretKey = document.getElementById('bayleis-secret-key').value;
-    
-    if (!apiKey || !secretKey) {
-        window.showToast('Preencha a API Key e Secret Key do Bayleis!', 'error');
-        return;
-    }
-    
-    window.electronAPI.testBayleisConnection({ apiKey, secretKey }).then(result => {
-        const statusDiv = document.getElementById('whatsapp-status');
-        const statusText = document.getElementById('whatsapp-status-text');
-        if (statusDiv && statusText) {
-            statusDiv.style.display = 'block';
-            if (result.success && result.connected) {
-                statusText.innerHTML = `
-                    <strong>✅ Bayleis conectado</strong><br>
-                    Conta: ${result.account?.type || 'N/A'}<br>
-                    Saldo: R$ ${result.account?.balance?.toFixed(2) || '0.00'}<br>
-                    Status: ${result.account?.status || 'active'}
-                `;
-                statusText.style.color = 'var(--verde-esperanca)';
-                window.showToast('Conexão com Bayleis estabelecida!', 'success');
-            } else {
-                statusText.innerHTML = `
-                    <strong>❌ Falha na conexão</strong><br>
-                    ${result.message || 'Verifique suas chaves de API'}
-                `;
-                statusText.style.color = 'var(--vermelho-sobrio)';
-                window.showToast('Erro na conexão: ' + result.message, 'error');
-            }
-        }
-    });
-};
-
-window.createBayleisPayment = function() {
-    const apiKey = document.getElementById('bayleis-api-key').value;
-    const secretKey = document.getElementById('bayleis-secret-key').value;
-    
-    if (!apiKey || !secretKey) {
-        window.showToast('Configure as chaves do Bayleis primeiro!', 'error');
-        return;
-    }
-    
-    const amount = parseFloat(prompt('Valor do pagamento (R$):', '10.00'));
-    if (isNaN(amount) || amount <= 0) {
-        window.showToast('Valor inválido!', 'error');
-        return;
-    }
-    
-    const description = prompt('Descrição do pagamento:', 'Pagamento de teste Ceia');
-    
-    window.electronAPI.createBayleisPayment({ 
-        apiKey, 
-        secretKey, 
-        amount, 
-        description 
-    }).then(result => {
-        if (result.success) {
-            window.showToast(`Pagamento criado! ID: ${result.paymentId}`, 'success');
-            
-            // Mostrar QR Code
-            const qrContainer = document.getElementById('whatsapp-qr-container');
-            const qrImage = document.getElementById('whatsapp-qr-image');
-            const statusDiv = document.getElementById('whatsapp-status');
-            const statusText = document.getElementById('whatsapp-status-text');
-            
-            if (qrContainer && qrImage) {
-                qrImage.src = result.qrCodeUrl;
-                qrContainer.style.display = 'block';
-            }
-            
-            if (statusDiv && statusText) {
-                statusDiv.style.display = 'block';
-                statusText.innerHTML = `
-                    <strong>💰 Pagamento Bayleis</strong><br>
-                    ID: ${result.paymentId}<br>
-                    Valor: R$ ${amount.toFixed(2)}<br>
-                    Expira em: 30 minutos<br>
-                    <small>Escaneie o QR Code com seu app bancário</small>
-                `;
-                statusText.style.color = 'var(--verde-esperanca)';
-            }
-            
-            // Iniciar verificação periódica do status
-            const paymentId = result.paymentId;
-            const checkInterval = setInterval(() => {
-                window.electronAPI.checkBayleisPayment({ apiKey, secretKey, paymentId }).then(checkResult => {
-                    if (checkResult.success && checkResult.status === 'completed') {
-                        clearInterval(checkInterval);
-                        window.showToast('✅ Pagamento confirmado!', 'success');
-                        if (statusText) {
-                            statusText.innerHTML += '<br><strong>✅ PAGAMENTO CONFIRMADO</strong>';
-                        }
-                    }
-                });
-            }, 5000); // Verificar a cada 5 segundos
-            
-            // Parar de verificar após 30 minutos
-            setTimeout(() => {
-                clearInterval(checkInterval);
-            }, 30 * 60 * 1000);
-            
-        } else {
-            window.showToast('Erro ao criar pagamento: ' + result.error, 'error');
-        }
-    });
+// Funções para Pagamentos (simplificadas)
+window.showPaymentSettings = function() {
+    window.showToast('Configurações de pagamento gerenciadas pelo sistema.', 'info');
 };
 
 // Funções para WhatsApp
@@ -1235,11 +1126,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setValue('telegram-motoboys-channel', window.config.telegram.motoboysChannel || 'bot_embutido_ceia_frota');
             }
             
-            // Preencher configurações do Bayleis
-            if (window.config.bayleis) {
-                setValue('bayleis-api-key', window.config.bayleis.apiKey);
-                setValue('bayleis-secret-key', window.config.bayleis.secretKey);
-                setValue('bayleis-pix-key', window.config.bayleis.pixKey);
+            // Preencher configurações de pagamentos
+            if (window.config.payments) {
+                setValue('pix-recebimento-key', window.config.payments.pixKey || '');
+            }
+            // Se não houver configuração de pagamentos, usar uma chave padrão
+            const pixInput = document.getElementById('pix-recebimento-key');
+            if (pixInput && !pixInput.value) {
+                // Gerar uma chave PIX padrão baseada no CNPJ/telefone da loja
+                const defaultPixKey = window.config.adminNumber?.replace(/\D/g, '') || '5511999999999';
+                pixInput.value = defaultPixKey;
             }
             
             // Atualizar botão de pausa

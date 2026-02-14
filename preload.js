@@ -54,10 +54,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendTelegramMessage: (data) => ipcRenderer.invoke('send-telegram-message', data),
   getTelegramUpdates: (botToken) => ipcRenderer.invoke('get-telegram-updates', botToken),
   
-  // Bayleis
-  testBayleisConnection: (data) => ipcRenderer.invoke('test-bayleis-connection', data),
-  createBayleisPayment: (data) => ipcRenderer.invoke('create-bayleis-payment', data),
-  checkBayleisPayment: (data) => ipcRenderer.invoke('check-bayleis-payment', data),
+  // Pagamentos
+  getPaymentStatus: () => ipcRenderer.invoke('get-payment-status'),
   
   // WhatsApp
   whatsappSend: (data) => ipcRenderer.invoke('whatsapp-send', data),
