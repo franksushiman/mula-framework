@@ -1331,22 +1331,48 @@ window.checkWhatsAppStatus = function() {
 };
 
 window.generateWhatsAppQR = function() {
-    window.electronAPI.whatsappGetQr().then(result => {
-        if (result.success && result.qrImage) {
-            const qrContainer = document.getElementById('whatsapp-qr-container-config');
-            const qrImage = document.getElementById('whatsapp-qr-image-config');
-            
-            if (qrContainer && qrImage) {
-                qrImage.src = result.qrImage;
-                qrContainer.style.display = 'block';
-                window.showToast('QR Code gerado! Escaneie com o WhatsApp.', 'success');
-            }
-        } else {
-            window.showToast(result.message || 'Aguardando QR Code...', 'info');
+    // Primeiro inicializa o WhatsApp
+    window.electronAPI.whatsappInitialize().then(initResult => {
+        if (!initResult.success) {
+            window.showToast('Erro ao inicializar WhatsApp: ' + initResult.error, 'error');
+            return;
         }
+        
+        window.showToast('WhatsApp inicializando... Aguarde o QR Code aparecer.', 'info');
+        
+        // Tentar obter o QR Code a cada 2 segundos até conseguir
+        const checkQR = setInterval(() => {
+            window.electronAPI.whatsappGetQr().then(result => {
+                if (result.success && result.qrImage) {
+                    clearInterval(checkQR);
+                    const qrContainer = document.getElementById('whatsapp-qr-container-config');
+                    const qrImage = document.getElementById('whatsapp-qr-image-config');
+                    
+                    if (qrContainer && qrImage) {
+                        qrImage.src = result.qrImage;
+                        qrContainer.style.display = 'block';
+                        window.showToast('QR Code gerado! Escaneie com o WhatsApp.', 'success');
+                    }
+                } else if (result.message && result.message.includes('não inicializado')) {
+                    // WhatsApp ainda não inicializado, continuar tentando
+                    console.log('WhatsApp ainda não inicializado, tentando novamente...');
+                } else {
+                    console.log('Aguardando QR Code:', result.message);
+                }
+            }).catch(error => {
+                console.error('Erro ao obter QR Code:', error);
+            });
+        }, 2000);
+        
+        // Timeout após 30 segundos
+        setTimeout(() => {
+            clearInterval(checkQR);
+            window.showToast('Timeout ao aguardar QR Code. Tente novamente.', 'error');
+        }, 30000);
+        
     }).catch(error => {
-        console.error('Erro ao gerar QR Code:', error);
-        window.showToast('Erro ao gerar QR Code', 'error');
+        console.error('Erro ao inicializar WhatsApp:', error);
+        window.showToast('Erro ao inicializar WhatsApp: ' + error.message, 'error');
     });
 };
 
