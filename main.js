@@ -2021,6 +2021,22 @@ app.whenReady().then(() => {
     }
   }, 3000); // Delay de 3 segundos
 
+  // Inicializar bot Telegram (Live Location)
+  setTimeout(() => {
+    console.log('Inicializando bot Telegram para Live Location...');
+    try {
+      const telegramBot = require('./telegram.js');
+      if (telegramBot && telegramBot.initializeTelegramBot) {
+        telegramBot.initializeTelegramBot();
+        console.log('✅ Bot Telegram inicializado para rastreamento em tempo real');
+      } else {
+        console.warn('⚠️  Módulo Telegram não encontrado ou sem função initializeTelegramBot');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao inicializar bot Telegram:', error);
+    }
+  }, 5000); // Delay de 5 segundos após o WhatsApp
+
   app.on('activate', () => {
     // No macOS, é comum recriar uma janela quando o dock é clicado e não há outras janelas abertas
     if (BrowserWindow.getAllWindows().length === 0) {
