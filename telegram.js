@@ -123,22 +123,32 @@ async function initializeTelegramBot(config) {
         bot.start((ctx) => {
             console.log(`[Telegram] Recebido comando /start de ${ctx.from.id}`);
             const chatId = ctx.chat.id;
-            const startPayload = ctx.startPayload; // Parâmetro após /start
+            const startPayload = ctx.startPayload; // Parâmetro após /start (o "carimbo")
             console.log(`[Telegram] Novo entregador ${ctx.from.id} iniciou com payload: ${startPayload}`);
 
-            // Obter nome da loja da configuração (acessível via closure) ou usar genérico
-            const storeName = (config && config.storeName && config.storeName !== 'Delivery Manager') ? config.storeName : "Delivery";
+            // Lógica de Apresentação (White Label vs Agnostic)
+            let presentationName = "Ceia Delivery"; // Nome agnóstico padrão (Site)
+            
+            // Se tiver payload (link carimbado), tenta usar o nome da loja específica
+            if (startPayload && startPayload.trim() !== '') {
+                if (config && config.storeName && config.storeName !== 'Delivery Manager') {
+                    presentationName = config.storeName;
+                } else {
+                    presentationName = "Loja Parceira"; // Fallback se config não tiver nome
+                }
+            }
 
             // Limpar sessão anterior se existir
             delete userSessions[chatId];
 
-            // Iniciar novo cadastro
+            // Iniciar novo cadastro salvando o código de convite
             userSessions[chatId] = {
                 step: USER_STEPS.WAITING_NAME,
-                data: {}
+                data: {},
+                inviteCode: startPayload || null // Salvar o carimbo
             };
 
-            ctx.reply(`👋 Bem-vindo à frota ${storeName}! Vamos fazer seu cadastro.\n\nPrimeiro, qual é seu **Nome Completo**?`).catch(err => console.error('❌ [Telegram] Erro ao responder /start:', err));
+            ctx.reply(`👋 Bem-vindo à frota **${presentationName}**! Vamos fazer seu cadastro.\n\nPrimeiro, qual é seu **Nome Completo**?`).catch(err => console.error('❌ [Telegram] Erro ao responder /start:', err));
         });
         
         // Listener para mensagens de texto (respostas do wizard)
@@ -306,7 +316,8 @@ async function initializeTelegramBot(config) {
                     telegramUserId: ctx.from.id,
                     username: ctx.from.username,
                     registeredAt: Date.now(),
-                    status: 'pending' // ou 'active'
+                    inviteCode: session.inviteCode, // Envia o carimbo para o backend decidir
+                    status: session.inviteCode ? 'active' : 'pending' // Ativo se tiver carimbo, pendente se for site-only
                 };
                 console.log('📤 [Telegram] Enviando driver-registered para main.js:', driverData);
                 BrowserWindow.getAllWindows().forEach(win => {

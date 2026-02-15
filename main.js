@@ -1875,8 +1875,25 @@ ipcMain.on('driver-registered', async (event, driverData) => {
             d.phone === driverData.phone || d.chatId === driverData.chatId
         );
         
+        // Lógica de Status baseada no carimbo (inviteCode)
+        // Se tiver carimbo, é para ESTA loja -> active
+        // Se não tiver, é cadastro geral (Site) -> pending/site_only
+        let driverStatus = 'pending';
+        let origin = 'site';
+
+        if (driverData.inviteCode) {
+            driverStatus = 'active';
+            origin = 'store_link';
+            console.log(`🔗 Cadastro carimbado (Código: ${driverData.inviteCode}). Ativando para a loja.`);
+        } else {
+            console.log('🌐 Cadastro sem carimbo (Site). Mantendo como pendente/global.');
+        }
+
+        // Se o driverData já vier com status definido pelo bot, respeitar, senão usar a lógica acima
+        const finalStatus = driverData.status || driverStatus;
+
         const newDriver = {
-            id: `DRV-${Date.now()}`,
+            id: existingIndex >= 0 ? fleet[existingIndex].id : `DRV-${Date.now()}`,
             name: driverData.name,
             phone: driverData.phone,
             pixKey: driverData.pixKey,
@@ -1885,12 +1902,14 @@ ipcMain.on('driver-registered', async (event, driverData) => {
             telegramUserId: driverData.telegramUserId,
             telegramUsername: driverData.username,
             chatId: driverData.chatId,
-            status: 'pending', // precisa ser aprovado
+            status: finalStatus, 
+            origin: origin,
+            inviteCode: driverData.inviteCode || null,
             registeredAt: driverData.registeredAt || Date.now(),
             lastSeen: null,
             online: false
         };
-        
+
         if (existingIndex >= 0) {
             fleet[existingIndex] = { ...fleet[existingIndex], ...newDriver };
             console.log('✅ Atualizado entregador existente:', newDriver.name);
