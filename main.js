@@ -1620,7 +1620,7 @@ ipcMain.on('driver-pos', (event, { phone, lat, lng, vulgo, liveTracking, timesta
   
   // Broadcast para todas as janelas
   BrowserWindow.getAllWindows().forEach(win => {
-    win.webContents.send('telegram-location', { 
+    win.webContents.send('driver-pos', { 
       phone, 
       lat, 
       lng, 
