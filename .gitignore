@@ -1,0 +1,22 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime
+.env
+.env.*
+*.log
+
+# Estados locais
+core/state/state.json
+whatsapp/runtime/
+ia/runtime/
+
+# Pagamentos sensíveis
+payments/config/payments.json
+
+# Docker
+docker/.env
+.aider*
