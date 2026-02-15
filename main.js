@@ -2117,15 +2117,69 @@ app.whenReady().then(() => {
   setTimeout(() => {
     console.log('Inicializando bot Telegram para Live Location...');
     try {
+      const config = loadConfig(); // Carrega a configuração atual
+      const telegramToken = config.telegramToken || config.telegramClientToken;
+
+      if (!telegramToken || telegramToken.trim() === '') {
+        console.warn('⚠️ Token Telegram vazio no config.json. O bot Telegram não será inicializado.');
+        // Envia um status para o frontend para exibir um toast
+        BrowserWindow.getAllWindows().forEach(win => {
+          win.webContents.send('bot-status', {
+            online: false,
+            timestamp: Date.now(),
+            message: 'Token Telegram vazio. Bot não inicializado.'
+          });
+        });
+        return; // Sai da função se não houver token
+      }
+
       const telegramBot = require('./telegram.js');
       if (telegramBot && telegramBot.initializeTelegramBot) {
-        telegramBot.initializeTelegramBot();
-        console.log('✅ Bot Telegram inicializado para rastreamento em tempo real');
+        // A função initializeTelegramBot em telegram.js já verifica o token internamente
+        // e retorna null se estiver vazio. Precisamos verificar o valor de retorno.
+        const botInstance = telegramBot.initializeTelegramBot();
+        if (botInstance) {
+          console.log('✅ Bot Telegram inicializado para rastreamento em tempo real');
+          // Envia um status de sucesso para o frontend
+          BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('bot-status', {
+              online: true,
+              timestamp: Date.now(),
+              message: 'Bot Telegram inicializado.'
+            });
+          });
+        } else {
+          console.warn('⚠️ Bot Telegram não foi inicializado. Verifique o token e logs do telegram.js.');
+          // Envia um status de falha para o frontend
+          BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('bot-status', {
+              online: false,
+              timestamp: Date.now(),
+              message: 'Bot Telegram não inicializado. Token pode estar inválido.'
+            });
+          });
+        }
       } else {
         console.warn('⚠️  Módulo Telegram não encontrado ou sem função initializeTelegramBot');
+        // Envia um status de falha para o frontend
+        BrowserWindow.getAllWindows().forEach(win => {
+          win.webContents.send('bot-status', {
+            online: false,
+            timestamp: Date.now(),
+            message: 'Módulo Telegram não encontrado.'
+          });
+        });
       }
     } catch (error) {
       console.error('❌ Erro ao inicializar bot Telegram:', error);
+      // Envia um status de erro para o frontend
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('bot-status', {
+          online: false,
+          timestamp: Date.now(),
+          message: `Erro ao inicializar Bot Telegram: ${error.message}`
+        });
+      });
     }
   }, 5000); // Delay de 5 segundos após o WhatsApp
 
