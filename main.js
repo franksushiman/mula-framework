@@ -1749,7 +1749,7 @@ ipcMain.on('driver-registered', async (event, driverData) => {
         const newDriver = {
             id: existingIndex >= 0 ? fleet[existingIndex].id : `DRV-${Date.now()}`,
             name: driverData.name,
-            code: driverData.name || driverData.username || driverData.phone, // Adicionado 'code' para exibição
+            code: (driverData.name ? driverData.name.split(' ')[0] : driverData.username) || driverData.phone, // 'code' é o primeiro nome
             phone: driverData.phone,
             pixKey: driverData.pixKey,
             type: driverData.type,
