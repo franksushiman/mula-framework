@@ -190,10 +190,10 @@ window.openExternalLink = function(url) {
 // Funções de convite da frota (renderFleetInvites, etc.) removidas para simplificar a interface.
 // A funcionalidade de envio de convite foi mantida.
 
-// Função para renderizar a frota
-window.renderFleet = function() {
-    window.renderFleetNew(); // Chama a função que realmente renderiza a frota
-}; // Fechamento da função window.renderFleet
+// A definição correta de renderFleet está mais abaixo. Esta é uma definição antiga e incorreta.
+// window.renderFleet = function() {
+//     window.renderFleetNew(); // Chama a função que realmente renderiza a frota
+// };
 
 window.addDriver = function() {
     // Abrir modal de adição de motoboy em vez de prompt
@@ -2832,6 +2832,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             Object.assign(window.config, newConfig); // Atualiza o objeto de configuração global
             window.renderFleet(); // Re-renderiza a frota com a configuração atualizada (função renomeada)
             window.renderDashboardStats(); // Re-renderiza o dashboard com a configuração atualizada
+            
+            // Atualiza o painel de cardápio se estiver ativo
+            if (document.getElementById('menu-panel').classList.contains('active')) {
+                window.initMenu();
+            }
+            
             // Também atualiza o formulário de configuração se estiver aberto
             if (document.getElementById('config-panel').classList.contains('active')) {
                 window.loadConfigToForm();
