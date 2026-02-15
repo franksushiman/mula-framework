@@ -20,3 +20,8 @@ payments/config/payments.json
 # Docker
 docker/.env
 .aider*
+# Dependências
+/node_modules
+
+# Variáveis de ambiente
+.env

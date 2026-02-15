@@ -2,10 +2,10 @@
   "name": "ceia-delivery",
   "version": "1.0.0",
   "description": "ERP de delivery/restaurante - Sistema Ceia",
-  "main": "main.js",
+  "main": "src/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --debug"
+    "start": "electron src/main.js",
+    "dev": "electron src/main.js --debug"
   },
   "dependencies": {
     "axios": "^1.6.0",
