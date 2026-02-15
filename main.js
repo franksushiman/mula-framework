@@ -127,7 +127,8 @@ function saveConfig(data) {
     merged.telegramToken = data.telegramToken;
   }
   
-  return writeJSON(configPath, merged);
+  const success = writeJSON(configPath, merged);
+  return success ? merged : null; // Retorna o objeto de configuração mesclado se for bem-sucedido, caso contrário, null
 }
 
 // Função centralizada para validar configurações
