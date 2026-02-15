@@ -1,6 +1,6 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 // Expor APIs seguras para o renderer no objeto window.electronAPI
 contextBridge.exposeInMainWorld('electronAPI', {
-  // As funções para comunicação entre main e renderer serão adicionadas aqui.
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 });

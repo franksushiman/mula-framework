@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
 function createWindow() {
@@ -14,6 +14,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // IPC para obter a versão do app
+  ipcMain.handle('get-app-version', () => {
+    const { version } = require('../package.json');
+    return version;
+  });
+
   createWindow();
 
   app.on('activate', function () {
