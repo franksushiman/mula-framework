@@ -91,6 +91,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Eventos do main para renderer
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
+  onDriverRegisteredAck: (callback) => ipcRenderer.on('driver-registered-ack', callback), // Adicionado
   onShowQR: (callback) => ipcRenderer.on('show-qr', callback),
   onBotStatus: (callback) => ipcRenderer.on('bot-status', callback), // General bot status (can be WhatsApp or Telegram)
   onTelegramBotStatus: (callback) => ipcRenderer.on('telegram-bot-status', callback), // Specific for Telegram
