@@ -2806,6 +2806,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.renderDashboardStats();
         });
 
+        // Listener para confirmação de registro de entregador
+        window.electronAPI.onDriverRegisteredAck((event, data) => {
+            console.log('Confirmação de registro de entregador recebida:', data);
+            if (data.success) {
+                window.showToast(`✅ Entregador ${data.driver.name} registrado com sucesso!`, 'success');
+                window.renderFleet(); // Atualiza a lista de entregadores
+                window.renderDashboardStats(); // Atualiza o dashboard
+            } else {
+                window.showToast(`❌ Erro ao registrar entregador: ${data.error}`, 'error');
+            }
+        });
+
         window.electronAPI.onWhatsappQrUpdated((event, data) => {
             console.log('QR Code do WhatsApp atualizado');
             
