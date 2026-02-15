@@ -182,8 +182,10 @@ window.renderT = function() {
 };
 
 // Funções obrigatórias
+// Função para renderizar convites pendentes
 window.renderFleetInvites = function() {
     const invitesList = document.getElementById('fleet-invites-list');
+    // Se o elemento não existir (estamos em outra tela), não faz nada e não quebra
     if (!invitesList) return;
 
     invitesList.innerHTML = '';
@@ -216,27 +218,21 @@ window.renderFleetInvites = function() {
     });
 };
 
+// Função para revogar convite
 window.revokeInvite = function(code) {
     if (confirm('Deseja revogar este convite?')) {
-        // Implementar lógica de revogação via IPC se necessário
-        // window.electronAPI.revokeInvite(code);
         console.log('Revogar convite:', code);
-        // Remover localmente para feedback imediato
         if (window.config.fleetInvites) {
             window.config.fleetInvites = window.config.fleetInvites.filter(i => i.code !== code);
             window.renderFleetInvites();
+            // Aqui idealmente enviaria um evento IPC para persistir a remoção no backend
         }
     }
 };
 
 // Função para renderizar a frota
 window.renderFleet = function() {
-    // Renderiza a frota no novo formato
-    window.renderFleetNew();
-    
-    // Também atualiza o feed da frota
-    window.renderFleetFeed();
-};
+    const fleetList = document.getElementById('fleet-list');
 
 window.addDriver = function() {
     // Abrir modal de adição de motoboy em vez de prompt
