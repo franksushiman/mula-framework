@@ -182,6 +182,68 @@ window.renderT = function() {
 };
 
 // Funções obrigatórias
+window.renderFleetInvites = function() {
+    const invitesList = document.getElementById('fleet-invites-list');
+    if (!invitesList) return;
+
+    invitesList.innerHTML = '';
+    // Assumindo que window.config.pendingMotoboys armazena os convites pendentes
+    const invites = window.config.pendingMotoboys || [];
+
+    if (invites.length === 0) {
+        invitesList.innerHTML = '<div class="text-center text-muted p-2" style="font-size: 0.9em;">Nenhum convite pendente</div>';
+        return;
+    }
+
+    invites.forEach(invite => {
+        const item = document.createElement('div');
+        item.className = 'fleet-item';
+        item.style.display = 'flex';
+        item.style.justifyContent = 'space-between';
+        item.style.alignItems = 'center';
+        item.style.padding = '8px';
+        item.style.borderBottom = '1px solid var(--borda-suave)';
+        
+        // Formatar a data de expiração (se existir)
+        const expiresAtText = invite.expiresAt ? `Expira em: ${new Date(invite.expiresAt).toLocaleDateString()}` : '';
+        const sentAtText = invite.sentAt ? `Enviado em: ${new Date(invite.sentAt).toLocaleString()}` : '';
+
+        item.innerHTML = `
+            <div>
+                <div style="font-weight: 600;">${invite.phone}</div>
+                <div style="font-size: 0.8em; color: var(--texto-secundario);">
+                    ${sentAtText} ${expiresAtText ? `(${expiresAtText})` : ''}
+                </div>
+                <div style="font-size: 0.8em; color: var(--texto-secundario);">
+                    Status: ${invite.status || 'desconhecido'}
+                </div>
+            </div>
+            <button class="btn btn-sm btn-error" onclick="window.revokeInvite('${invite.inviteId}')" title="Revogar convite">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        invitesList.appendChild(item);
+    });
+};
+
+window.revokeInvite = function(inviteId) {
+    if (confirm('Deseja revogar este convite?')) {
+        // Implementar lógica de revogação via IPC se necessário
+        // Por enquanto, apenas remove localmente e salva a config
+        console.log('Revogar convite:', inviteId);
+        if (window.config.pendingMotoboys) {
+            window.config.pendingMotoboys = window.config.pendingMotoboys.filter(i => i.inviteId !== inviteId);
+            window.electronAPI.saveConfig(window.config).then(() => {
+                window.showToast('Convite revogado!', 'success');
+                window.renderFleetInvites();
+            }).catch(error => {
+                window.showToast('Erro ao revogar convite: ' + error.message, 'error');
+            });
+        }
+    }
+};
+
+// Função para renderizar a frota
 window.renderFleet = function() {
     // Renderiza a frota no novo formato
     window.renderFleetNew();
