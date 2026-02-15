@@ -230,53 +230,6 @@ window.revokeInvite = function(code) {
     }
 };
 
-// Função para renderizar convites pendentes
-window.renderFleetInvites = function() {
-    const invitesList = document.getElementById('fleet-invites-list');
-    if (!invitesList) return;
-
-    invitesList.innerHTML = '';
-    const invites = window.config.fleetInvites || [];
-
-    if (invites.length === 0) {
-        invitesList.innerHTML = '<div class="text-center text-muted p-2" style="font-size: 0.9em;">Nenhum convite pendente</div>';
-        return;
-    }
-
-    invites.forEach(invite => {
-        const item = document.createElement('div');
-        item.className = 'fleet-item';
-        item.style.display = 'flex';
-        item.style.justifyContent = 'space-between';
-        item.style.alignItems = 'center';
-        item.style.padding = '8px';
-        item.style.borderBottom = '1px solid var(--borda-suave)';
-        
-        item.innerHTML = `
-            <div>
-                <div style="font-weight: 600;">${invite.phone}</div>
-                <div style="font-size: 0.8em; color: var(--texto-secundario);">Expira em: ${new Date(invite.expiresAt).toLocaleDateString()}</div>
-            </div>
-            <button class="btn btn-sm btn-error" onclick="window.revokeInvite('${invite.code}')" title="Revogar convite">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        invitesList.appendChild(item);
-    });
-};
-
-window.revokeInvite = function(code) {
-    if (confirm('Deseja revogar este convite?')) {
-        // Implementar lógica de revogação via IPC se necessário
-        // window.electronAPI.revokeInvite(code);
-        console.log('Revogar convite:', code);
-        // Remover localmente para feedback imediato
-        if (window.config.fleetInvites) {
-            window.config.fleetInvites = window.config.fleetInvites.filter(i => i.code !== code);
-            window.renderFleetInvites();
-        }
-    }
-};
 
 // Função para renderizar a frota
 window.renderFleet = function() {
