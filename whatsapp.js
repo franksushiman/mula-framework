@@ -498,7 +498,8 @@ function setupClientListeners(mainConfig) {
                                     let openAIKey = mainConfig ? (mainConfig.openAIKey || mainConfig.openaiKey) : null;
                                     respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, openAIKey);
                                 } else {
-                                    respostaIA = "Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.";
+                                    const nomeLoja = (mainConfig && mainConfig.storeName) ? mainConfig.storeName : "nosso restaurante";
+                                    respostaIA = `Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.`;
                                 }
                                             
                                 // Responder
@@ -607,8 +608,9 @@ function setupClientListeners(mainConfig) {
                 const chat = await msg.getChat();
                 await chat.sendStateTyping();
                 
-                // Contexto da loja - usar a configuração passada
-                let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
+                // Contexto da loja - usar a configuração passada ou genérico
+                // Padrão agnóstico caso a config falhe
+                let contextoLoja = "Restaurante e Delivery. Consulte nosso cardápio e horários.";
                 
                 // Tentar usar informações reais do mainConfig passado
                 if (mainConfig) {
@@ -643,6 +645,7 @@ function setupClientListeners(mainConfig) {
                     let openAIKey = mainConfig ? (mainConfig.openAIKey || mainConfig.openaiKey) : null;
                     respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
                 } else {
+                    const nomeLoja = (mainConfig && mainConfig.storeName) ? mainConfig.storeName : "nosso restaurante";
                     const nomeLoja = (mainConfig && mainConfig.storeName) ? mainConfig.storeName : "nosso restaurante";
                     respostaIA = `Olá! Sou o assistente virtual do ${nomeLoja}. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.`;
                 }
