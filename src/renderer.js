@@ -1,5 +1,17 @@
 function renderFleet(drivers) {
     const fleetContainer = document.getElementById('fleet-container');
+    const onlineCountEl = document.getElementById('online-count');
+
+    if (onlineCountEl) {
+        const count = drivers ? drivers.length : 0;
+        onlineCountEl.textContent = count;
+        if (count > 0) {
+            onlineCountEl.classList.add('online');
+        } else {
+            onlineCountEl.classList.remove('online');
+        }
+    }
+
     if (!fleetContainer) return;
 
     if (!drivers || drivers.length === 0) {
