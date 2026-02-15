@@ -19,14 +19,8 @@ function renderFleet(drivers) {
         return;
     }
 
-    // Usando uma tabela para melhor formatação
+    // Usando uma tabela para o layout da frota
     const table = `
-        <style>
-            table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #f4f4f4; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
-        </style>
         <table>
             <thead>
                 <tr>
