@@ -181,8 +181,22 @@ ipcMain.handle('save-config', async (event, config) => {
       savedTelegramToken: savedConfig.telegramToken?.substring(0, 10) + '...'
     });
   }
+  const savedConfig = saveConfig(config); // Agora retorna o objeto de configuração salvo ou null
   
-  return success ? { success: true, message: 'Configurações salvas!' } : { success: false, message: 'Erro ao salvar configurações.' };
+  if (savedConfig) {
+    console.log('Configuração salva no disco:', {
+      savedGoogleMapsKey: savedConfig.googleMapsKey?.substring(0, 10) + '...',
+      savedOpenAIKey: savedConfig.openAIKey?.substring(0, 10) + '...',
+      savedTelegramToken: savedConfig.telegramToken?.substring(0, 10) + '...'
+    });
+    // Envia a configuração completa e atualizada para todos os renderers
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('config-updated', savedConfig);
+    });
+    return { success: true, message: 'Configurações salvas!' };
+  } else {
+    return { success: false, message: 'Erro ao salvar configurações.' };
+  }
 });
 
 ipcMain.handle('get-fleet-status', async () => {
@@ -1919,15 +1933,19 @@ ipcMain.on('driver-registered', async (event, driverData) => {
         }
         
         config.fleet = fleet;
-        saveConfig(config);
+        const savedConfig = saveConfig(config); // Usa a função saveConfig atualizada
         
-        // Notificar frontend
+        // Notificar frontend sobre o registro do driver
         BrowserWindow.getAllWindows().forEach(win => {
             win.webContents.send('driver-registered-ack', {
                 success: true,
                 driver: newDriver,
                 message: `Entregador ${newDriver.name} registrado com sucesso!`
             });
+            // Também notifica sobre a atualização da configuração
+            if (savedConfig) {
+                win.webContents.send('config-updated', savedConfig);
+            }
         });
         
     } catch (error) {

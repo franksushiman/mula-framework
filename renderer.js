@@ -2811,10 +2811,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Confirmação de registro de entregador recebida:', data);
             if (data.success) {
                 window.showToast(`✅ Entregador ${data.driver.name} registrado com sucesso!`, 'success');
-                window.renderFleet(); // Atualiza a lista de entregadores
-                window.renderDashboardStats(); // Atualiza o dashboard
+                // As funções renderFleet() e renderDashboardStats() serão chamadas pelo listener 'config-updated'
+                // após a atualização da configuração global.
             } else {
                 window.showToast(`❌ Erro ao registrar entregador: ${data.error}`, 'error');
+            }
+        });
+
+        // Adicionar listener para atualizações de configuração
+        window.electronAPI.onConfigUpdated((event, newConfig) => {
+            console.log('Configuração atualizada recebida do main.js:', newConfig);
+            Object.assign(window.config, newConfig); // Atualiza o objeto de configuração global
+            window.renderFleet(); // Re-renderiza a frota com a configuração atualizada
+            window.renderDashboardStats(); // Re-renderiza o dashboard com a configuração atualizada
+            // Também atualiza o formulário de configuração se estiver aberto
+            if (document.getElementById('config-panel').classList.contains('active')) {
+                window.loadConfigToForm();
             }
         });
 
