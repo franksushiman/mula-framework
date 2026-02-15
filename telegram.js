@@ -126,11 +126,8 @@ async function initializeTelegramBot(config) {
             const startPayload = ctx.startPayload; // Parâmetro após /start
             console.log(`[Telegram] Novo entregador ${ctx.from.id} iniciou com payload: ${startPayload}`);
 
-            // Tentar obter nome da loja da config (acessível via closure se passado no init, ou genérico)
-            // Como initializeTelegramBot recebe 'config', podemos acessá-lo aqui se o escopo permitir,
-            // mas como 'config' é argumento da função async, precisamos garantir que o bot tenha acesso a ele.
-            // O ideal é armazenar config em uma variável acessível ou usar um padrão genérico aqui.
-            const storeName = (config && config.storeName) ? config.storeName : "Delivery";
+            // Obter nome da loja da configuração (acessível via closure) ou usar genérico
+            const storeName = (config && config.storeName && config.storeName !== 'Delivery Manager') ? config.storeName : "Delivery";
 
             // Limpar sessão anterior se existir
             delete userSessions[chatId];
