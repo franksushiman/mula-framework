@@ -281,6 +281,7 @@ window.revokeInvite = function(code) {
 // Função para renderizar a frota
 window.renderFleet = function() {
     const fleetList = document.getElementById('fleet-list');
+}; // Fechamento da função window.renderFleet
 
 window.addDriver = function() {
     // Abrir modal de adição de motoboy em vez de prompt
