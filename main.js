@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron'); // Adicionado 'shell'
 const path = require('path');
 const fs = require('fs-extra');
 const axios = require('axios');
@@ -1742,6 +1742,43 @@ ipcMain.handle('open-menu-import', async (event, { menuItems, menuCategories, ad
     return { success: true, message: 'Cardápio importado com sucesso!' };
   } catch (error) {
     console.error('Erro ao importar cardápio:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler para obter convites pendentes
+ipcMain.handle('get-fleet-invites', async () => {
+  try {
+    const config = loadConfig();
+    return config.pendingMotoboys || [];
+  } catch (error) {
+    console.error('Erro ao obter convites da frota:', error);
+    return [];
+  }
+});
+
+// Handler para excluir um convite pendente
+ipcMain.handle('delete-fleet-invite', async (event, inviteId) => {
+  try {
+    const config = loadConfig();
+    if (config.pendingMotoboys) {
+      config.pendingMotoboys = config.pendingMotoboys.filter(invite => invite.inviteId !== inviteId);
+      saveConfig(config);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao excluir convite da frota:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler para abrir links externos
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    console.error('Erro ao abrir link externo:', error);
     return { success: false, error: error.message };
   }
 });

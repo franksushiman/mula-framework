@@ -105,6 +105,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLocationProcessed: (callback) => ipcRenderer.on('location-processed', callback),
   onWhatsappDeliveryAddressDetected: (callback) => ipcRenderer.on('whatsapp-delivery-address-detected', callback),
   
+  // Frota - Convites
+  getFleetInvites: () => ipcRenderer.invoke('get-fleet-invites'),
+  deleteFleetInvite: (inviteId) => ipcRenderer.invoke('delete-fleet-invite', inviteId),
+  
+  // Abrir links externos
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+
   // Envio de eventos para o main
   notifyMotoboyApproved: (data) => ipcRenderer.send('notify-motoboy-approved', data),
   restartWhatsapp: () => ipcRenderer.send('restart-whatsapp'),
