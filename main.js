@@ -206,7 +206,7 @@ ipcMain.handle('get-fleet-status', async () => {
 
 ipcMain.handle('dispatch-fleet', async (event, { order, drivers }) => {
   // Simulação de envio para frota
-  console.log('Dispatching order:', order, 'to drivers:', drivers);
+  console.log('Despachando pedido:', order, 'para entregadores:', drivers);
   return { success: true, message: 'Pedido enviado para a frota' };
 });
 
@@ -1793,7 +1793,7 @@ ipcMain.on('driver-registered', async (event, driverData) => {
 });
 
 ipcMain.on('bot-status', (event, data) => {
-    console.log(`[main.js] Bot status received: Type=${data.botType || 'Telegram'}, Online=${data.online}, Message=${data.message}`);
+    console.log(`[main.js] Status do bot recebido: Tipo=${data.botType || 'Telegram'}, Online=${data.online}, Mensagem=${data.message}`);
     // Enviar para todas as janelas
     BrowserWindow.getAllWindows().forEach(win => {
         if (data.botType === 'whatsapp') {

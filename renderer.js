@@ -248,18 +248,18 @@ window.saveConfig = function() {
     Object.assign(window.config, configUpdates);
     
     // Salvar via API
-    console.log('Enviando configuração para main.js:', {
+    console.log('Enviando configuração para o processo principal:', {
         googleMapsKey: configUpdates.googleMapsKey?.substring(0, 5) + '...',
         openAIKey: configUpdates.openAIKey?.substring(0, 5) + '...',
         telegramToken: configUpdates.telegramToken?.substring(0, 5) + '...'
     });
     
     return window.electronAPI.saveConfig(window.config).then(result => {
-        console.log('Resultado do salvamento do main.js:', result);
+        console.log('Resultado do salvamento do processo principal:', result);
         window.showToast('Configurações salvas com sucesso!', 'success');
         // Forçar recarregamento da configuração após salvar
         window.electronAPI.loadConfig().then(newConfig => {
-            console.log('Configuração recarregada após salvar:', {
+            console.log('Configuração recarregada após o salvamento:', {
                 googleMapsKey: newConfig.googleMapsKey?.substring(0, 5) + '...',
                 openAIKey: newConfig.openAIKey?.substring(0, 5) + '...',
                 telegramToken: newConfig.telegramToken?.substring(0, 5) + '...'
@@ -1036,7 +1036,7 @@ window.dropProduct = function(event, targetCategoryIndex, targetProductIndex) {
 // Função para abrir a janela de importação do cardápio via IA
 window.openMenuImport = function() {
     window.electronAPI.openMenuImport().then(result => {
-        console.log('Janela de importação aberta');
+        console.log('Janela de importação de cardápio aberta');
     }).catch(error => {
         console.error('Erro ao abrir janela de importação:', error);
         window.showToast('Erro ao abrir importador de cardápio', 'error');
@@ -1408,7 +1408,7 @@ window.togglePause = function() {
     
     // Persistir o estado
     window.electronAPI.saveConfig(window.config).then(result => {
-        console.log('Estado de pausa salvo:', result);
+        console.log('Estado de pausa da loja salvo:', result);
     });
 };
 
@@ -1627,12 +1627,12 @@ window.sendTelegramInviteToWhatsApp = function() {
     window.showToast('Enviando convite via WhatsApp...', 'info');
     
     // Log no frontend conforme solicitado
-    console.log('Botão clicado, enviando para backend: ' + cleanPhone);
+    console.log('Botão de convite clicado, enviando para o backend: ' + cleanPhone);
     
     // Usar o novo handler 'enviarConviteEntregador' em vez do antigo
-    console.log('Chamando electronAPI.enviarConviteEntregador com:', cleanPhone);
+    console.log('Chamando API "enviarConviteEntregador" com:', cleanPhone);
     window.electronAPI.enviarConviteEntregador(cleanPhone).then(result => {
-        console.log('Resultado do envio:', result);
+        console.log('Resultado do envio do convite:', result);
         
         // Liberar trava de estado
         window.isSendingInvite = false;
@@ -1997,7 +1997,7 @@ window.testGoogleMapsKey = function() {
     })
     .then(data => {
         if (data.status === 'OK') {
-            console.log('Resposta do Google Maps:', data);
+            console.log('Resposta da API do Google Maps:', data);
             window.showToast('✅ Chave Google Maps válida! Conectado com sucesso.', 'success');
             
             // Atualizar status
@@ -2055,7 +2055,7 @@ window.testOpenAIKey = function() {
         }
     })
     .then(data => {
-        console.log('Resposta da OpenAI:', data);
+        console.log('Resposta da API da OpenAI:', data);
         window.showToast('✅ Chave OpenAI válida! Conectado com sucesso.', 'success');
         
         // Atualizar status
@@ -2320,7 +2320,7 @@ window.renderDashboardStats = async function() {
         try {
             summary = await window.electronAPI.getDashboardSummary(window.pendingOrders) || summary;
         } catch (e) {
-            console.warn('Erro ao buscar dashboard summary:', e);
+            console.warn('Erro ao buscar resumo do dashboard:', e);
         }
         
         // Atualiza cards
@@ -2801,13 +2801,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Configurar listeners de eventos
         window.electronAPI.onDriverPos((event, data) => {
-            console.log('Driver position updated:', data);
+            console.log('Posição do entregador atualizada:', data);
             // Usar timestamp do GPS se disponível, caso contrário usar o tempo atual
             window.driverLastSeen[data.phone] = data.timestamp || Date.now();
             
             // Verificar se é rastreamento em tempo real
             if (data.liveTracking) {
-                console.log('Live tracking:', data.lat, data.lng);
+                console.log('Rastreamento em tempo real:', data.lat, data.lng);
             }
             
             window.renderFleet();
@@ -2857,7 +2857,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         window.electronAPI.onDriverAccepted((event, data) => {
-            console.log('Driver accepted order:', data);
+            console.log('Entregador aceitou o pedido:', data);
             window.showToast(`Motoboy ${data.driverName} aceitou o pedido ${data.orderId}`, 'success');
         });
 
@@ -2867,14 +2867,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Listener para status geral do bot (pode ser WhatsApp ou Telegram)
         window.electronAPI.onBotStatus((event, data) => {
-            console.log('[renderer.js] General Bot status received:', data);
+            console.log('[renderer.js] Status geral do bot recebido:', data);
             // Este listener pode ser para um toast genérico ou para depuração
             window.showToast(`Bot ${data.botType || 'Geral'} ${data.online ? 'online' : 'offline'}: ${data.message}`, data.online ? 'success' : 'error');
         });
 
         // Listener específico para status do Telegram Bot
         window.electronAPI.onTelegramBotStatus((event, data) => {
-            console.log('[renderer.js] Telegram Bot status received:', data);
+            console.log('[renderer.js] Status do bot do Telegram recebido:', data);
             window.updateTelegramStatusUI(data);
         });
 
