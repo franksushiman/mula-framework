@@ -2116,7 +2116,8 @@ app.whenReady().then(() => {
       // Se não está conectado nem inicializando, tentar inicializar
       console.log('WhatsApp não está conectado, tentando inicializar...');
       
-      service.initializeWhatsApp().then(() => {
+      const config = loadConfig(); // Carregar config aqui para passar ao WhatsApp
+      service.initializeWhatsApp(config).then(() => {
         console.log('✅ WhatsApp inicializado com sucesso!');
         
         // Verificar status após inicialização

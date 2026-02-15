@@ -461,73 +461,40 @@ function setupClientListeners(mainConfig) {
                                 const chat = await msg.getChat();
                                 await chat.sendStateTyping();
                                             
-                                // Contexto da loja - tentar obter do config
+                                // Contexto da loja - usar a configuração passada
                                 let contextoLoja = "Restaurante Ceia Delivery. Cardápio: Pizza (R$ 45), Hamburguer (R$ 35), Sushi (R$ 60). Horário: 18h-23h. Entrega: R$ 10.";
-                                            
-                                try {
-                                    // Tentar obter informações reais do config
-                                    if (typeof require !== 'undefined') {
-                                        const { app } = require('electron');
-                                                    
-                                        const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
-                                        if (fs.existsSync(configPath)) {
-                                            const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                                                        
-                                            // Verificar se há informações reais configuradas
-                                            const hasRealInfo = configData.restaurantAddress || 
-                                                               (configData.menuItems && configData.menuItems.length > 0) ||
-                                                               configData.storeName;
-                                                        
-                                            if (hasRealInfo) {
-                                                // Construir contexto com informações reais
-                                                let contextParts = [];
-                                                            
-                                                if (configData.storeName && configData.storeName !== 'Delivery Manager') {
-                                                    contextParts.push(`Estabelecimento: ${configData.storeName}`);
-                                                }
-                                                            
-                                                if (configData.restaurantAddress) {
-                                                    contextParts.push(`Endereço: ${configData.restaurantAddress}`);
-                                                }
-                                                            
-                                                if (configData.menuItems && configData.menuItems.length > 0) {
-                                                    const sampleItems = configData.menuItems.slice(0, 3).map(item => 
-                                                        `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
-                                                    ).join(', ');
-                                                    contextParts.push(`Cardápio: ${sampleItems}${configData.menuItems.length > 3 ? '...' : ''}`);
-                                                }
-                                                            
-                                                if (contextParts.length > 0) {
-                                                    contextoLoja = contextParts.join('. ');
-                                                }
-                                            }
+
+                                // Tentar usar informações reais do mainConfig passado
+                                if (mainConfig) {
+                                    const hasRealInfo = mainConfig.restaurantAddress || 
+                                                   (mainConfig.menuItems && mainConfig.menuItems.length > 0) ||
+                                                   mainConfig.storeName;
+
+                                    if (hasRealInfo) {
+                                        let contextParts = [];
+                                        if (mainConfig.storeName && mainConfig.storeName !== 'Delivery Manager') {
+                                            contextParts.push(`Estabelecimento: ${mainConfig.storeName}`);
+                                        }
+                                        if (mainConfig.restaurantAddress) {
+                                            contextParts.push(`Endereço: ${mainConfig.restaurantAddress}`);
+                                        }
+                                        if (mainConfig.menuItems && mainConfig.menuItems.length > 0) {
+                                            const sampleItems = mainConfig.menuItems.slice(0, 3).map(item => 
+                                                `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
+                                            ).join(', ');
+                                            contextParts.push(`Cardápio: ${sampleItems}${mainConfig.menuItems.length > 3 ? '...' : ''}`);
+                                        }
+                                        if (contextParts.length > 0) {
+                                            contextoLoja = contextParts.join('. ');
                                         }
                                     }
-                                } catch (configError) {
-                                    console.warn('⚠️  Não foi possível ler contexto do config:', configError.message);
                                 }
-                                            
+
                                 // Chamar a OpenAI para gerar resposta baseada na transcrição
                                 let respostaIA;
                                 if (aiService && aiService.gerarRespostaIA) {
-                                    // Tentar obter a chave OpenAI do config (se disponível)
-                                    let openAIKey = null;
-                                    try {
-                                        // Se estivermos no contexto do Electron, podemos acessar o config
-                                        if (typeof require !== 'undefined') {
-                                            const { app } = require('electron');
-                                                        
-                                            const configPath = path.join(app.getPath('userData'), 'data', 'config.json');
-                                            if (fs.existsSync(configPath)) {
-                                                const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-                                                openAIKey = configData.openAIKey || configData.openaiKey || null;
-                                            }
-                                        }
-                                    } catch (configError) {
-                                        console.warn('⚠️  Não foi possível ler a chave OpenAI do config:', configError.message);
-                                    }
-                                                
-                                    // Chamar a função com a chave (se encontrada)
+                                    // Usar a chave do mainConfig
+                                    let openAIKey = mainConfig ? (mainConfig.openAIKey || mainConfig.openaiKey) : null;
                                     respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, openAIKey);
                                 } else {
                                     respostaIA = "Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.";
