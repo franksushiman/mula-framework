@@ -2849,7 +2849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Configurar listeners de eventos
-        window.electronAPI.onDriverPos((event, data) => {
+        const handleDriverPositionUpdate = (event, data) => {
             console.log('Posição do entregador atualizada:', data);
             // Usar timestamp do GPS se disponível, caso contrário usar o tempo atual
             window.driverLastSeen[data.phone] = data.timestamp || Date.now();
@@ -2861,7 +2861,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             window.renderFleet();
             window.renderDashboardStats();
-        });
+        };
+
+        window.electronAPI.onDriverPos(handleDriverPositionUpdate);
+        window.electronAPI.onTelegramLocation(handleDriverPositionUpdate);
 
         // Listener para confirmação de registro de entregador
         window.electronAPI.onDriverRegisteredAck((event, data) => {
