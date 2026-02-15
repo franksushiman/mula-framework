@@ -187,8 +187,7 @@ window.renderFleetInvites = function() {
     if (!invitesList) return;
 
     invitesList.innerHTML = '';
-    // Assumindo que window.config.pendingMotoboys armazena os convites pendentes
-    const invites = window.config.pendingMotoboys || [];
+    const invites = window.config.fleetInvites || [];
 
     if (invites.length === 0) {
         invitesList.innerHTML = '<div class="text-center text-muted p-2" style="font-size: 0.9em;">Nenhum convite pendente</div>';
@@ -204,21 +203,12 @@ window.renderFleetInvites = function() {
         item.style.padding = '8px';
         item.style.borderBottom = '1px solid var(--borda-suave)';
         
-        // Formatar a data de expiração (se existir)
-        const expiresAtText = invite.expiresAt ? `Expira em: ${new Date(invite.expiresAt).toLocaleDateString()}` : '';
-        const sentAtText = invite.sentAt ? `Enviado em: ${new Date(invite.sentAt).toLocaleString()}` : '';
-
         item.innerHTML = `
             <div>
                 <div style="font-weight: 600;">${invite.phone}</div>
-                <div style="font-size: 0.8em; color: var(--texto-secundario);">
-                    ${sentAtText} ${expiresAtText ? `(${expiresAtText})` : ''}
-                </div>
-                <div style="font-size: 0.8em; color: var(--texto-secundario);">
-                    Status: ${invite.status || 'desconhecido'}
-                </div>
+                <div style="font-size: 0.8em; color: var(--texto-secundario);">Expira em: ${new Date(invite.expiresAt).toLocaleDateString()}</div>
             </div>
-            <button class="btn btn-sm btn-error" onclick="window.revokeInvite('${invite.inviteId}')" title="Revogar convite">
+            <button class="btn btn-sm btn-error" onclick="window.revokeInvite('${invite.code}')" title="Revogar convite">
                 <i class="fas fa-times"></i>
             </button>
         `;
@@ -226,19 +216,15 @@ window.renderFleetInvites = function() {
     });
 };
 
-window.revokeInvite = function(inviteId) {
+window.revokeInvite = function(code) {
     if (confirm('Deseja revogar este convite?')) {
         // Implementar lógica de revogação via IPC se necessário
-        // Por enquanto, apenas remove localmente e salva a config
-        console.log('Revogar convite:', inviteId);
-        if (window.config.pendingMotoboys) {
-            window.config.pendingMotoboys = window.config.pendingMotoboys.filter(i => i.inviteId !== inviteId);
-            window.electronAPI.saveConfig(window.config).then(() => {
-                window.showToast('Convite revogado!', 'success');
-                window.renderFleetInvites();
-            }).catch(error => {
-                window.showToast('Erro ao revogar convite: ' + error.message, 'error');
-            });
+        // window.electronAPI.revokeInvite(code);
+        console.log('Revogar convite:', code);
+        // Remover localmente para feedback imediato
+        if (window.config.fleetInvites) {
+            window.config.fleetInvites = window.config.fleetInvites.filter(i => i.code !== code);
+            window.renderFleetInvites();
         }
     }
 };
