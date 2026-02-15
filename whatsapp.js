@@ -646,7 +646,6 @@ function setupClientListeners(mainConfig) {
                     respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
                 } else {
                     const nomeLoja = (mainConfig && mainConfig.storeName) ? mainConfig.storeName : "nosso restaurante";
-                    const nomeLoja = (mainConfig && mainConfig.storeName) ? mainConfig.storeName : "nosso restaurante";
                     respostaIA = `Olá! Sou o assistente virtual do ${nomeLoja}. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.`;
                 }
                 
