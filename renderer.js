@@ -1339,11 +1339,18 @@ window.aiM = function() {
         window.showToast('Cole um texto para processar!', 'error');
         return;
     }
+    window.showToast('Processando cardápio com IA...', 'info');
     window.electronAPI.aiParseMenu(text).then(items => {
-        if (!window.config.menu) window.config.menu = [];
-        window.config.menu.push(...items);
-        // Não chamar renderT() pois não é mais necessário
-        window.showToast('Cardápio processado com IA!', 'success');
+        if (!window.menuItems) window.menuItems = [];
+        window.menuItems.push(...items);
+        window.config.menuItems = window.menuItems;
+        
+        window.electronAPI.saveConfig(window.config).then(() => {
+            window.showToast(`${items.length} itens importados com sucesso!`, 'success');
+            window.renderMenuTable();
+        });
+    }).catch(error => {
+        window.showToast(`Erro ao processar com IA: ${error.message}`, 'error');
     });
 };
 

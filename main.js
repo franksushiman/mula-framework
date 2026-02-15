@@ -364,14 +364,13 @@ ipcMain.handle('ai-parse-menu', async (event, text) => {
   try {
     const config = loadConfig();
     const openAIKey = config.openAIKey || config.openaiKey;
-    
+
     if (!openAIKey) {
       throw new Error('Chave OpenAI não configurada. Configure na aba de Configurações.');
     }
-    
+
     console.log('Processando cardápio com IA usando chave:', openAIKey.substring(0, 10) + '...');
-    
-    // Usar a API real da OpenAI
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -383,85 +382,52 @@ ipcMain.handle('ai-parse-menu', async (event, text) => {
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente especializado em processar cardápios de restaurantes. Converta o texto fornecido em uma lista estruturada de itens do cardápio com categoria, nome, ingredientes, preço e impressora sugerida.'
+            content: 'Você é um assistente para sistemas de restaurante. Sua tarefa é converter um texto de cardápio em um array JSON. Cada item no array deve ser um objeto com os seguintes campos: "name" (string), "description" (string, opcional), "category" (string, sugira uma categoria como "Entradas", "Pratos Principais", "Bebidas", "Sobremesas"), "price" (número), "promoPrice" (número, opcional, se houver preço promocional), "paused" (boolean, sempre false), "stock" (null).'
           },
           {
             role: 'user',
-            content: `Processe este cardápio: ${text}\n\nRetorne um array JSON com os itens. Cada item deve ter: category, name, ingredients, price (número), printer (sugira "Cozinha" ou "Sobremesa" ou "Bebidas"), paused (false).`
+            content: `Processe este cardápio: ${text}\n\nRetorne APENAS o array JSON, sem nenhum texto adicional.`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 1000
+        temperature: 0.2,
+        max_tokens: 2048
       })
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`Erro da OpenAI: ${errorData.error?.message || response.statusText}`);
     }
-    
+
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
-    
+
     if (!content) {
       throw new Error('Resposta da OpenAI vazia');
     }
-    
-    // Extrair JSON da resposta
+
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       const items = JSON.parse(jsonMatch[0]);
-      console.log('Itens processados:', items);
-      return items;
+      console.log('Itens processados pela IA:', items.length);
+      // Adicionar ID e garantir a estrutura correta para o novo sistema de cardápio
+      const processedItems = items.map((item, index) => ({
+        id: Date.now() + index,
+        name: item.name || 'Item sem nome',
+        description: item.description || '',
+        category: item.category || 'Geral',
+        price: parseFloat(item.price) || 0,
+        promoPrice: item.promoPrice ? parseFloat(item.promoPrice) : null,
+        paused: item.paused === true, // Garante que seja booleano
+        stock: item.stock !== undefined ? item.stock : null
+      }));
+      return processedItems;
     } else {
-      // Fallback para processamento manual
-      console.log('Fazendo parsing manual da resposta:', content);
-      return [
-        {
-          category: 'Processado com IA',
-          name: 'Item de exemplo',
-          ingredients: 'Ingredientes processados',
-          price: 29.90,
-          printer: 'Cozinha',
-          paused: false
-        }
-      ];
+      throw new Error('Não foi possível encontrar um JSON válido na resposta da IA.');
     }
   } catch (error) {
     console.error('Erro ao processar cardápio com IA:', error);
-    
-    // Fallback para simulação se a chave não estiver configurada
-    if (error.message.includes('não configurada')) {
-      throw error;
-    }
-    
-    // Retornar dados simulados em caso de erro
-    return [
-      {
-        category: 'Entradas',
-        name: 'Bruschetta',
-        ingredients: 'Pão italiano, tomate, manjericão, azeite',
-        price: 25.90,
-        printer: 'Cozinha',
-        paused: false
-      },
-      {
-        category: 'Pratos Principais',
-        name: 'Filé Mignon',
-        ingredients: 'Filé mignon 200g, batatas rústicas, legumes grelhados',
-        price: 89.90,
-        printer: 'Cozinha',
-        paused: false
-      },
-      {
-        category: 'Sobremesas',
-        name: 'Cheesecake',
-        ingredients: 'Base de biscoito, cream cheese, frutas vermelhas',
-        price: 22.50,
-        printer: 'Sobremesa',
-        paused: false
-      }
-    ];
+    throw error; // Re-lança o erro para ser pego no frontend
   }
 });
 
