@@ -178,6 +178,12 @@ ipcMain.handle('save-config', async (event, config) => {
       savedOpenAIKey: savedConfig.openAIKey?.substring(0, 10) + '...',
       savedTelegramToken: savedConfig.telegramToken?.substring(0, 10) + '...'
     });
+    // Atualizar a configuração no serviço do WhatsApp
+    if (whatsappService && whatsappService.updateConfig) {
+        console.log('Atualizando configuração no serviço de WhatsApp...');
+        whatsappService.updateConfig(savedConfig);
+    }
+
     // Envia a configuração completa e atualizada para todos os renderers
     BrowserWindow.getAllWindows().forEach(win => {
       win.webContents.send('config-updated', savedConfig);

@@ -22,6 +22,7 @@ const client = new Client({
 });
 
 // Variável para armazenar o QR Code atual
+let currentMainConfig = null;
 let currentQrCode = null;
 
 // Variável para armazenar o status da conexão
@@ -256,6 +257,7 @@ function restartWhatsApp() {
 // Função para configurar listeners do cliente (apenas uma vez)
 function setupClientListeners(mainConfig) {
     try {
+        currentMainConfig = mainConfig;
         // Verificar se os listeners já foram configurados
         if (clientListenersConfigured) {
             console.log('Listeners do WhatsApp já configurados');
@@ -466,24 +468,24 @@ function setupClientListeners(mainConfig) {
                                 let contextoLoja = "Restaurante e Delivery. Consulte nosso cardápio e horários.";
 
                                 // Tentar usar informações reais do mainConfig passado
-                                if (mainConfig) {
-                                    const hasRealInfo = mainConfig.restaurantAddress || 
-                                                   (mainConfig.menuItems && mainConfig.menuItems.length > 0) ||
-                                                   mainConfig.storeName;
+                                if (currentMainConfig) {
+                                    const hasRealInfo = currentMainConfig.restaurantAddress || 
+                                                   (currentMainConfig.menuItems && currentMainConfig.menuItems.length > 0) ||
+                                                   currentMainConfig.storeName;
 
                                     if (hasRealInfo) {
                                         let contextParts = [];
-                                        if (mainConfig.storeName && mainConfig.storeName !== 'Delivery Manager') {
-                                            contextParts.push(`Estabelecimento: ${mainConfig.storeName}`);
+                                        if (currentMainConfig.storeName && currentMainConfig.storeName !== 'Delivery Manager') {
+                                            contextParts.push(`Estabelecimento: ${currentMainConfig.storeName}`);
                                         }
-                                        if (mainConfig.restaurantAddress) {
-                                            contextParts.push(`Endereço: ${mainConfig.restaurantAddress}`);
+                                        if (currentMainConfig.restaurantAddress) {
+                                            contextParts.push(`Endereço: ${currentMainConfig.restaurantAddress}`);
                                         }
-                                        if (mainConfig.menuItems && mainConfig.menuItems.length > 0) {
-                                            const sampleItems = mainConfig.menuItems.slice(0, 3).map(item => 
+                                        if (currentMainConfig.menuItems && currentMainConfig.menuItems.length > 0) {
+                                            const sampleItems = currentMainConfig.menuItems.slice(0, 3).map(item => 
                                                 `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
                                             ).join(', ');
-                                            contextParts.push(`Cardápio: ${sampleItems}${mainConfig.menuItems.length > 3 ? '...' : ''}`);
+                                            contextParts.push(`Cardápio: ${sampleItems}${currentMainConfig.menuItems.length > 3 ? '...' : ''}`);
                                         }
                                         if (contextParts.length > 0) {
                                             contextoLoja = contextParts.join('. ');
@@ -495,10 +497,10 @@ function setupClientListeners(mainConfig) {
                                 let respostaIA;
                                 if (aiService && aiService.gerarRespostaIA) {
                                     // Usar a chave do mainConfig
-                                    let openAIKey = mainConfig ? (mainConfig.openAIKey || mainConfig.openaiKey) : null;
+                                    let openAIKey = currentMainConfig ? (currentMainConfig.openAIKey || currentMainConfig.openaiKey) : null;
                                     respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, openAIKey);
                                 } else {
-                                    const nomeLoja = (mainConfig && mainConfig.storeName) ? mainConfig.storeName : "nosso restaurante";
+                                    const nomeLoja = (currentMainConfig && currentMainConfig.storeName) ? currentMainConfig.storeName : "nosso restaurante";
                                     respostaIA = `Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.`;
                                 }
                                             
@@ -613,24 +615,24 @@ function setupClientListeners(mainConfig) {
                 let contextoLoja = "Restaurante e Delivery. Consulte nosso cardápio e horários.";
                 
                 // Tentar usar informações reais do mainConfig passado
-                if (mainConfig) {
-                    const hasRealInfo = mainConfig.restaurantAddress || 
-                                   (mainConfig.menuItems && mainConfig.menuItems.length > 0) ||
-                                   mainConfig.storeName;
+                if (currentMainConfig) {
+                    const hasRealInfo = currentMainConfig.restaurantAddress || 
+                                   (currentMainConfig.menuItems && currentMainConfig.menuItems.length > 0) ||
+                                   currentMainConfig.storeName;
 
                     if (hasRealInfo) {
                         let contextParts = [];
-                        if (mainConfig.storeName && mainConfig.storeName !== 'Delivery Manager') {
-                            contextParts.push(`Estabelecimento: ${mainConfig.storeName}`);
+                        if (currentMainConfig.storeName && currentMainConfig.storeName !== 'Delivery Manager') {
+                            contextParts.push(`Estabelecimento: ${currentMainConfig.storeName}`);
                         }
-                        if (mainConfig.restaurantAddress) {
-                            contextParts.push(`Endereço: ${mainConfig.restaurantAddress}`);
+                        if (currentMainConfig.restaurantAddress) {
+                            contextParts.push(`Endereço: ${currentMainConfig.restaurantAddress}`);
                         }
-                        if (mainConfig.menuItems && mainConfig.menuItems.length > 0) {
-                            const sampleItems = mainConfig.menuItems.slice(0, 3).map(item => 
+                        if (currentMainConfig.menuItems && currentMainConfig.menuItems.length > 0) {
+                            const sampleItems = currentMainConfig.menuItems.slice(0, 3).map(item => 
                                 `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
                             ).join(', ');
-                            contextParts.push(`Cardápio: ${sampleItems}${mainConfig.menuItems.length > 3 ? '...' : ''}`);
+                            contextParts.push(`Cardápio: ${sampleItems}${currentMainConfig.menuItems.length > 3 ? '...' : ''}`);
                         }
                         if (contextParts.length > 0) {
                             contextoLoja = contextParts.join('. ');
@@ -642,10 +644,10 @@ function setupClientListeners(mainConfig) {
                 let respostaIA;
                 if (aiService && aiService.gerarRespostaIA) {
                     // Usar a chave do mainConfig
-                    let openAIKey = mainConfig ? (mainConfig.openAIKey || mainConfig.openaiKey) : null;
+                    let openAIKey = currentMainConfig ? (currentMainConfig.openAIKey || currentMainConfig.openaiKey) : null;
                     respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
                 } else {
-                    const nomeLoja = (mainConfig && mainConfig.storeName && mainConfig.storeName !== 'Delivery Manager') ? mainConfig.storeName : "nosso restaurante";
+                    const nomeLoja = (currentMainConfig && currentMainConfig.storeName && currentMainConfig.storeName !== 'Delivery Manager') ? currentMainConfig.storeName : "nosso restaurante";
                     respostaIA = `Olá! Sou o assistente virtual do ${nomeLoja}. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.`;
                 }
                 
@@ -828,6 +830,12 @@ function resetInitialization() {
     whatsappStatus.readyAt = null;
 }
 
+// Função para atualizar a configuração em tempo real
+function updateConfig(newConfig) {
+    console.log('🔄 Configuração do WhatsApp atualizada com novo cardápio e dados.');
+    currentMainConfig = newConfig;
+}
+
 // Função para limpar sessão manualmente
 function clearWhatsAppSession() {
     try {
@@ -857,5 +865,6 @@ module.exports = {
     isWhatsAppInitialized,
     resetInitialization,
     clearWhatsAppSession,
+    updateConfig,
     client
 };

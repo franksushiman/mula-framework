@@ -408,10 +408,20 @@ window.renderMenuTable = function() {
                     </label>
                 </td>
                 <td>
-                    <div class="product-name" style="font-weight: 600; color: ${isPaused ? 'var(--stone-500)' : 'var(--stone-200)'}">
-                        ${item.name || 'Sem nome'}
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        ${item.image ? 
+                            `<img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">` : 
+                            `<div style="width: 50px; height: 50px; border-radius: 8px; background-color: #3a475a; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-camera" style="color: var(--texto-secundario);"></i>
+                            </div>`
+                        }
+                        <div>
+                            <div class="product-name" style="font-weight: 600; color: ${isPaused ? 'var(--stone-500)' : 'var(--stone-200)'}">
+                                ${item.name || 'Sem nome'}
+                            </div>
+                            ${item.description ? `<div style="font-size: 13px; color: var(--stone-400); margin-top: 4px;">${item.description}</div>` : ''}
+                        </div>
                     </div>
-                    ${item.description ? `<div style="font-size: 13px; color: var(--stone-400); margin-top: 4px;">${item.description}</div>` : ''}
                 </td>
                 <td>
                     <span class="category-badge">
@@ -453,7 +463,8 @@ window.addMenuItem = function() {
         price: 0,
         promoPrice: null,
         paused: false,
-        stock: null
+        stock: null,
+        image: null
     };
     
     window.menuItems.push(newItem);
@@ -496,11 +507,43 @@ window.editMenuItemInline = function(index) {
     
     // Nome e descrição
     cells[1].innerHTML = `
-        <input type="text" class="menu-editable" value="${item.name || ''}" 
-               placeholder="Nome do produto" data-field="name" style="margin-bottom: 8px;">
-        <textarea class="menu-editable" placeholder="Descrição (opcional)" 
-                  data-field="description" rows="2" style="resize: vertical;">${item.description || ''}</textarea>
+        <div style="display: flex; gap: 16px; align-items: flex-start;">
+            <div style="flex-shrink: 0; text-align: center;">
+                <label for="edit-image-input-${item.id}" style="cursor: pointer; display: block; width: 70px; height: 70px; border-radius: 8px; border: 1px solid var(--borda-quente); background-color: #3a475a; overflow: hidden; position: relative;">
+                    <img src="${item.image || ''}" id="edit-image-preview-${item.id}" 
+                         style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; display: ${item.image ? 'block' : 'none'};">
+                    <div id="edit-image-placeholder-${item.id}" style="width: 100%; height: 100%; display: ${item.image ? 'none' : 'flex'}; align-items: center; justify-content: center; flex-direction: column; font-size: 12px; color: var(--texto-secundario);">
+                        <i class="fas fa-camera" style="font-size: 20px; margin-bottom: 5px;"></i>
+                        Alterar
+                    </div>
+                </label>
+                <input type="file" id="edit-image-input-${item.id}" accept="image/*" style="display: none;">
+            </div>
+            <div style="flex-grow: 1;">
+                <input type="text" class="menu-editable" value="${item.name || ''}" 
+                       placeholder="Nome do produto" data-field="name" style="margin-bottom: 8px;">
+                <textarea class="menu-editable" placeholder="Descrição (opcional)" 
+                          data-field="description" rows="2" style="resize: vertical;">${item.description || ''}</textarea>
+            </div>
+        </div>
     `;
+
+    const fileInput = row.querySelector(`#edit-image-input-${item.id}`);
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = row.querySelector(`#edit-image-preview-${item.id}`);
+                const placeholder = row.querySelector(`#edit-image-placeholder-${item.id}`);
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+                row.setAttribute('data-new-image', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
     
     // Categoria
     cells[2].innerHTML = `
@@ -563,6 +606,12 @@ window.saveMenuItemEdit = function() {
             item[field] = input.value.trim();
         }
     });
+    
+    // Coletar imagem nova, se houver
+    const newImage = row.getAttribute('data-new-image');
+    if (newImage) {
+        item.image = newImage;
+    }
     
     window.config.menuItems = window.menuItems;
     window.electronAPI.saveConfig(window.config).then(() => {
