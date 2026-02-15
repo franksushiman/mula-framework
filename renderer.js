@@ -2872,6 +2872,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Inicializar componentes
         window.renderFleet();
+        window.renderFleetInvites(); // Garante que os convites pendentes sejam carregados na inicialização
         // Não chamar renderT() aqui - o novo sistema de cardápio usa initMenu()
         window.loadPrinters();
         window.initMap();
@@ -2922,10 +2923,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             window.showToast('Sistema Ceia carregado com sucesso!', 'success');
-            // Carregar convites pendentes se estiver na aba da frota
-            if (document.getElementById('fleet-panel').classList.contains('active')) {
-                window.renderFleetInvites();
-            }
+            // A chamada a window.renderFleetInvites() já foi movida para fora deste setTimeout.
+            // Este bloco agora apenas garante que o botão de convite esteja funcional.
         }, 1000);
         
     } catch (error) {
