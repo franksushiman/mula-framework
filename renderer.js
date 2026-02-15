@@ -2569,6 +2569,69 @@ window.validateProductData = function(productData) {
 window.checkWhatsAppOnConfigOpen = function() {
     if (document.getElementById('config-panel').classList.contains('active')) {
         window.checkWhatsAppStatus();
+        window.checkTelegramStatus(); // Também verificar o Telegram
+    }
+};
+
+// Função para verificar status do Telegram Bot
+window.checkTelegramStatus = function() {
+    const statusDot = document.getElementById('telegram-config-status-dot');
+    const statusText = document.getElementById('telegram-config-status-text');
+    const lastActivity = document.getElementById('telegram-last-activity');
+
+    if (!statusDot || !statusText || !lastActivity) return;
+
+    // Assumimos que o status do bot Telegram é enviado via 'bot-status' do main.js
+    // Por enquanto, vamos apenas exibir um status padrão ou o último conhecido
+    statusDot.className = 'status-dot initializing';
+    statusText.textContent = 'Verificando...';
+    statusText.style.color = 'var(--ambar)';
+    lastActivity.textContent = 'Aguardando atualização...';
+
+    // O status real será atualizado pelo evento 'bot-status' vindo do main.js
+    // que é disparado na inicialização e em caso de erro.
+    // Podemos adicionar um IPC invoke aqui se quisermos um check manual mais direto,
+    // mas o 'bot-status' já deve cobrir a maioria dos casos.
+    // Exemplo de IPC invoke (se main.js tiver um handler para isso):
+    // window.electronAPI.getTelegramBotStatus().then(status => {
+    //     window.updateTelegramStatusUI(status);
+    // });
+};
+
+// Função para reiniciar o bot Telegram
+window.restartTelegramBot = function() {
+    window.showToast('Reiniciando bot Telegram...', 'info');
+    // Enviar um evento para o main.js para reiniciar o bot
+    window.electronAPI.restartTelegramBot().then(result => {
+        if (result.success) {
+            window.showToast('Bot Telegram reiniciado com sucesso!', 'success');
+            window.checkTelegramStatus(); // Atualizar UI após reinício
+        } else {
+            window.showToast(`Erro ao reiniciar bot Telegram: ${result.error}`, 'error');
+        }
+    }).catch(error => {
+        window.showToast(`Erro ao reiniciar bot Telegram: ${error.message}`, 'error');
+    });
+};
+
+// Função para atualizar a UI do status do Telegram
+window.updateTelegramStatusUI = function(data) {
+    const statusDot = document.getElementById('telegram-config-status-dot');
+    const statusText = document.getElementById('telegram-config-status-text');
+    const lastActivity = document.getElementById('telegram-last-activity');
+
+    if (!statusDot || !statusText || !lastActivity) return;
+
+    if (data.online) {
+        statusDot.className = 'status-dot online';
+        statusText.textContent = 'Conectado';
+        statusText.style.color = 'var(--verde-esperanca)';
+        lastActivity.textContent = `Última atividade: ${new Date(data.timestamp).toLocaleTimeString()}`;
+    } else {
+        statusDot.className = 'status-dot offline';
+        statusText.textContent = 'Desconectado';
+        statusText.style.color = 'var(--vermelho-sobrio)';
+        lastActivity.textContent = `Erro: ${data.message || 'Desconhecido'}`;
     }
 };
 
@@ -2770,9 +2833,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.showToast('QR Code recebido: ' + qrUrl, 'success');
         });
 
+        // Listener para status geral do bot (pode ser WhatsApp ou Telegram)
         window.electronAPI.onBotStatus((event, data) => {
-            console.log('Bot status:', data);
-            window.showToast(`Bot ${data.online ? 'online' : 'offline'}`, data.online ? 'success' : 'error');
+            console.log('[renderer.js] General Bot status received:', data);
+            // Este listener pode ser para um toast genérico ou para depuração
+            window.showToast(`Bot ${data.botType || 'Geral'} ${data.online ? 'online' : 'offline'}: ${data.message}`, data.online ? 'success' : 'error');
+        });
+
+        // Listener específico para status do Telegram Bot
+        window.electronAPI.onTelegramBotStatus((event, data) => {
+            console.log('[renderer.js] Telegram Bot status received:', data);
+            window.updateTelegramStatusUI(data);
         });
 
         // Inicializar componentes

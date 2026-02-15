@@ -33,19 +33,32 @@ const USER_STEPS = {
 // Inicializar bot Telegram
 async function initializeTelegramBot() {
     try {
+        console.log('🤖 [Telegram] Tentando carregar configuração...');
         config = loadConfig();
         const token = config.telegramToken || config.telegramClientToken;
         
         if (!token || token.trim() === '') {
-            console.warn('⚠️ Token Telegram vazio no config.json. Configure na aba de Configurações.');
+            console.warn('⚠️ [Telegram] Token Telegram vazio no config.json. Configure na aba de Configurações.');
             return null;
         }
         
-        console.log('🤖 Inicializando bot Telegram...');
+        console.log('🤖 [Telegram] Inicializando bot Telegram com token (primeiros 5 chars):', token.substring(0, 5) + '...');
         bot = new Telegraf(token);
+
+        // Adicionar listeners de erro para o bot
+        bot.catch((err, ctx) => {
+            console.error(`❌ [Telegram] Erro para ${ctx.updateType} no chat ${ctx.chat?.id}:`, err);
+            // Tentar enviar uma mensagem de erro para o usuário se possível
+            if (ctx.chat?.id) {
+                ctx.reply('Desculpe, tive um problema ao processar sua solicitação. Por favor, tente novamente mais tarde.').catch(replyErr => {
+                    console.error('❌ [Telegram] Erro ao enviar mensagem de erro para o usuário:', replyErr);
+                });
+            }
+        });
         
         // Listener para mensagens editadas (Live Location)
         bot.on('edited_message', async (ctx) => {
+            console.log(`[Telegram] Recebida edited_message de ${ctx.chat.id}`);
             const msg = ctx.editedMessage;
             const chatId = msg.chat.id;
             
@@ -54,7 +67,7 @@ async function initializeTelegramBot() {
                 const lat = msg.location.latitude;
                 const lng = msg.location.longitude;
                 
-                console.log(`[RASTREAMENTO] Entregador ${chatId} moveu-se para ${lat}, ${lng}`);
+                console.log(`[Telegram][RASTREAMENTO] Entregador ${chatId} moveu-se para ${lat}, ${lng}`);
                 
                 // Buscar informações do entregador (pode ser armazenado em um mapa local)
                 // Aqui você pode buscar o phone/vulgo do entregador a partir do chatId
@@ -79,6 +92,7 @@ async function initializeTelegramBot() {
         
         // Listener para mensagens de localização (fixa ou live)
         bot.on('location', async (ctx) => {
+            console.log(`[Telegram] Recebida location de ${ctx.chat.id}`);
             const msg = ctx.message;
             const chatId = msg.chat.id;
             const location = msg.location;
@@ -89,19 +103,19 @@ async function initializeTelegramBot() {
             const isLiveLocation = location.live_period !== undefined;
             
             if (isLiveLocation) {
-                console.log(`[LIVE] Entregador ${chatId} iniciou compartilhamento em tempo real`);
+                console.log(`[Telegram][LIVE] Entregador ${chatId} iniciou compartilhamento em tempo real`);
                 
                 // Responder confirmando
-                ctx.reply('Rastreamento iniciado! 🛰️ Estamos te acompanhando no mapa.');
+                ctx.reply('Rastreamento iniciado! 🛰️ Estamos te acompanhando no mapa.').catch(err => console.error('❌ [Telegram] Erro ao responder live location:', err));
                 
                 // Registrar como rastreamento ativo
                 // (Poderia armazenar em um mapa de activeLiveSessions)
             } else {
                 // Localização fixa (check-in)
-                console.log(`[CHECK-IN] Entregador ${chatId} enviou localização fixa: ${lat}, ${lng}`);
+                console.log(`[Telegram][CHECK-IN] Entregador ${chatId} enviou localização fixa: ${lat}, ${lng}`);
                 
                 // Responder conforme lógica existente
-                ctx.reply('Localização recebida! ✅ Agora você está online no radar.');
+                ctx.reply('Localização recebida! ✅ Agora você está online no radar.').catch(err => console.error('❌ [Telegram] Erro ao responder check-in location:', err));
             }
             
             // Atualizar no sistema (mesmo para fixa e live)
@@ -119,9 +133,10 @@ async function initializeTelegramBot() {
         
         // Comando /start para novos entregadores
         bot.start((ctx) => {
+            console.log(`[Telegram] Recebido comando /start de ${ctx.from.id}`);
             const chatId = ctx.chat.id;
             const startPayload = ctx.startPayload; // Parâmetro após /start
-            console.log(`Novo entregador ${ctx.from.id} iniciou com payload: ${startPayload}`);
+            console.log(`[Telegram] Novo entregador ${ctx.from.id} iniciou com payload: ${startPayload}`);
             
             // Verificar se o usuário já está cadastrado
             // Aqui você pode integrar com o sistema existente para verificar se o chatId já está na frota
@@ -136,18 +151,19 @@ async function initializeTelegramBot() {
                 data: {}
             };
             
-            ctx.reply('👋 Bem-vindo à frota Ceia Delivery! Vamos fazer seu cadastro.\n\nPrimeiro, qual é seu **Nome Completo**?');
+            ctx.reply('👋 Bem-vindo à frota Ceia Delivery! Vamos fazer seu cadastro.\n\nPrimeiro, qual é seu **Nome Completo**?').catch(err => console.error('❌ [Telegram] Erro ao responder /start:', err));
         });
         
         // Listener para mensagens de texto (respostas do wizard)
         bot.on('text', async (ctx) => {
+            console.log(`[Telegram] Recebida mensagem de texto de ${ctx.chat.id}: "${ctx.message.text.substring(0, 50)}..."`);
             const chatId = ctx.chat.id;
             const text = ctx.message.text;
             
             // Verificar se é comando /cancelar
             if (text.toLowerCase() === '/cancelar') {
                 delete userSessions[chatId];
-                ctx.reply('Cadastro cancelado. Use /start para começar novamente.');
+                ctx.reply('Cadastro cancelado. Use /start para começar novamente.').catch(err => console.error('❌ [Telegram] Erro ao responder /cancelar:', err));
                 return;
             }
             
@@ -155,6 +171,7 @@ async function initializeTelegramBot() {
             const session = userSessions[chatId];
             if (!session) {
                 // Se não está em cadastro, tratar como mensagem normal
+                console.log(`[Telegram] Chat ${chatId} não está em sessão de cadastro. Ignorando.`);
                 return;
             }
             
@@ -167,7 +184,7 @@ async function initializeTelegramBot() {
                         // Salvar nome
                         userData.name = text.trim();
                         session.step = USER_STEPS.WAITING_PIX;
-                        ctx.reply(`Prazer, ${userData.name}! Qual sua chave **PIX** para pagamentos?`);
+                        ctx.reply(`Prazer, ${userData.name}! Qual sua chave **PIX** para pagamentos?`).catch(err => console.error('❌ [Telegram] Erro ao pedir PIX:', err));
                         break;
                         
                     case USER_STEPS.WAITING_PIX:
@@ -185,7 +202,7 @@ async function initializeTelegramBot() {
                                 resize_keyboard: true,
                                 one_time_keyboard: true
                             }
-                        });
+                        }).catch(err => console.error('❌ [Telegram] Erro ao pedir tipo de trabalho:', err));
                         break;
                         
                     case USER_STEPS.WAITING_TYPE:
@@ -209,7 +226,7 @@ async function initializeTelegramBot() {
                                 reply_markup: {
                                     remove_keyboard: true
                                 }
-                            });
+                            }).catch(err => console.error('❌ [Telegram] Erro ao pedir placa/modelo:', err));
                         } else {
                             // Resposta inválida, repetir pergunta
                             ctx.reply('Por favor, escolha uma das opções abaixo:', {
@@ -221,7 +238,7 @@ async function initializeTelegramBot() {
                                     resize_keyboard: true,
                                     one_time_keyboard: true
                                 }
-                            });
+                            }).catch(err => console.error('❌ [Telegram] Erro ao repetir tipo de trabalho:', err));
                         }
                         break;
                         
@@ -242,36 +259,39 @@ async function initializeTelegramBot() {
                                 resize_keyboard: true,
                                 one_time_keyboard: true
                             }
-                        });
+                        }).catch(err => console.error('❌ [Telegram] Erro ao pedir contato:', err));
                         break;
                         
                     default:
                         // Estado não reconhecido
+                        console.warn(`[Telegram] Estado de cadastro não reconhecido para ${chatId}: ${step}`);
                         delete userSessions[chatId];
-                        ctx.reply('Ocorreu um erro no cadastro. Use /start para começar novamente.');
+                        ctx.reply('Ocorreu um erro no cadastro. Use /start para começar novamente.').catch(err => console.error('❌ [Telegram] Erro ao responder estado desconhecido:', err));
                         break;
                 }
             } catch (error) {
-                console.error('Erro no processamento do wizard:', error);
+                console.error(`❌ [Telegram] Erro no processamento do wizard para ${chatId}:`, error);
                 delete userSessions[chatId];
-                ctx.reply('Ocorreu um erro. Use /start para tentar novamente.');
+                ctx.reply('Ocorreu um erro. Use /start para tentar novamente.').catch(err => console.error('❌ [Telegram] Erro ao responder erro no wizard:', err));
             }
         });
         
         // Listener para contatos (compartilhamento de número)
         bot.on('contact', async (ctx) => {
+            console.log(`[Telegram] Recebido contato de ${ctx.chat.id}`);
             const chatId = ctx.chat.id;
             const contact = ctx.message.contact;
             const session = userSessions[chatId];
             
             // Verificar se estamos esperando contato
             if (!session || session.step !== USER_STEPS.WAITING_CONTACT) {
+                console.warn(`[Telegram] Contato recebido fora do fluxo de cadastro para ${chatId}. Ignorando.`);
                 return;
             }
             
             // Verificar se o contato pertence ao usuário que enviou a mensagem
             if (contact.user_id !== ctx.from.id) {
-                ctx.reply('Por favor, compartilhe seu próprio número de telefone.');
+                ctx.reply('Por favor, compartilhe seu próprio número de telefone.').catch(err => console.error('❌ [Telegram] Erro ao pedir próprio número:', err));
                 return;
             }
             
@@ -301,7 +321,7 @@ async function initializeTelegramBot() {
                     registeredAt: Date.now(),
                     status: 'pending' // ou 'active'
                 };
-                console.log('📤 Enviando driver-registered:', driverData);
+                console.log('📤 [Telegram] Enviando driver-registered para main.js:', driverData);
                 BrowserWindow.getAllWindows().forEach(win => {
                     win.webContents.send('driver-registered', driverData);
                 });
@@ -331,19 +351,20 @@ async function initializeTelegramBot() {
                             one_time_keyboard: false
                         }
                     }
-                );
+                ).catch(err => console.error('❌ [Telegram] Erro ao enviar mensagem de sucesso de cadastro:', err));
                 
-                console.log(`✅ Novo entregador cadastrado: ${userData.name} (${phoneNumber})`);
+                console.log(`✅ [Telegram] Novo entregador cadastrado: ${userData.name} (${phoneNumber})`);
                 
             } catch (error) {
-                console.error('Erro ao finalizar cadastro:', error);
+                console.error(`❌ [Telegram] Erro ao finalizar cadastro para ${chatId}:`, error);
                 delete userSessions[chatId];
-                ctx.reply('Erro ao salvar cadastro. Use /start para tentar novamente.');
+                ctx.reply('Erro ao salvar cadastro. Use /start para tentar novamente.').catch(err => console.error('❌ [Telegram] Erro ao responder erro ao salvar cadastro:', err));
             }
         });
         
         // Comando /help
         bot.help((ctx) => {
+            console.log(`[Telegram] Recebido comando /help de ${ctx.from.id}`);
             ctx.reply(
                 'Comandos disponíveis:\n' +
                 '/start - Iniciar cadastro\n' +
@@ -351,47 +372,57 @@ async function initializeTelegramBot() {
                 '/offline - Sair do radar\n' +
                 '/cancelar - Cancelar cadastro em andamento\n' +
                 '\nPara compartilhar localização em tempo real, toque no clipe 📎 e selecione "Localização" → "Compartilhar localização em tempo real".'
-            );
+            ).catch(err => console.error('❌ [Telegram] Erro ao responder /help:', err));
         });
         
         // Comando /online (check-in manual)
         bot.command('online', (ctx) => {
-            ctx.reply('Para ficar online, compartilhe sua localização (fixa ou em tempo real). Toque no clipe 📎 e selecione "Localização".');
+            console.log(`[Telegram] Recebido comando /online de ${ctx.from.id}`);
+            ctx.reply('Para ficar online, compartilhe sua localização (fixa ou em tempo real). Toque no clipe 📎 e selecione "Localização".').catch(err => console.error('❌ [Telegram] Erro ao responder /online:', err));
         });
         
         // Comando /cancelar - Cancelar cadastro em andamento
         bot.command('cancelar', (ctx) => {
+            console.log(`[Telegram] Recebido comando /cancelar de ${ctx.from.id}`);
             const chatId = ctx.chat.id;
             if (userSessions[chatId]) {
                 delete userSessions[chatId];
-                ctx.reply('Cadastro cancelado. Use /start para começar novamente.');
+                ctx.reply('Cadastro cancelado. Use /start para começar novamente.').catch(err => console.error('❌ [Telegram] Erro ao responder /cancelar (em andamento):', err));
             } else {
-                ctx.reply('Não há cadastro em andamento para cancelar.');
+                ctx.reply('Não há cadastro em andamento para cancelar.').catch(err => console.error('❌ [Telegram] Erro ao responder /cancelar (sem andamento):', err));
             }
         });
         
         // Comando /offline
         bot.command('offline', (ctx) => {
+            console.log(`[Telegram] Recebido comando /offline de ${ctx.from.id}`);
             // Remover do radar
             BrowserWindow.getAllWindows().forEach(win => {
                 win.webContents.send('driver-offline', {
                     phone: `telegram_${ctx.chat.id}`
                 });
             });
-            ctx.reply('Você saiu do radar. Para voltar, envie /online e compartilhe sua localização.');
+            ctx.reply('Você saiu do radar. Para voltar, envie /online e compartilhe sua localização.').catch(err => console.error('❌ [Telegram] Erro ao responder /offline:', err));
         });
         
         // Iniciar bot
+        console.log('🤖 [Telegram] Lançando bot...');
         await bot.launch(); // Aguarda o lançamento do bot
-        console.log('✅ Bot Telegram iniciado com sucesso');
+        console.log('✅ [Telegram] Bot Telegram iniciado com sucesso');
         
         // Configurar graceful shutdown
-        process.once('SIGINT', () => bot && bot.stop('SIGINT'));
-        process.once('SIGTERM', () => bot && bot.stop('SIGTERM'));
+        process.once('SIGINT', () => {
+            console.log('SIGINT recebido, parando bot Telegram...');
+            bot && bot.stop('SIGINT');
+        });
+        process.once('SIGTERM', () => {
+            console.log('SIGTERM recebido, parando bot Telegram...');
+            bot && bot.stop('SIGTERM');
+        });
         
         return bot;
     } catch (error) {
-        console.error('❌ Erro ao inicializar bot Telegram:', error);
+        console.error('❌ [Telegram] Erro fatal ao inicializar bot Telegram:', error);
         bot = null; // Garante que bot seja null se o lançamento falhar
         return null;
     }

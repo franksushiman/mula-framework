@@ -2365,6 +2365,36 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Telegram -->
+                        <div class="ceia-surface-card">
+                            <h4 style="color: var(--texto-principal); margin-bottom: 15px; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fab fa-telegram-plane"></i> Telegram Bot
+                            </h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <label>Status</label>
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                                        <span class="status-dot" id="telegram-config-status-dot"></span>
+                                        <span id="telegram-config-status-text" style="font-weight: 600;">Verificando...</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label>Última Atividade</label>
+                                    <div style="margin-top: 8px; font-size: 14px; color: var(--texto-principal);" id="telegram-last-activity">
+                                        Verificando...
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="window.checkTelegramStatus()">
+                                    <i class="fas fa-sync"></i> Verificar Status
+                                </button>
+                                <button class="btn btn-error" onclick="window.restartTelegramBot()">
+                                    <i class="fas fa-power-off"></i> Reiniciar Bot
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 4. ONDE O SISTEMA FALA? -->

@@ -92,7 +92,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onDriverPos: (callback) => ipcRenderer.on('driver-pos', callback),
   onDriverAccepted: (callback) => ipcRenderer.on('driver-accepted', callback),
   onShowQR: (callback) => ipcRenderer.on('show-qr', callback),
-  onBotStatus: (callback) => ipcRenderer.on('bot-status', callback),
+  onBotStatus: (callback) => ipcRenderer.on('bot-status', callback), // General bot status (can be WhatsApp or Telegram)
+  onTelegramBotStatus: (callback) => ipcRenderer.on('telegram-bot-status', callback), // Specific for Telegram
   onConfigUpdated: (callback) => ipcRenderer.on('config-updated', callback),
   onTelegramLocation: (callback) => ipcRenderer.on('telegram-location', callback),
   onWhatsappQrUpdated: (callback) => ipcRenderer.on('whatsapp-qr-updated', callback),
@@ -107,5 +108,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notifyMotoboyApproved: (data) => ipcRenderer.send('notify-motoboy-approved', data),
   restartWhatsapp: () => ipcRenderer.send('restart-whatsapp'),
   whatsappBroadcast: (data) => ipcRenderer.send('whatsapp-broadcast', data),
-  sendDriverPos: (data) => ipcRenderer.send('driver-pos', data)
+  sendDriverPos: (data) => ipcRenderer.send('driver-pos', data),
+
+  // Telegram Bot specific actions
+  restartTelegramBot: () => ipcRenderer.invoke('restartTelegramBot')
 });
