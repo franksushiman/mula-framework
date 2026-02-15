@@ -562,7 +562,9 @@ function initializeWhatsAppService() {
         // Inicializar o WhatsApp se não estiver inicializado
         if (!whatsappService.isWhatsAppInitialized || !whatsappService.isWhatsAppInitialized()) {
             console.log('WhatsApp não está inicializado, tentando inicializar...');
-            whatsappService.initializeWhatsApp().catch(error => {
+            // A config já foi carregada acima nesta função
+            const config = loadConfig(); 
+            whatsappService.initializeWhatsApp(config).catch(error => {
                 console.error('Erro ao inicializar WhatsApp:', error);
             });
         }
