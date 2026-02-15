@@ -1722,9 +1722,11 @@ ipcMain.on('driver-registered', async (event, driverData) => {
         const config = loadConfig();
         const fleet = config.fleet || [];
         
-        // Verificar se já existe pelo telefone ou chatId
+        // Verificar se já existe pelo telegramUserId, chatId ou telefone
         const existingIndex = fleet.findIndex(d => 
-            d.phone === driverData.phone || d.chatId === driverData.chatId
+            (d.telegramUserId && d.telegramUserId === driverData.telegramUserId) ||
+            (d.chatId && d.chatId === driverData.chatId) ||
+            (d.phone && driverData.phone && String(d.phone).replace(/\D/g, '') === String(driverData.phone).replace(/\D/g, ''))
         );
         
         // Lógica de Status baseada no carimbo (inviteCode)
