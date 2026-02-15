@@ -189,11 +189,14 @@ window.openExternalLink = function(url) {
 
 // Funções para gerenciar e renderizar convites da frota
 window.renderFleetInvites = async function() {
-    const invitesList = document.getElementById('fleet-invites-list'); // Assumindo que este elemento existe no HTML
-    if (!invitesList) return;
+    console.log('renderFleetInvites chamada'); // Adicionado log para depuração
+    const invitesList = document.getElementById('fleet-invites-container'); // Corrigido o ID do elemento HTML
+    if (!invitesList) {
+        console.warn('Elemento #fleet-invites-container não encontrado no DOM.');
+        return;
+    }
 
     try {
-        // Esta chamada IPC precisa ser implementada em preload.js e main.js
         const invites = await window.electronAPI.getFleetInvites(); 
         
         if (invites.length === 0) {
@@ -2413,7 +2416,7 @@ window.renderDashboardStats = async function() {
         
         safeSet('orders-today', String(summary.today_orders_count || 0));
         safeSet('orders-in-kitchen', String(summary.orders_in_kitchen || 0));
-        safeSet('fleet-online', String(summary.active_drivers || 0));
+        safeSet('fleet-online', String(window.config.fleet?.length || 0)); // Mostrar total de entregadores registrados
         
         const financeEl = document.getElementById('finance-total-hoje');
         if (financeEl) {
