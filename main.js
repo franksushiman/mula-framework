@@ -2225,6 +2225,57 @@ app.whenReady().then(() => {
   });
 });
 
+// Listener para status do bot (WhatsApp e Telegram)
+ipcMain.on('bot-status', (event, data) => {
+    // Reencaminhar para todas as janelas com o tipo correto
+    BrowserWindow.getAllWindows().forEach(win => {
+        // Se ainda não tem botType, assume Telegram se vier do telegram.js
+        if (!data.botType) {
+            // Tenta inferir pelo conteúdo ou padrão telegram
+            data.botType = 'telegram';
+        }
+
+        win.webContents.send('bot-status', data);
+        
+        // Também enviar eventos específicos para compatibilidade com a UI
+        if (data.botType === 'telegram') {
+            win.webContents.send('telegram-bot-status', data);
+        }
+    });
+});
+
+// Handler para reiniciar o bot Telegram
+ipcMain.handle('restartTelegramBot', async () => {
+    console.log('🔄 [main.js] Recebida solicitação para reiniciar bot Telegram.');
+    try {
+        const config = loadConfig(); // Recarregar config para garantir dados atualizados
+        const telegramBot = require('./telegram.js');
+        
+        // Parar o bot atual se estiver rodando
+        if (telegramBot.getBot && telegramBot.getBot()) {
+             try {
+                 await telegramBot.getBot().stop('restart');
+                 console.log('✅ [main.js] Bot Telegram parado.');
+             } catch (e) {
+                 console.warn('⚠️ [main.js] Erro ao parar bot Telegram:', e.message);
+             }
+        }
+
+        // Reinicializar com a nova config
+        const botInstance = await telegramBot.initializeTelegramBot(config);
+        
+        if (botInstance) {
+            console.log('✅ [main.js] Bot Telegram reinicializado.');
+            return { success: true, message: 'Bot Telegram reinicializado com sucesso.' };
+        } else {
+            return { success: false, error: 'Falha ao inicializar. Verifique o Token.' };
+        }
+    } catch (error) {
+        console.error('❌ [main.js] Erro ao reiniciar bot Telegram:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
