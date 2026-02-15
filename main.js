@@ -2157,14 +2157,14 @@ app.whenReady().then(() => {
 
       const telegramBot = require('./telegram.js');
       if (telegramBot && telegramBot.initializeTelegramBot) {
-        // A função initializeTelegramBot em telegram.js já verifica o token internamente
-        // e retorna null se estiver vazio. Precisamos verificar o valor de retorno.
-        const botInstance = await telegramBot.initializeTelegramBot(); // AGUARDA a inicialização
+        // A função initializeTelegramBot agora recebe a config
+        const botInstance = await telegramBot.initializeTelegramBot(config);
         if (botInstance) {
           console.log('✅ Bot Telegram inicializado para rastreamento em tempo real');
           // Envia um status de sucesso para o frontend
           BrowserWindow.getAllWindows().forEach(win => {
             win.webContents.send('bot-status', {
+              botType: 'telegram',
               online: true,
               timestamp: Date.now(),
               message: 'Bot Telegram inicializado.'

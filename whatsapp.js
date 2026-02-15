@@ -254,14 +254,14 @@ function restartWhatsApp() {
 }
 
 // Função para configurar listeners do cliente (apenas uma vez)
-function setupClientListeners() {
+function setupClientListeners(mainConfig) {
     try {
         // Verificar se os listeners já foram configurados
         if (clientListenersConfigured) {
             console.log('Listeners do WhatsApp já configurados');
             return;
         }
-        
+
         console.log('Configurando listeners do WhatsApp...');
         
         // Configurar os listeners padrão
@@ -741,13 +741,13 @@ function setupClientListeners() {
 }
 
 // Função para inicializar o WhatsApp manualmente
-function initializeWhatsApp() {
+function initializeWhatsApp(config) {
     // Se já está inicializado e conectado, retornar sucesso imediatamente
     if (isInitialized && whatsappStatus.connected) {
         console.log('WhatsApp já está inicializado e conectado');
         return Promise.resolve();
     }
-    
+
     // Se está inicializando, retornar uma promessa que aguarda o resultado
     if (isInitializing) {
         console.log('WhatsApp já está em processo de inicialização, aguardando...');
@@ -761,7 +761,7 @@ function initializeWhatsApp() {
                 }
                 // Timeout após 30 segundos
             }, 1000);
-            
+
             // Timeout após 30 segundos
             setTimeout(() => {
                 clearInterval(checkInterval);
@@ -773,14 +773,14 @@ function initializeWhatsApp() {
             }, 30000);
         });
     }
-    
+
     console.log('🚀 Inicializando WhatsApp Web...');
     return new Promise((resolve, reject) => {
         try {
             isInitializing = true;
-            
-            // Configurar listeners primeiro (apenas uma vez)
-            setupClientListeners();
+
+            // Configurar listeners primeiro (apenas uma vez), passando a config
+            setupClientListeners(config);
             
             // Verificar se há sessão corrompida antes de tentar inicializar
             const checkAndCleanSession = () => {

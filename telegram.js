@@ -2,23 +2,7 @@ const { Telegraf } = require('telegraf');
 const { ipcMain, BrowserWindow } = require('electron');
 const path = require('path');
 
-// Carregar configuração
-function loadConfig() {
-    const fs = require('fs-extra');
-    const dataDir = path.join(require('electron').app.getPath('userData'), 'data');
-    const configPath = path.join(dataDir, 'config.json');
-    try {
-        if (fs.existsSync(configPath)) {
-            return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        }
-    } catch (err) {
-        console.error('Erro ao carregar config:', err);
-    }
-    return {};
-}
-
 let bot = null;
-let config = null;
 
 // Gestão de estado para cadastro de entregadores
 const userSessions = {};
@@ -31,17 +15,21 @@ const USER_STEPS = {
 };
 
 // Inicializar bot Telegram
-async function initializeTelegramBot() {
+async function initializeTelegramBot(config) {
     try {
-        console.log('🤖 [Telegram] Tentando carregar configuração...');
-        config = loadConfig();
-        const token = config.telegramToken || config.telegramClientToken;
-        
-        if (!token || token.trim() === '') {
-            console.warn('⚠️ [Telegram] Token Telegram vazio no config.json. Configure na aba de Configurações.');
+        if (!config) {
+            console.error('❌ [Telegram] Configuração não fornecida para inicialização.');
             return null;
         }
-        
+
+        console.log('🤖 [Telegram] Inicializando com configuração recebida...');
+        const token = config.telegramToken || config.telegramClientToken;
+
+        if (!token || token.trim() === '') {
+            console.warn('⚠️ [Telegram] Token Telegram vazio na configuração.');
+            return null;
+        }
+
         console.log('🤖 [Telegram] Inicializando bot Telegram com token (primeiros 5 chars):', token.substring(0, 5) + '...');
         bot = new Telegraf(token);
 
