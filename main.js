@@ -589,9 +589,9 @@ function initializeWhatsAppService() {
 }
 
 // Função para obter o serviço do WhatsApp (inicializa se necessário)
-function getWhatsAppService() {
+function getWhatsAppService(mainConfig) {
     if (!whatsappService) {
-        return initializeWhatsAppService();
+        return initializeWhatsAppService(mainConfig);
     }
     return whatsappService;
 }
@@ -1370,15 +1370,25 @@ ipcMain.handle('whatsapp-restart', async () => {
 ipcMain.handle('whatsapp-clear-session', async () => {
   try {
     const fs = require('fs-extra');
-    const path = require('path');
     const sessionPath = path.join(app.getPath('userData'), '.wwebjs_auth', 'session-ceia-delivery');
     
-    if (fs.existsSync(sessionPath)) {
-      fs.removeSync(sessionPath);
-      console.log('Sessão do WhatsApp limpa:', sessionPath);
+    const whatsapp = require('./whatsapp.js');
+    if (whatsapp && whatsapp.clearWhatsAppSession) {
+        const cleared = whatsapp.clearWhatsAppSession(sessionPath);
+        if (cleared) {
+            return { success: true, message: 'Sessão limpa. Reinicie o aplicativo.' };
+        } else {
+            return { success: false, error: 'Falha ao limpar sessão ou sessão não encontrada.' };
+        }
+    } else {
+        // Fallback se a função não estiver disponível no whatsapp.js
+        if (fs.existsSync(sessionPath)) {
+            fs.removeSync(sessionPath);
+            console.log('Sessão do WhatsApp limpa (fallback):', sessionPath);
+            return { success: true, message: 'Sessão limpa. Reinicie o aplicativo.' };
+        }
+        return { success: false, error: 'Módulo WhatsApp não disponível ou sessão não encontrada.' };
     }
-    
-    return { success: true, message: 'Sessão limpa. Reinicie o aplicativo.' };
   } catch (error) {
     console.error('Erro ao limpar sessão:', error);
     return { success: false, error: error.message };

@@ -58,7 +58,7 @@ client.on('disconnected', (reason) => {
 // Evento: Mensagem recebida (configurado apenas uma vez em setupClientListeners)
 // Removido para evitar duplicação
 
-// Importar módulos necessários
+// Importar módulos necessários para manipulação de arquivos e sistema operacional
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
