@@ -31,7 +31,7 @@ const USER_STEPS = {
 };
 
 // Inicializar bot Telegram
-function initializeTelegramBot() {
+async function initializeTelegramBot() {
     try {
         config = loadConfig();
         const token = config.telegramToken || config.telegramClientToken;
@@ -382,12 +382,8 @@ function initializeTelegramBot() {
         });
         
         // Iniciar bot
-        bot.launch().then(() => {
-            console.log('✅ Bot Telegram iniciado com sucesso');
-        }).catch(err => {
-            console.error('❌ Erro ao iniciar bot Telegram:', err);
-            bot = null;
-        });
+        await bot.launch(); // Aguarda o lançamento do bot
+        console.log('✅ Bot Telegram iniciado com sucesso');
         
         // Configurar graceful shutdown
         process.once('SIGINT', () => bot && bot.stop('SIGINT'));
@@ -396,6 +392,7 @@ function initializeTelegramBot() {
         return bot;
     } catch (error) {
         console.error('❌ Erro ao inicializar bot Telegram:', error);
+        bot = null; // Garante que bot seja null se o lançamento falhar
         return null;
     }
 }

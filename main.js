@@ -2114,7 +2114,7 @@ app.whenReady().then(() => {
   }, 3000); // Delay de 3 segundos
 
   // Inicializar bot Telegram (Live Location)
-  setTimeout(() => {
+  setTimeout(async () => { // Torna o callback assíncrono
     console.log('Inicializando bot Telegram para Live Location...');
     try {
       const config = loadConfig(); // Carrega a configuração atual
@@ -2137,7 +2137,7 @@ app.whenReady().then(() => {
       if (telegramBot && telegramBot.initializeTelegramBot) {
         // A função initializeTelegramBot em telegram.js já verifica o token internamente
         // e retorna null se estiver vazio. Precisamos verificar o valor de retorno.
-        const botInstance = telegramBot.initializeTelegramBot();
+        const botInstance = await telegramBot.initializeTelegramBot(); // AGUARDA a inicialização
         if (botInstance) {
           console.log('✅ Bot Telegram inicializado para rastreamento em tempo real');
           // Envia um status de sucesso para o frontend
