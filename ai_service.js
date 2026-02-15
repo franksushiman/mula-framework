@@ -333,5 +333,111 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
 module.exports = {
     gerarRespostaIA,
     configureOpenAI,
-    transcreverAudio
+    transcreverAudio,
+    parseMenuWithAI // Adicionar a nova função
 };
+
+/**
+ * Analisa um texto de cardápio usando IA para extrair itens estruturados.
+ * @param {string} menuText - O texto bruto do cardápio.
+ * @param {object} mainConfig - O objeto de configuração principal.
+ * @returns {Promise<Array>} - Array de objetos de itens do cardápio.
+ */
+async function parseMenuWithAI(menuText, mainConfig) {
+    try {
+        // A chave OpenAI já deve ter sido configurada no aiService pelo main.js
+        if (!openai) {
+            // Tentar configurar agora se não estiver configurado
+            const apiKey = mainConfig.openAIKey || mainConfig.openaiKey;
+            if (apiKey && apiKey.trim() !== '' && apiKey.startsWith('sk-')) {
+                configureOpenAI(apiKey);
+            } else {
+                throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
+            }
+        }
+
+        console.log(`🤖 IA: Processando cardápio com IA (${menuText.length} caracteres)...`);
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini", // Usar o mesmo modelo que gerarRespostaIA
+            messages: [
+                {
+                    role: "system",
+                    content: `Você é um assistente especializado em processar cardápios de restaurantes.
+Converta o texto fornecido em uma lista estruturada de itens do cardápio.
+Cada item deve ter as seguintes propriedades:
+- id: Um ID único (pode ser um timestamp ou UUID simples).
+- name: Nome do produto.
+- description: Descrição breve do produto (se disponível).
+- price: Preço do produto (número).
+- promoPrice: Preço promocional (número, opcional, null se não houver).
+- category: Categoria do produto (ex: "Pizzas", "Bebidas", "Sobremesas").
+- paused: Booleano, sempre false por padrão.
+- stock: Número, sempre null por padrão.
+- image: String vazia por padrão.
+- availableDays: Array de strings com os dias da semana (ex: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]). Sempre todos os dias por padrão.
+- startTime: String vazia por padrão.
+- endTime: String vazia por padrão.
+- addonGroups: Array vazio por padrão.
+
+Retorne um array JSON com os itens. Se não conseguir extrair, retorne um array vazio.
+Exemplo de formato de saída:
+{ "menuItems": [
+  {
+    "id": 1700000000001,
+    "name": "Pizza Margherita",
+    "description": "Molho de tomate, mussarela e manjericão fresco.",
+    "price": 45.00,
+    "promoPrice": null,
+    "category": "Pizzas",
+    "paused": false,
+    "stock": null,
+    "image": "",
+    "availableDays": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+    "startTime": "",
+    "endTime": "",
+    "addonGroups": []
+  }
+]}`
+                },
+                {
+                    role: "user",
+                    content: `Texto do cardápio para processar:\n\n${menuText}`
+                }
+            ],
+            temperature: 0.3,
+            max_tokens: 2000, // Aumentar max_tokens para cardápios maiores
+            response_format: { type: "json_object" } // Pedir JSON diretamente
+        });
+
+        const responseContent = completion.choices[0]?.message?.content;
+        if (!responseContent) {
+            throw new Error('Resposta vazia da OpenAI ao processar cardápio.');
+        }
+
+        console.log(`🤖 IA: Resposta bruta do cardápio: ${responseContent.substring(0, 200)}...`);
+
+        let parsedResult;
+        try {
+            parsedResult = JSON.parse(responseContent);
+        } catch (jsonError) {
+            console.error('❌ Erro ao fazer parse do JSON da OpenAI:', jsonError);
+            throw new Error('Formato de resposta da OpenAI inválido. Não é um JSON válido.');
+        }
+
+        // Se a resposta for um objeto com uma chave 'menuItems', extrair o array
+        if (parsedResult && Array.isArray(parsedResult.menuItems)) {
+            return parsedResult.menuItems;
+        } else if (Array.isArray(parsedResult)) {
+            // Se a resposta for diretamente um array (menos provável com response_format: json_object)
+            return parsedResult;
+        } else {
+            console.warn('⚠️ Resposta da OpenAI não contém um array de itens de cardápio esperado:', parsedResult);
+            return [];
+        }
+
+    } catch (error) {
+        console.error('❌ Erro ao processar cardápio com IA:', error.message);
+        throw error;
+    }
+}
