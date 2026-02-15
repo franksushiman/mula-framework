@@ -465,7 +465,7 @@ function setupClientListeners(mainConfig) {
                                             
                                 // Contexto da loja - usar a configuração passada ou genérico
                                 // Padrão agnóstico caso a config falhe
-                                let contextoLoja = "Restaurante e Delivery. Consulte nosso cardápio e horários.";
+                                let contextoLoja = "Você é um assistente de um restaurante fictício em um ambiente de teste. Responda às perguntas do cliente com base nas informações a seguir. Restaurante e Delivery. Consulte nosso cardápio e horários.";
 
                                 // Tentar usar informações reais do mainConfig passado
                                 if (currentMainConfig) {
@@ -482,13 +482,14 @@ function setupClientListeners(mainConfig) {
                                             contextParts.push(`Endereço: ${currentMainConfig.restaurantAddress}`);
                                         }
                                         if (currentMainConfig.menuItems && currentMainConfig.menuItems.length > 0) {
-                                            const sampleItems = currentMainConfig.menuItems.slice(0, 3).map(item => 
-                                                `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
-                                            ).join(', ');
-                                            contextParts.push(`Cardápio: ${sampleItems}${currentMainConfig.menuItems.length > 3 ? '...' : ''}`);
+                                            const menuString = currentMainConfig.menuItems
+                                                .filter(item => !item.paused)
+                                                .map(item => `${item.name}: R$${(item.price || 0).toFixed(2)}` + (item.description ? ` (${item.description})` : ''))
+                                                .join('\n');
+                                            contextParts.push(`Cardápio disponível:\n${menuString}`);
                                         }
                                         if (contextParts.length > 0) {
-                                            contextoLoja = contextParts.join('. ');
+                                            contextoLoja = `Você é um assistente de um restaurante fictício em um ambiente de teste. Responda às perguntas do cliente com base nas informações a seguir. ` + contextParts.join('. ');
                                         }
                                     }
                                 }
@@ -612,7 +613,7 @@ function setupClientListeners(mainConfig) {
                 
                 // Contexto da loja - usar a configuração passada ou genérico
                 // Padrão agnóstico caso a config falhe
-                let contextoLoja = "Restaurante e Delivery. Consulte nosso cardápio e horários.";
+                let contextoLoja = "Você é um assistente de um restaurante fictício em um ambiente de teste. Responda às perguntas do cliente com base nas informações a seguir. Restaurante e Delivery. Consulte nosso cardápio e horários.";
                 
                 // Tentar usar informações reais do mainConfig passado
                 if (currentMainConfig) {
@@ -629,13 +630,14 @@ function setupClientListeners(mainConfig) {
                             contextParts.push(`Endereço: ${currentMainConfig.restaurantAddress}`);
                         }
                         if (currentMainConfig.menuItems && currentMainConfig.menuItems.length > 0) {
-                            const sampleItems = currentMainConfig.menuItems.slice(0, 3).map(item => 
-                                `${item.name || 'Item'} (R$ ${(item.price || 0).toFixed(2)})`
-                            ).join(', ');
-                            contextParts.push(`Cardápio: ${sampleItems}${currentMainConfig.menuItems.length > 3 ? '...' : ''}`);
+                            const menuString = currentMainConfig.menuItems
+                                .filter(item => !item.paused)
+                                .map(item => `${item.name}: R$${(item.price || 0).toFixed(2)}` + (item.description ? ` (${item.description})` : ''))
+                                .join('\n');
+                            contextParts.push(`Cardápio disponível:\n${menuString}`);
                         }
                         if (contextParts.length > 0) {
-                            contextoLoja = contextParts.join('. ');
+                            contextoLoja = `Você é um assistente de um restaurante fictício em um ambiente de teste. Responda às perguntas do cliente com base nas informações a seguir. ` + contextParts.join('. ');
                         }
                     }
                 }

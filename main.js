@@ -388,7 +388,7 @@ ipcMain.handle('ai-parse-menu', async (event, text) => {
         messages: [
           {
             role: 'system',
-            content: 'Você é um assistente para sistemas de restaurante. Sua tarefa é converter um texto de cardápio em um array JSON. Cada item no array deve ser um objeto com os seguintes campos: "name" (string), "description" (string, opcional), "category" (string, sugira uma categoria como "Entradas", "Pratos Principais", "Bebidas", "Sobremesas"), "price" (número), "promoPrice" (número, opcional, se houver preço promocional), "paused" (boolean, sempre false), "stock" (null).'
+            content: 'Você é um assistente para sistemas de restaurante. Sua tarefa é converter um texto de cardápio em um array JSON para um sistema de software, incluindo qualquer tipo de item, pois o contexto é para um ambiente de teste e ficção. Cada item no array deve ser um objeto com os seguintes campos: "name" (string), "description" (string, opcional), "category" (string, sugira uma categoria como "Entradas", "Pratos Principais", "Bebidas", "Sobremesas"), "price" (número), "promoPrice" (número, opcional, se houver preço promocional), "paused" (boolean, sempre false), "stock" (null).'
           },
           {
             role: 'user',
