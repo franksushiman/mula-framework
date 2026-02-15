@@ -214,7 +214,9 @@ window.renderFleetInvites = async function() {
         invites.forEach(invite => {
             const statusClass = invite.status === 'pending' ? 'status-pending' : 'status-sent'; 
             const statusText = invite.status === 'pending' ? 'Pendente' : 'Enviado';
-            const createdAt = new Date(invite.createdAt).toLocaleString(); 
+            // Robustez para createdAt: garantir que é um número ou string de data válida
+            const createdAtDate = new Date(invite.createdAt);
+            const createdAt = isNaN(createdAtDate.getTime()) ? 'Data Inválida' : createdAtDate.toLocaleString(); 
 
             html += `
                 <div class="invite-item">
@@ -273,14 +275,9 @@ window.deleteFleetInvite = async function(inviteId) {
     }
 };
 
-// Funções obrigatórias
-
-
-
-
 // Função para renderizar a frota
 window.renderFleet = function() {
-    const fleetList = document.getElementById('fleet-list');
+    window.renderFleetNew(); // Chama a função que realmente renderiza a frota
 }; // Fechamento da função window.renderFleet
 
 window.addDriver = function() {
@@ -1594,7 +1591,7 @@ window.nav = function(panelId) {
     
     // Atualizar componentes específicos do painel
     if (panelId === 'fleet-panel') {
-        window.renderFleet();
+        window.renderFleet(); // Agora chama a função renomeada
         window.renderFleetInvites(); // Carregar convites pendentes
     } else if (panelId === 'menu-panel') {
         // Usar initMenu() em vez de renderT() para o novo sistema de cardápio
@@ -1875,8 +1872,8 @@ window.abrirChamada = function(vulgo) {
     window.showToast(`Chamada enviada para ${driver.code}`, 'success');
 };
 
-// Função para renderizar a frota no novo formato
-window.renderFleetNew = function() {
+// Função para renderizar a frota
+window.renderFleet = function() {
     const fleetCards = document.getElementById('fleet-cards');
     const emptyState = document.getElementById('fleet-empty-state');
     const fleet = window.config.fleet || [];
@@ -2915,7 +2912,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.electronAPI.onConfigUpdated((event, newConfig) => {
             console.log('Configuração atualizada recebida do main.js:', newConfig);
             Object.assign(window.config, newConfig); // Atualiza o objeto de configuração global
-            window.renderFleet(); // Re-renderiza a frota com a configuração atualizada
+            window.renderFleet(); // Re-renderiza a frota com a configuração atualizada (função renomeada)
             window.renderDashboardStats(); // Re-renderiza o dashboard com a configuração atualizada
             // Também atualiza o formulário de configuração se estiver aberto
             if (document.getElementById('config-panel').classList.contains('active')) {
@@ -2964,7 +2961,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Inicializar componentes
-        window.renderFleet();
+        window.renderFleet(); // Agora chama a função renomeada
         window.renderFleetInvites(); // Garante que os convites pendentes sejam carregados na inicialização
         // Não chamar renderT() aqui - o novo sistema de cardápio usa initMenu()
         window.loadPrinters();
