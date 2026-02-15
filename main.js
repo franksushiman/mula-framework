@@ -1702,6 +1702,35 @@ ipcMain.handle('menu-addon-group-list', async () => {
   }
 });
 
+ipcMain.handle('open-menu-import', async (event, { menuItems, menuCategories, addonGroups }) => {
+  try {
+    const config = loadConfig();
+    
+    if (!config.menuData) {
+      config.menuData = { categories: [], addonGroups: [] };
+    }
+
+    // Atualizar itens do cardápio
+    if (menuItems) {
+      config.menuItems = menuItems;
+    }
+    // Atualizar categorias
+    if (menuCategories) {
+      config.menuData.categories = menuCategories;
+    }
+    // Atualizar grupos de complementos
+    if (addonGroups) {
+      config.menuData.addonGroups = addonGroups;
+    }
+    
+    saveConfig(config);
+    return { success: true, message: 'Cardápio importado com sucesso!' };
+  } catch (error) {
+    console.error('Erro ao importar cardápio:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 
 // Event listeners
 ipcMain.on('save-config', (event, data) => {
