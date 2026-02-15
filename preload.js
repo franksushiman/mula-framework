@@ -8,7 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Frota
   getFleetStatus: () => ipcRenderer.invoke('get-fleet-status'),
-  fleetInviteCreate: (data) => ipcRenderer.invoke('fleet-invite-create', data),
   requestDriverLocation: (data) => ipcRenderer.invoke('request-driver-location', data),
   dispatchFleet: (order, drivers) => ipcRenderer.invoke('dispatch-fleet', { order, drivers }),
   
@@ -105,9 +104,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLocationProcessed: (callback) => ipcRenderer.on('location-processed', callback),
   onWhatsappDeliveryAddressDetected: (callback) => ipcRenderer.on('whatsapp-delivery-address-detected', callback),
   
-  // Frota - Convites
-  getFleetInvites: () => ipcRenderer.invoke('get-fleet-invites'),
-  deleteFleetInvite: (inviteId) => ipcRenderer.invoke('delete-fleet-invite', inviteId),
+  // Frota - Convites (APIs removidas para simplificar a interface)
   
   // Abrir links externos
   openExternal: (url) => ipcRenderer.invoke('open-external', url),

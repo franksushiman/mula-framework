@@ -169,21 +169,9 @@ ipcMain.handle('save-config', async (event, config) => {
     openAIKeyLength: config.openAIKey?.length || 0,
     telegramTokenLength: config.telegramToken?.length || 0
   });
-  
-  // Salvar sem validação rigorosa para permitir salvar configurações parciais
-  const success = saveConfig(config);
-  
-  // Ler o arquivo salvo para verificação
-  if (success) {
-    const savedConfig = loadConfig();
-    console.log('Configuração salva no disco:', {
-      savedGoogleMapsKey: savedConfig.googleMapsKey?.substring(0, 10) + '...',
-      savedOpenAIKey: savedConfig.openAIKey?.substring(0, 10) + '...',
-      savedTelegramToken: savedConfig.telegramToken?.substring(0, 10) + '...'
-    });
-  }
-  const savedConfig = saveConfig(config); // Agora retorna o objeto de configuração salvo ou null
-  
+
+  const savedConfig = saveConfig(config);
+
   if (savedConfig) {
     console.log('Configuração salva no disco:', {
       savedGoogleMapsKey: savedConfig.googleMapsKey?.substring(0, 10) + '...',
@@ -220,25 +208,6 @@ ipcMain.handle('dispatch-fleet', async (event, { order, drivers }) => {
   // Simulação de envio para frota
   console.log('Dispatching order:', order, 'to drivers:', drivers);
   return { success: true, message: 'Pedido enviado para a frota' };
-});
-
-ipcMain.handle('fleet-invite-create', async (event, { phone, slug }) => {
-  const config = loadConfig();
-  const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
-  const pending = config.pendingMotoboys || [];
-  pending.push({
-    phone,
-    inviteId,
-    slug: slug || 'default',
-    createdAt: Date.now(),
-    status: 'pending'
-  });
-  
-  config.pendingMotoboys = pending;
-  saveConfig(config);
-  
-  return { inviteId };
 });
 
 ipcMain.handle('request-driver-location', async (event, { telegramId, vulgo }) => {
@@ -652,110 +621,6 @@ ipcMain.handle('whatsapp-send', async (event, { phone, message }) => {
   }
 });
 
-// Handler para enviar convite do Telegram via WhatsApp
-// WhatsApp é opcional: se falhar, o convite ainda é criado e o link é retornado.
-ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
-  console.log(`📱 IPC send-telegram-invite-to-whatsapp chamado com phone: ${phone}`);
-  try {
-    const config = loadConfig();
-    console.log('Config carregada');
-    
-    const service = getWhatsAppService();
-    console.log('Serviço WhatsApp obtido');
-    
-    // Gerar ID único para o convite
-    const inviteId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log('Invite ID gerado:', inviteId);
-    
-    // ID da loja (usar slug ou nome) - garantir que não seja vazio
-    const storeId = config.hubPagesSlug || config.storeName?.replace(/\s+/g, '-').toLowerCase() || 'ceia-delivery';
-    console.log('Store ID:', storeId);
-    
-    // Gerar link do Telegram usando função auxiliar
-    const telegramLink = generateTelegramInviteLink(config, inviteId);
-    console.log('Telegram link:', telegramLink);
-    
-    // Mensagem personalizada
-    const message = `🚀 *CONVITE PARA FAZER PARTE DA FROTA CEIA DELIVERY* 🚀\n\n` +
-                   `Olá! Você foi convidado(a) para fazer parte da frota de entregadores do ${config.storeName || 'Ceia Delivery'}.\n\n` +
-                   `📲 *Clique no link abaixo para se cadastrar:*\n` +
-                   `${telegramLink}\n\n` +
-                   `_\"Esse motoboy é meu\"_ 👊\n\n` +
-                   `Após clicar no link, o bot do Telegram irá solicitar:\n` +
-                   `• Seu PIX para pagamentos\n` +
-                   `• Placa do veículo (se tiver)\n` +
-                   `• Tipo de veículo\n` +
-                   `• CPF\n` +
-                   `• Número do WhatsApp\n\n` +
-                   `Assim que cadastrado, você poderá compartilhar sua localização em tempo real e ficar online para receber corridas!`;
-    
-    // Variáveis para rastrear o envio do WhatsApp
-    let whatsappSent = false;
-    let whatsappError = null;
-    
-    // Tentar enviar via WhatsApp (opcional)
-    try {
-      // Verificar se o WhatsApp está conectado
-      const status = service.getWhatsAppStatus();
-      console.log('Status WhatsApp:', status);
-      
-      if (status.connected) {
-        console.log(`Enviando convite Telegram para ${phone} via WhatsApp...`);
-        console.log('Chamando service.sendWhatsAppMessage...');
-        const response = await service.sendWhatsAppMessage(phone, message);
-        console.log('Resposta do WhatsApp:', response);
-        whatsappSent = true;
-      } else {
-        whatsappError = 'WhatsApp não está conectado';
-        console.log('WhatsApp não conectado, pulando envio:', whatsappError);
-      }
-    } catch (whatsappErr) {
-      whatsappError = whatsappErr.message;
-      console.warn(`WhatsApp falhou (não crítico): ${whatsappError}`);
-      // Não lançar erro - continuar com o fluxo
-    }
-    
-    // Salvar o convite pendente (sempre, independente do WhatsApp)
-    if (!config.pendingMotoboys) {
-      config.pendingMotoboys = [];
-    }
-    config.pendingMotoboys.push({
-      phone,
-      inviteId,
-      storeId,
-      telegramLink,
-      sentAt: Date.now(),
-      status: whatsappSent ? 'sent' : 'pending_whatsapp'
-    });
-    saveConfig(config);
-    console.log('Convite salvo no config');
-    
-    // Determinar mensagem de retorno
-    let userMessage;
-    if (whatsappSent) {
-      userMessage = 'Convite enviado com sucesso via WhatsApp!';
-    } else {
-      userMessage = 'Convite criado! O link está pronto para ser compartilhado.';
-      if (whatsappError) {
-        userMessage += ` (WhatsApp não pôde enviar: ${whatsappError})`;
-      }
-    }
-    
-    return { 
-      success: true, 
-      message: userMessage,
-      inviteId,
-      telegramLink,
-      whatsappSent,
-      whatsappError: whatsappError || null
-    };
-  } catch (error) {
-    console.error('Erro ao enviar convite Telegram via WhatsApp:', error);
-    console.error('Stack trace:', error.stack);
-    return { success: false, error: error.message };
-  }
-});
-
 // Handler para enviar convite do entregador
 // IMPORTANTE: O bot do Telegram deve processar tanto links com carimbo (/start storeId_inviteId)
 // quanto links genéricos (/start). Links genéricos devem criar cadastros sem loja (unassigned)
@@ -764,8 +629,6 @@ ipcMain.handle('send-telegram-invite-to-whatsapp', async (event, phone) => {
 // Para links genéricos, use generateTelegramGenericLink(config).
 // WhatsApp é opcional: se falhar, o convite ainda é criado e o link é retornado.
 ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
-  console.log(`[BACKEND] Handler 'enviar-convite-entregador' chamado com telefone: ${phoneNumber}`);
-  
   // Validação básica
   if (!phoneNumber || phoneNumber.trim() === '') {
     const errorMsg = 'Número de telefone vazio recebido no backend';
@@ -783,8 +646,6 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
   }
   
   try {
-    console.log(`[BACKEND] Processando convite para: ${numericPhone}`);
-    
     // Obter o serviço do WhatsApp
     const service = getWhatsAppService();
     const config = loadConfig();
@@ -820,16 +681,12 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
     try {
       // Verificar se o WhatsApp está conectado
       const status = service.getWhatsAppStatus();
-      console.log(`[BACKEND] Status do WhatsApp:`, status);
       
       if (status.connected) {
-        console.log(`[BACKEND] Tentando enviar mensagem via WhatsApp para ${numericPhone}...`);
         await service.sendWhatsAppMessage(numericPhone, message);
         whatsappSent = true;
-        console.log(`[BACKEND] WhatsApp enviado com sucesso para ${numericPhone}`);
       } else {
         whatsappError = 'WhatsApp não está conectado';
-        console.log(`[BACKEND] WhatsApp não conectado, pulando envio: ${whatsappError}`);
       }
     } catch (whatsappErr) {
       whatsappError = whatsappErr.message;
@@ -837,23 +694,8 @@ ipcMain.handle('enviar-convite-entregador', async (event, phoneNumber) => {
       // Não lançar erro - continuar com o fluxo
     }
     
-    // Salvar o convite pendente (sempre, independente do WhatsApp)
-    if (!config.pendingMotoboys) {
-      config.pendingMotoboys = [];
-    }
-    // Garantir que storeId não seja undefined
-    const safeStoreId = storeId || 'ceia-delivery';
-    config.pendingMotoboys.push({
-      phone: numericPhone,
-      inviteId,
-      storeId: safeStoreId,
-      telegramLink,
-      sentAt: Date.now(),
-      status: whatsappSent ? 'sent' : 'pending_whatsapp'
-    });
-    saveConfig(config);
-    
-    console.log(`[BACKEND] Convite criado com sucesso para ${numericPhone}`);
+    // O salvamento de convites pendentes foi removido para simplificar a interface.
+    console.log(`[BACKEND] Convite para ${numericPhone} processado.`);
     
     // Determinar mensagem de retorno
     let userMessage;
@@ -1746,31 +1588,7 @@ ipcMain.handle('open-menu-import', async (event, { menuItems, menuCategories, ad
   }
 });
 
-// Handler para obter convites pendentes
-ipcMain.handle('get-fleet-invites', async () => {
-  try {
-    const config = loadConfig();
-    return config.pendingMotoboys || [];
-  } catch (error) {
-    console.error('Erro ao obter convites da frota:', error);
-    return [];
-  }
-});
-
-// Handler para excluir um convite pendente
-ipcMain.handle('delete-fleet-invite', async (event, inviteId) => {
-  try {
-    const config = loadConfig();
-    if (config.pendingMotoboys) {
-      config.pendingMotoboys = config.pendingMotoboys.filter(invite => invite.inviteId !== inviteId);
-      saveConfig(config);
-    }
-    return { success: true };
-  } catch (error) {
-    console.error('Erro ao excluir convite da frota:', error);
-    return { success: false, error: error.message };
-  }
-});
+// Handlers de convite da frota (get-fleet-invites, delete-fleet-invite) removidos para simplificar.
 
 // Handler para abrir links externos
 ipcMain.handle('open-external', async (event, url) => {

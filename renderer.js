@@ -187,93 +187,8 @@ window.openExternalLink = function(url) {
     window.electronAPI.openExternal(url); 
 };
 
-// Funções para gerenciar e renderizar convites da frota
-window.renderFleetInvites = async function() {
-    console.log('renderFleetInvites chamada'); // Adicionado log para depuração
-    const invitesList = document.getElementById('fleet-invites-container'); // Corrigido o ID do elemento HTML
-    if (!invitesList) {
-        console.warn('Elemento #fleet-invites-container não encontrado no DOM.');
-        return;
-    }
-
-    try {
-        const invites = await window.electronAPI.getFleetInvites(); 
-        
-        if (invites.length === 0) {
-            invitesList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-envelope-open-text"></i>
-                    <h3>Nenhum convite pendente</h3>
-                    <p>Envie um convite para um entregador para que ele possa se registrar.</p>
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        invites.forEach(invite => {
-            const statusClass = invite.status === 'pending' ? 'status-pending' : 'status-sent'; 
-            const statusText = invite.status === 'pending' ? 'Pendente' : 'Enviado';
-            // Robustez para createdAt: garantir que é um número ou string de data válida
-            const createdAtDate = new Date(invite.createdAt);
-            const createdAt = isNaN(createdAtDate.getTime()) ? 'Data Inválida' : createdAtDate.toLocaleString(); 
-
-            html += `
-                <div class="invite-item">
-                    <div class="invite-info">
-                        <span class="invite-phone">${invite.phone}</span>
-                        <span class="invite-status ${statusClass}">${statusText}</span>
-                    </div>
-                    <div class="invite-details">
-                        <span class="invite-link">${invite.telegramLink || 'Link não gerado'}</span>
-                        <span class="invite-date">${createdAt}</span>
-                    </div>
-                    <div class="invite-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="window.copyInviteLinkFromList('${invite.telegramLink}')">Copiar Link</button>
-                        <button class="btn btn-error btn-sm" onclick="window.deleteFleetInvite('${invite.id}')">Excluir</button>
-                    </div>
-                </div>
-            `;
-        });
-        invitesList.innerHTML = html;
-
-    } catch (error) {
-        console.error('Erro ao carregar convites da frota:', error);
-        invitesList.innerHTML = `
-            <div class="empty-state error">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Erro ao carregar convites</h3>
-                <p>Verifique a conexão ou tente novamente.</p>
-            </div>
-        `;
-        window.showToast('Erro ao carregar convites da frota.', 'error');
-    }
-};
-
-window.copyInviteLinkFromList = function(link) {
-    if (link && link.trim() !== '') {
-        navigator.clipboard.writeText(link);
-        window.showToast('Link copiado para a área de transferência!', 'success');
-    } else {
-        window.showToast('Link não disponível para copiar', 'error');
-    }
-};
-
-window.deleteFleetInvite = async function(inviteId) {
-    try {
-        // Esta chamada IPC precisa ser implementada em preload.js e main.js
-        const result = await window.electronAPI.deleteFleetInvite(inviteId); 
-        if (result.success) {
-            window.showToast('Convite excluído com sucesso!', 'success');
-            window.renderFleetInvites(); // Re-renderiza a lista
-        } else {
-            window.showToast('Erro ao excluir convite: ' + result.error, 'error');
-        }
-    } catch (error) {
-        console.error('Erro ao excluir convite:', error);
-        window.showToast('Erro ao excluir convite.', 'error');
-    }
-};
+// Funções de convite da frota (renderFleetInvites, etc.) removidas para simplificar a interface.
+// A funcionalidade de envio de convite foi mantida.
 
 // Função para renderizar a frota
 window.renderFleet = function() {
@@ -1592,7 +1507,6 @@ window.nav = function(panelId) {
     // Atualizar componentes específicos do painel
     if (panelId === 'fleet-panel') {
         window.renderFleet(); // Agora chama a função renomeada
-        window.renderFleetInvites(); // Carregar convites pendentes
     } else if (panelId === 'menu-panel') {
         // Usar initMenu() em vez de renderT() para o novo sistema de cardápio
         window.initMenu();
@@ -1739,10 +1653,7 @@ window.sendTelegramInviteToWhatsApp = function() {
                 }
             }
             
-            // Atualizar a lista de convites pendentes
-            if (window.renderFleetInvites) {
-                window.renderFleetInvites();
-            }
+            // A lista de convites foi removida, não é mais necessário atualizar.
             
             // Limpar o campo do telefone
             phoneInput.value = '';
@@ -2962,7 +2873,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Inicializar componentes
         window.renderFleet(); // Agora chama a função renomeada
-        window.renderFleetInvites(); // Garante que os convites pendentes sejam carregados na inicialização
         // Não chamar renderT() aqui - o novo sistema de cardápio usa initMenu()
         window.loadPrinters();
         window.initMap();
@@ -3003,18 +2913,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const inputTelefone = document.getElementById('fleet-invite-phone');
             
             if (btnEnviarConvite && inputTelefone) {
-                console.log('✅ Botão e campo de telefone encontrados');
+                console.log('✅ Botão e campo de telefone para convite de frota encontrados.');
                 
                 // Usar a função já existente window.sendTelegramInviteToWhatsApp
                 // que já está configurada para usar o link do backend
                 btnEnviarConvite.addEventListener('click', window.sendTelegramInviteToWhatsApp);
             } else {
-                console.warn('⚠️ Botão ou campo de telefone não encontrados');
+                console.warn('⚠️ Botão ou campo de telefone para convite de frota não encontrados.');
             }
             
             window.showToast('Sistema Ceia carregado com sucesso!', 'success');
-            // A chamada a window.renderFleetInvites() já foi movida para fora deste setTimeout.
-            // Este bloco agora apenas garante que o botão de convite esteja funcional.
         }, 1000);
         
     } catch (error) {
