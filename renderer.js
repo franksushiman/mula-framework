@@ -1858,7 +1858,8 @@ window.renderFleet = function() {
     let html = '';
     
     fleet.forEach(driver => {
-        const lastSeen = window.driverLastSeen[driver.phone] || 0;
+        const cleanPhone = driver.phone ? String(driver.phone).replace(/\D/g, '') : null;
+        const lastSeen = cleanPhone ? window.driverLastSeen[cleanPhone] || 0 : 0;
         const minutesAgo = lastSeen ? Math.floor((now - lastSeen) / 60000) : Infinity;
         const isOnline = minutesAgo < 30;
         const team = driver.team || 'freelancers';
@@ -2851,8 +2852,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Configurar listeners de eventos
         const handleDriverPositionUpdate = (event, data) => {
             console.log('Posição do entregador atualizada:', data);
+            
+            // Normalizar o número de telefone para garantir consistência
+            const cleanPhone = data.phone ? String(data.phone).replace(/\D/g, '') : null;
+            if (!cleanPhone) {
+                console.warn('Posição recebida sem número de telefone válido:', data);
+                return;
+            }
+
             // Usar timestamp do GPS se disponível, caso contrário usar o tempo atual
-            window.driverLastSeen[data.phone] = data.timestamp || Date.now();
+            window.driverLastSeen[cleanPhone] = data.timestamp || Date.now();
             
             // Verificar se é rastreamento em tempo real
             if (data.liveTracking) {
