@@ -181,6 +181,95 @@ window.renderT = function() {
     }
 };
 
+// Função para abrir links externos no navegador padrão do sistema
+window.openExternalLink = function(url) {
+    // Esta chamada IPC precisa ser implementada em preload.js e main.js
+    window.electronAPI.openExternal(url); 
+};
+
+// Funções para gerenciar e renderizar convites da frota
+window.renderFleetInvites = async function() {
+    const invitesList = document.getElementById('fleet-invites-list'); // Assumindo que este elemento existe no HTML
+    if (!invitesList) return;
+
+    try {
+        // Esta chamada IPC precisa ser implementada em preload.js e main.js
+        const invites = await window.electronAPI.getFleetInvites(); 
+        
+        if (invites.length === 0) {
+            invitesList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <h3>Nenhum convite pendente</h3>
+                    <p>Envie um convite para um entregador para que ele possa se registrar.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        invites.forEach(invite => {
+            const statusClass = invite.status === 'pending' ? 'status-pending' : 'status-sent'; 
+            const statusText = invite.status === 'pending' ? 'Pendente' : 'Enviado';
+            const createdAt = new Date(invite.createdAt).toLocaleString(); 
+
+            html += `
+                <div class="invite-item">
+                    <div class="invite-info">
+                        <span class="invite-phone">${invite.phone}</span>
+                        <span class="invite-status ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="invite-details">
+                        <span class="invite-link">${invite.telegramLink || 'Link não gerado'}</span>
+                        <span class="invite-date">${createdAt}</span>
+                    </div>
+                    <div class="invite-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="window.copyInviteLinkFromList('${invite.telegramLink}')">Copiar Link</button>
+                        <button class="btn btn-error btn-sm" onclick="window.deleteFleetInvite('${invite.id}')">Excluir</button>
+                    </div>
+                </div>
+            `;
+        });
+        invitesList.innerHTML = html;
+
+    } catch (error) {
+        console.error('Erro ao carregar convites da frota:', error);
+        invitesList.innerHTML = `
+            <div class="empty-state error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Erro ao carregar convites</h3>
+                <p>Verifique a conexão ou tente novamente.</p>
+            </div>
+        `;
+        window.showToast('Erro ao carregar convites da frota.', 'error');
+    }
+};
+
+window.copyInviteLinkFromList = function(link) {
+    if (link && link.trim() !== '') {
+        navigator.clipboard.writeText(link);
+        window.showToast('Link copiado para a área de transferência!', 'success');
+    } else {
+        window.showToast('Link não disponível para copiar', 'error');
+    }
+};
+
+window.deleteFleetInvite = async function(inviteId) {
+    try {
+        // Esta chamada IPC precisa ser implementada em preload.js e main.js
+        const result = await window.electronAPI.deleteFleetInvite(inviteId); 
+        if (result.success) {
+            window.showToast('Convite excluído com sucesso!', 'success');
+            window.renderFleetInvites(); // Re-renderiza a lista
+        } else {
+            window.showToast('Erro ao excluir convite: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir convite:', error);
+        window.showToast('Erro ao excluir convite.', 'error');
+    }
+};
+
 // Funções obrigatórias
 
 
