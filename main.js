@@ -1881,6 +1881,24 @@ ipcMain.on('driver-registered', async (event, driverData) => {
     }
 });
 
+ipcMain.on('bot-status', (event, data) => {
+    console.log(`[main.js] Bot status received: Type=${data.botType || 'Telegram'}, Online=${data.online}, Message=${data.message}`);
+    // Enviar para todas as janelas
+    BrowserWindow.getAllWindows().forEach(win => {
+        if (data.botType === 'whatsapp') {
+            // O renderer.js já tem um listener específico para whatsapp-qr-updated que lida com o status do WhatsApp
+            // Este listener 'bot-status' pode ser usado para um feedback mais genérico ou para o Telegram
+            // Por enquanto, vamos usar o 'bot-status' para o Telegram e o 'whatsapp-qr-updated' para o WhatsApp
+            // Se o renderer.js tiver um listener genérico para 'bot-status', ele o processará.
+            // Para o Telegram, o renderer.js precisa de uma função updateTelegramStatusUI.
+            win.webContents.send('telegram-bot-status', data); // Envia para o Telegram UI
+        } else {
+            // Assume Telegram se não especificado ou se for Telegram
+            win.webContents.send('telegram-bot-status', data);
+        }
+    });
+});
+
 // Listener para processar localização recebida do WhatsApp
 ipcMain.on('whatsapp-location-to-process', async (event, data) => {
   console.log(`Processando localização recebida via evento: ${data.messageId}`);
@@ -2019,6 +2037,7 @@ function createWindow() {
     
     // Atualizar status do bot
     win.webContents.send('bot-status', {
+      botType: 'whatsapp', // Assuming this is for WhatsApp simulation
       online: true,
       timestamp: Date.now()
     });
@@ -2051,6 +2070,7 @@ app.whenReady().then(() => {
         console.log('✅ WhatsApp já está conectado!');
         BrowserWindow.getAllWindows().forEach(win => {
           win.webContents.send('bot-status', {
+            botType: 'whatsapp',
             online: true,
             timestamp: Date.now(),
             message: status.message
@@ -2070,6 +2090,7 @@ app.whenReady().then(() => {
             console.log('✅ WhatsApp conectado após espera!');
             BrowserWindow.getAllWindows().forEach(win => {
               win.webContents.send('bot-status', {
+                botType: 'whatsapp',
                 online: true,
                 timestamp: Date.now(),
                 message: newStatus.message
@@ -2094,6 +2115,7 @@ app.whenReady().then(() => {
           // Enviar status para a janela principal
           BrowserWindow.getAllWindows().forEach(win => {
             win.webContents.send('bot-status', {
+              botType: 'whatsapp',
               online: newStatus.connected,
               timestamp: Date.now(),
               message: newStatus.message
