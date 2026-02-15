@@ -1525,32 +1525,42 @@ ipcMain.handle('menu-addon-group-list', async () => {
   }
 });
 
-ipcMain.handle('open-menu-import', async (event, { menuItems, menuCategories, addonGroups }) => {
+ipcMain.handle('open-menu-import', async () => {
   try {
-    const config = loadConfig();
-    
-    if (!config.menuData) {
-      config.menuData = { categories: [], addonGroups: [] };
+    const mainWindow = BrowserWindow.getAllWindows().find(win => win && !win.isDestroyed());
+    if (!mainWindow) {
+      throw new Error('Janela principal não encontrada.');
     }
 
-    // Atualizar itens do cardápio
-    if (menuItems) {
-      config.menuItems = menuItems;
-    }
-    // Atualizar categorias
-    if (menuCategories) {
-      config.menuData.categories = menuCategories;
-    }
-    // Atualizar grupos de complementos
-    if (addonGroups) {
-      config.menuData.addonGroups = addonGroups;
-    }
+    const importWindow = new BrowserWindow({
+      width: 800,
+      height: 650,
+      parent: mainWindow,
+      modal: true,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        enableRemoteModule: false,
+        preload: path.join(__dirname, 'preload.js')
+      }
+    });
+
+    // Assumindo que existe um arquivo 'menu-import.html' para essa funcionalidade.
+    importWindow.loadFile('menu-import.html');
     
-    saveConfig(config);
-    return { success: true, message: 'Cardápio importado com sucesso!' };
+    // Janelas modais não devem ter menu.
+    importWindow.setMenu(null);
+
+    importWindow.once('ready-to-show', () => {
+      importWindow.show();
+    });
+
+    // A promise do handler resolve com sucesso, indicando que a ação de abrir foi iniciada.
+    return { success: true };
   } catch (error) {
-    console.error('Erro ao importar cardápio:', error);
-    return { success: false, error: error.message };
+    console.error('Erro ao abrir janela de importação de cardápio:', error);
+    throw error; // Re-lança o erro para ser pego pelo .catch() no renderer.
   }
 });
 
