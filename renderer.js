@@ -2,6 +2,7 @@
 window.config = {};
 window.driverLastSeen = {};
 window.pendingOrders = [];
+window.currentMenu = [];
 window.currentDrawMode = null;
 window.currentShape = null;
 
@@ -1565,6 +1566,9 @@ window.nav = function(viewId) {
         case 'cardapio':
             // window.initMenu(); // A view de cardápio é um placeholder por enquanto
             break;
+        case 'configuracoes':
+            window.loadSettings();
+            break;
         // Adicionar outros casos conforme necessário
     }
 };
@@ -2509,6 +2513,88 @@ window.ensureSaveButton = function() {
     });
 };
 
+window.loadSettings = async function() {
+    console.log('Carregando ajustes...');
+    try {
+        const config = await window.electronAPI.loadConfig();
+        const menu = await window.electronAPI.getMenu();
+
+        // Bloco A: Preencher integrações
+        const openAIKeyInput = document.getElementById('openai-key');
+        if (openAIKeyInput) openAIKeyInput.value = config.openAIKey || '';
+        
+        const whatsappSessionInput = document.getElementById('whatsapp-session');
+        if (whatsappSessionInput) whatsappSessionInput.value = config.whatsappSessionName || '';
+
+        // Bloco C: Preencher cardápio
+        window.currentMenu = menu.items || [];
+        window.renderMenuSettingsTable();
+
+    } catch (error) {
+        console.error('Erro ao carregar ajustes:', error);
+        if(window.showToast) window.showToast('Erro ao carregar ajustes', 'error');
+    }
+};
+
+window.renderMenuSettingsTable = function() {
+    const tableBody = document.getElementById('settings-menu-body');
+    if (!tableBody) return;
+
+    if (!window.currentMenu || window.currentMenu.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--text-secondary);">Nenhum item no cardápio.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = window.currentMenu.map(item => `
+        <tr data-item-id="${item.id}">
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${(item.price || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.category || 'N/A'}</td>
+            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">
+                <button onclick="window.toggleMenuItemAvailability('${item.id}')" style="margin-right: 5px; background: none; border: none; cursor: pointer; color: ${item.paused ? '#f0ad4e' : '#5cb85c'}; font-size: 16px;" title="${item.paused ? 'Ativar' : 'Pausar'}">
+                    <span class="material-icons-round" style="vertical-align: middle;">${item.paused ? 'play_circle' : 'pause_circle'}</span>
+                </button>
+                <button onclick="window.removeMenuItem('${item.id}')" style="background: none; border: none; cursor: pointer; color: #d9534f; font-size: 16px;" title="Remover">
+                     <span class="material-icons-round" style="vertical-align: middle;">delete</span>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.removeMenuItem = async function(itemId) {
+    if (!confirm('Tem certeza que deseja remover este item?')) return;
+
+    window.currentMenu = window.currentMenu.filter(item => item.id !== itemId);
+    
+    try {
+        await window.electronAPI.saveMenu({ items: window.currentMenu });
+        if(window.showToast) window.showToast('Item removido.', 'success');
+        window.renderMenuSettingsTable();
+    } catch (error) {
+        console.error('Erro ao remover item:', error);
+        if(window.showToast) window.showToast('Erro ao remover item.', 'error');
+    }
+};
+
+window.toggleMenuItemAvailability = async function(itemId) {
+    const item = window.currentMenu.find(i => i.id === itemId);
+    if (!item) return;
+
+    const targetPausedState = !item.paused;
+    const newIsAvailable = !targetPausedState;
+
+    try {
+        await window.electronAPI.updateItemAvailability(item.id, newIsAvailable); 
+        item.paused = targetPausedState;
+        if(window.showToast) window.showToast(`Item ${item.paused ? 'pausado' : 'ativado'}.`, 'success');
+        window.renderMenuSettingsTable();
+    } catch (error) {
+        console.error('Erro ao alterar disponibilidade do item:', error);
+        if(window.showToast) window.showToast('Erro ao alterar disponibilidade.', 'error');
+    }
+};
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -2726,6 +2812,76 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             window.showToast('Sistema Ceia carregado com sucesso!', 'success');
         }, 1000);
+
+        // --- Listeners da Tela de Ajustes ---
+        const btnSaveKeys = document.getElementById('btn-save-keys');
+        if (btnSaveKeys) {
+            btnSaveKeys.addEventListener('click', async () => {
+                try {
+                    const config = await window.electronAPI.loadConfig();
+                    
+                    config.openAIKey = document.getElementById('openai-key').value;
+                    config.whatsappSessionName = document.getElementById('whatsapp-session').value;
+                    
+                    await window.electronAPI.saveConfig(config);
+                    if(window.showToast) window.showToast('Chaves salvas!', 'success');
+                } catch (error) {
+                    console.error('Erro ao salvar chaves:', error);
+                    if(window.showToast) window.showToast('Erro ao salvar chaves', 'error');
+                }
+            });
+        }
+
+        const btnAddMenuItem = document.getElementById('btn-add-menu-item');
+        if (btnAddMenuItem) {
+            btnAddMenuItem.addEventListener('click', async () => {
+                try {
+                    const name = document.getElementById('new-item-name').value;
+                    const price = parseFloat(document.getElementById('new-item-price').value);
+                    const category = document.getElementById('new-item-category').value;
+
+                    if (!name || isNaN(price)) {
+                        if(window.showToast) window.showToast('Nome e preço são obrigatórios.', 'error');
+                        return;
+                    }
+
+                    const newItem = {
+                        id: crypto.randomUUID(),
+                        name,
+                        price,
+                        category,
+                        paused: false
+                    };
+
+                    window.currentMenu.push(newItem);
+                    
+                    await window.electronAPI.saveMenu({ items: window.currentMenu });
+                    
+                    if(window.showToast) window.showToast('Item adicionado ao cardápio!', 'success');
+                    window.renderMenuSettingsTable();
+
+                    // Limpar campos
+                    document.getElementById('new-item-name').value = '';
+                    document.getElementById('new-item-price').value = '';
+                    document.getElementById('new-item-category').value = '';
+
+                } catch (error) {
+                    console.error('Erro ao adicionar item ao cardápio:', error);
+                    if(window.showToast) window.showToast('Erro ao adicionar item', 'error');
+                }
+            });
+        }
+
+        const btnGenerateQR = document.getElementById('btn-generate-qr');
+        if (btnGenerateQR) {
+            btnGenerateQR.addEventListener('click', () => {
+                if(window.showToast) window.showToast('Funcionalidade de QR Code ainda não implementada.', 'info');
+                const qrContainer = document.getElementById('qrcode-container');
+                if(qrContainer) {
+                    qrContainer.innerHTML = '<p>Backend para QR Code ainda não implementado.</p>';
+                }
+            });
+        }
         
     } catch (error) {
         console.error('Erro durante a inicialização:', error);

@@ -249,10 +249,70 @@
         </section>
 
         <!-- Configurações View -->
-        <section class="view-section" id="configuracoes-view">
-            <div class="placeholder-view">
-                <span class="material-icons-round">settings</span>
-                <h1>Configurações</h1>
+        <section class="view-section" id="configuracoes-view" style="padding: 40px 20px; justify-content: flex-start; align-items: flex-start; overflow-y: auto; height: calc(100% - 70px);">
+            <div style="width: 100%; max-width: 960px; margin: 0 auto;">
+                <h1 style="margin-bottom: 20px;">Ajustes</h1>
+
+                <!-- Bloco A: Integrações -->
+                <div class="config-section" style="margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    <h2 style="font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Integrações</h2>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="openai-key" style="display: block; margin-bottom: 5px; font-weight: 500;">OpenAI API Key</label>
+                        <input type="password" id="openai-key" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="whatsapp-session" style="display: block; margin-bottom: 5px; font-weight: 500;">Nome da Sessão</label>
+                        <input type="text" id="whatsapp-session" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="session-ceia">
+                    </div>
+                    <button id="btn-save-keys" style="margin-top: 20px; padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Salvar Chaves</button>
+                </div>
+
+                <!-- Bloco B: Conexão WhatsApp -->
+                <div class="config-section" style="margin-top: 30px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    <h2 style="font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Conexão WhatsApp</h2>
+                    <div style="display: flex; align-items: center; gap: 20px; margin-top: 15px;">
+                        <button id="btn-generate-qr" style="padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Gerar QR Code</button>
+                        <div>
+                            <strong>Status:</strong> <span id="whatsapp-status">Desconectado</span>
+                        </div>
+                    </div>
+                    <div id="qrcode-container" style="margin-top: 20px; text-align: center;">
+                        <!-- QR Code será inserido aqui -->
+                    </div>
+                </div>
+
+                <!-- Bloco C: Gestão de Cardápio -->
+                <div class="config-section" style="margin-top: 30px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                    <h2 style="font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Gestão de Cardápio</h2>
+                    <div class="form-group" style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+                        <div style="flex-grow: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nome</label>
+                            <input type="text" id="new-item-name" placeholder="Ex: Pizza de Calabresa" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="width: 100px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Preço</label>
+                            <input type="number" id="new-item-price" placeholder="29.90" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <div style="flex-grow: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Categoria</label>
+                            <input type="text" id="new-item-category" placeholder="Ex: Pizzas" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        <button id="btn-add-menu-item" style="padding: 8px 12px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px; height: 36px;">Adicionar</button>
+                    </div>
+                    <table id="menu-items-table" style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Nome</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Preço</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Categoria</th>
+                                <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settings-menu-body">
+                            <!-- Itens do cardápio serão inseridos aqui -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
     </div>
