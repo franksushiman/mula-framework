@@ -5,12 +5,7 @@ from typing import List
 import uuid
 from datetime import datetime
 
-# Adicionar o path do src para permitir imports absolutos
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
-
-from core.domain.models import Order, OrderItem, OrderStatus
+from .core.domain.models import Order, OrderItem, OrderStatus
 
 app = FastAPI(title="Ceia-Bistro-Hub API")
 
