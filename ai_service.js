@@ -32,18 +32,16 @@ console.log('🤖 Serviço de IA carregado (sem estado global)');
  * Gera uma resposta usando IA para mensagens do WhatsApp
  * @param {string} mensagemUsuario - A mensagem recebida do cliente
  * @param {string} contextoLoja - Informações sobre a loja (cardápio, horários, etc.)
- * @param {string|object} apiKeyOrConfig - Chave da API da OpenAI ou objeto de configuração com tech.openai_api_key
+ * @param {object} config - Objeto de configuração completo (deve ter tech.openai_api_key)
  * @returns {Promise<string>} - Resposta gerada pela IA
  */
-async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKeyOrConfig = null) {
+async function gerarRespostaIA(mensagemUsuario, contextoLoja, config = null) {
     try {
-        // Extrair a chave da API do parâmetro
+        // Extrair a chave da API da configuração
         let apiKey = null;
         
-        if (typeof apiKeyOrConfig === 'string') {
-            apiKey = apiKeyOrConfig;
-        } else if (apiKeyOrConfig && apiKeyOrConfig.tech && apiKeyOrConfig.tech.openai_api_key) {
-            apiKey = apiKeyOrConfig.tech.openai_api_key;
+        if (config && config.tech && config.tech.openai_api_key) {
+            apiKey = config.tech.openai_api_key;
         }
         
         // Validar chave
@@ -207,14 +205,16 @@ async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKeyOrConfig = n
 // Função para transcrever áudio usando Whisper API
 async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
     try {
-        // Se uma chave foi fornecida, configurar a OpenAI com ela
+        // Se uma chave foi fornecida, criar cliente OpenAI com ela
+        let openaiClient;
         if (apiKey && apiKey.trim() !== '' && apiKey.startsWith('sk-')) {
-            configureOpenAI(apiKey);
-        }
-        
-        // Verificar se a OpenAI está configurada
-        if (!openai) {
-            throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
+            openaiClient = createOpenAIClient(apiKey);
+        } else {
+            // Tentar usar a chave global (se configurada)
+            if (!openai) {
+                throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
+            }
+            openaiClient = openai;
         }
         
         console.log(`🎤 Transcrevendo áudio (${audioBuffer.length} bytes, ${mimeType})...`);
@@ -280,7 +280,7 @@ async function transcreverAudio(audioBuffer, mimeType, apiKey = null) {
         
         try {
             // Transcrever usando Whisper
-            const transcription = await openai.audio.transcriptions.create({
+            const transcription = await openaiClient.audio.transcriptions.create({
                 file: fs.createReadStream(tempFilePath),
                 model: "whisper-1",
                 language: "pt", // Português

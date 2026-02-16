@@ -232,7 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = menu.items.find(i => i.id === id);
             
             if (item) {
-                const isNowAvailable = !!item.paused;
+                // item.paused === true significa que está pausado (indisponível)
+                // Para dataManager.updateItemAvailability, isAvailable = true significa disponível
+                // Portanto, se está pausado (true), queremos disponível (true)
+                // Se está disponível (false), queremos pausado (false)
+                const isNowAvailable = item.paused; // true → true, false → false
                 
                 await window.electronAPI.updateItemAvailability(id, isNowAvailable);
                 

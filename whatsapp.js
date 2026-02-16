@@ -453,8 +453,9 @@ function setupClientListeners(mainConfig) {
                         if (aiService && aiService.transcreverAudio) {
                             console.log('🎤 Enviando para Whisper...');
                                         
-                            // Transcrever o áudio
-                            const transcricao = await aiService.transcreverAudio(buffer, media.mimetype);
+                            // Transcrever o áudio usando a chave da configuração
+                            const apiKey = currentMainConfig && currentMainConfig.tech ? currentMainConfig.tech.openai_api_key : null;
+                            const transcricao = await aiService.transcreverAudio(buffer, media.mimetype, apiKey);
                                         
                             if (transcricao && transcricao.trim()) {
                                 console.log(`📝 Transcrição: ${transcricao.substring(0, 100)}...`);
@@ -497,9 +498,8 @@ function setupClientListeners(mainConfig) {
                                 // Chamar a OpenAI para gerar resposta baseada na transcrição
                                 let respostaIA;
                                 if (aiService && aiService.gerarRespostaIA) {
-                                    // Usar a chave do mainConfig
-                                    let openAIKey = currentMainConfig ? (currentMainConfig.openAIKey || currentMainConfig.openaiKey) : null;
-                                    respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, openAIKey);
+                                    // Passar a configuração completa
+                                    respostaIA = await aiService.gerarRespostaIA(transcricao, contextoLoja, currentMainConfig);
                                 } else {
                                     const nomeLoja = (currentMainConfig && currentMainConfig.storeName) ? currentMainConfig.storeName : "nosso restaurante";
                                     respostaIA = `Olá! Recebi sua mensagem de áudio, mas nosso sistema de IA está em manutenção. Por favor, envie uma mensagem de texto.`;
@@ -645,9 +645,8 @@ function setupClientListeners(mainConfig) {
                 // Chamar a OpenAI para gerar resposta
                 let respostaIA;
                 if (aiService && aiService.gerarRespostaIA) {
-                    // Usar a chave do mainConfig
-                    let openAIKey = currentMainConfig ? (currentMainConfig.openAIKey || currentMainConfig.openaiKey) : null;
-                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, openAIKey);
+                    // Passar a configuração completa
+                    respostaIA = await aiService.gerarRespostaIA(msg.body, contextoLoja, currentMainConfig);
                 } else {
                     const nomeLoja = (currentMainConfig && currentMainConfig.storeName && currentMainConfig.storeName !== 'Delivery Manager') ? currentMainConfig.storeName : "nosso restaurante";
                     respostaIA = `Olá! Sou o assistente virtual do ${nomeLoja}. No momento nosso sistema de IA está em manutenção. Para fazer um pedido, envie 'cardápio' ou fale com nosso atendente humano.`;
@@ -835,7 +834,16 @@ function resetInitialization() {
 // Função para atualizar a configuração em tempo real
 function updateConfig(newConfig) {
     console.log('🔄 Configuração do WhatsApp atualizada com novo cardápio e dados.');
-    currentMainConfig = newConfig;
+    // Mescla a nova configuração com a existente para manter todos os campos
+    currentMainConfig = { ...currentMainConfig, ...newConfig };
+    // Garante que a estrutura tech existe
+    if (!currentMainConfig.tech) {
+        currentMainConfig.tech = {};
+    }
+    // Mescla tech
+    if (newConfig.tech) {
+        currentMainConfig.tech = { ...currentMainConfig.tech, ...newConfig.tech };
+    }
 }
 
 // Função para limpar sessão manualmente
