@@ -252,8 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Inicialização ---
-    // Ativar a primeira aba (dashboard) por padrão
-    switchView('dashboard');
+    // Ativar a view de configurações por padrão para facilitar o setup
+    switchView('configuracoes');
 
     // Inicia o carregamento da frota
     initialLoad();
