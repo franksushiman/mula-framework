@@ -43,6 +43,9 @@ app.whenReady().then(async () => {
 
   // Menu
   ipcMain.handle('get-menu', dataManager.getMenu);
+  ipcMain.handle('save-menu', async (event, menuData) => {
+    return dataManager.saveMenu(menuData);
+  });
   ipcMain.handle('update-item-availability', async (event, { id, isAvailable }) => {
     return dataManager.updateItemAvailability(id, isAvailable);
   });

@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Menu
   getMenu: () => ipcRenderer.invoke('get-menu'),
+  saveMenu: (menuData) => ipcRenderer.invoke('save-menu', menuData),
   updateItemAvailability: (id, isAvailable) => ipcRenderer.invoke('update-item-availability', { id, isAvailable }),
 
   // Orders
