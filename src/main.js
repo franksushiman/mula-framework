@@ -3,7 +3,6 @@ const path = require('path');
 require('dotenv').config();
 const dataManager = require('./services/dataManager');
 const FleetService = require('./services/FleetService');
-const TelegramService = require('./services/TelegramService');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -74,35 +73,6 @@ app.whenReady().then(async () => {
   ipcMain.handle('get-drivers', () => {
     return FleetService.getAllDrivers();
   });
-
-  // Inicializa os serviços
-  const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (telegramToken) {
-    const telegramService = new TelegramService(telegramToken);
-    telegramService.start();
-
-    // Ouve por atualizações de localização do Telegram
-    telegramService.on('location', (ctx) => {
-      const { from, message } = ctx;
-      const driverData = {
-        id: from.id,
-        firstName: from.first_name,
-        lastName: from.last_name,
-        username: from.username,
-        location: message.location,
-        lastUpdate: new Date().toISOString(),
-      };
-      FleetService.addOrUpdateDriver(driverData);
-      
-      // Envia atualização para todas as janelas abertas
-      const updatedDrivers = FleetService.getAllDrivers();
-      BrowserWindow.getAllWindows().forEach(win => {
-        win.webContents.send('fleet-update', updatedDrivers);
-      });
-    });
-  } else {
-    console.error('TELEGRAM_BOT_TOKEN não encontrado no .env. O serviço do Telegram não será iniciado.');
-  }
 
   createWindow();
 
