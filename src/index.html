@@ -249,84 +249,72 @@
         </section>
 
         <!-- Configurações View -->
-        <section class="view-section" id="configuracoes-view" style="justify-content: flex-start; padding-top: 40px; gap: 20px; overflow-y: auto; height: calc(100% - 70px);">
-            <div style="width: 100%; max-width: 1200px; padding: 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+        <section class="view-section" id="configuracoes-view">
+            <div style="padding: 40px; overflow-y: auto; height: 100%; padding-bottom: 120px; width: 100%;">
+                <h2 style="margin: 0 0 30px 0; font-weight: 400; color: var(--text-main);">Ajustes do Sistema</h2>
                 
-                <!-- Coluna Esquerda -->
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- CARD 1: Integrações (Tech) -->
-                    <div class="kpi-card">
-                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Configurações de API</h3>
-                        <div style="display: flex; flex-direction: column; gap: 15px;">
-                            <div>
-                                <label for="openai-key" style="display: block; margin-bottom: 5px; font-weight: 500;">OpenAI API Key</label>
-                                <input type="password" id="openai-key" placeholder="sk-..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                            </div>
-                            <div>
-                                <label for="whatsapp-session" style="display: block; margin-bottom: 5px; font-weight: 500;">WhatsApp Session Name</label>
-                                <input type="text" id="whatsapp-session" placeholder="session-ceia" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                            </div>
-                            <button id="btn-save-keys" style="align-self: flex-start; margin-top: 10px; padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Salvar Chaves</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; max-width: 1200px; margin-left: auto; margin-right: auto;">
+                    <div style="background: var(--card-bg); padding: 30px; border-radius: 16px; box-shadow: var(--shadow-soft);">
+                        <h3 style="margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 20px;">Integrações</h3>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">OpenAI API Key</label>
+                            <input type="password" id="openai-key" placeholder="sk-..." style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; outline: none; box-sizing: border-box;">
                         </div>
+        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">Sessão WhatsApp</label>
+                            <input type="text" id="whatsapp-session" placeholder="Ex: CeiaBot" style="width: 100%; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; outline: none; box-sizing: border-box;">
+                        </div>
+        
+                        <button id="btn-save-config" style="background: var(--text-main); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;">Salvar Chaves</button>
                     </div>
-
-                    <!-- CARD 2: Conexão WhatsApp -->
-                    <div class="kpi-card">
-                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Status da Conexão</h3>
-                        <div style="display: flex; align-items: center; gap: 20px;">
-                            <button id="btn-generate-qr" style="padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Gerar QR Code</button>
-                            <div>
-                                <strong>Status:</strong> <span id="whatsapp-status">Desconectado</span>
-                            </div>
+        
+                    <div style="background: var(--card-bg); padding: 30px; border-radius: 16px; box-shadow: var(--shadow-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                        <h3 style="margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 20px; align-self: flex-start;">Status WhatsApp</h3>
+                        
+                        <div id="qrcode-container" style="width: 180px; height: 180px; background: #f3f4f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 2px dashed #d1d5db;">
+                            <span class="material-icons-round" style="color: #9ca3af; font-size: 48px;">qr_code_2</span>
                         </div>
-                        <div id="qrcode-container" style="margin-top: 20px; text-align: center; min-height: 150px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-radius: 4px;">
-                            <!-- QR Code será inserido aqui -->
+                        
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 10px; height: 10px; background: #ef4444; border-radius: 50%;" id="status-dot"></div>
+                            <span id="whatsapp-status" style="font-weight: 600; color: var(--text-muted);">Desconectado</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- Coluna Direita -->
-                <!-- CARD 3: Gestão de Cardápio -->
-                <div class="kpi-card" style="grid-column: 2; grid-row: 1 / span 2;">
-                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Cardápio do Restaurante</h3>
-                    
-                    <!-- Formulário Inline -->
-                    <div style="display: flex; gap: 10px; align-items: flex-end; padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 15px;">
-                        <div style="flex-grow: 1;">
-                            <label style="font-size: 12px; margin-bottom: 2px; display: block;">Nome</label>
-                            <input type="text" id="new-item-name" placeholder="Ex: Pizza de Calabresa" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                        </div>
-                        <div style="width: 100px;">
-                            <label style="font-size: 12px; margin-bottom: 2px; display: block;">Preço</label>
-                            <input type="number" id="new-item-price" placeholder="29.90" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                        </div>
-                        <div style="flex-grow: 1;">
-                            <label style="font-size: 12px; margin-bottom: 2px; display: block;">Categoria</label>
-                            <select id="new-item-category" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; height: 36px;">
-                                <option value="Prato Principal">Prato Principal</option>
-                                <option value="Bebida">Bebida</option>
-                                <option value="Sobremesa">Sobremesa</option>
-                                <option value="Entrada">Entrada</option>
-                                <option value="Sushi">Sushi</option>
-                            </select>
-                        </div>
-                        <button id="btn-add-menu-item" style="padding: 8px 12px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px; height: 36px;">Adicionar</button>
+        
+                <div style="background: var(--card-bg); padding: 30px; border-radius: 16px; box-shadow: var(--shadow-soft); max-width: 1200px; margin-left: auto; margin-right: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Cardápio</h3>
+                        <button onclick="loadSettingsData()" style="background: none; border: none; cursor: pointer; color: var(--accent); font-weight: 600;">Atualizar</button>
                     </div>
-
-                    <!-- Tabela de Itens -->
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Nome</th>
-                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Preço</th>
-                                <th style="text-align: center; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Status</th>
-                                <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="settings-menu-body">
-                            <!-- Itens do cardápio serão inseridos aqui -->
-                        </tbody>
-                    </table>
+        
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; background: #f9fafb; padding: 15px; border-radius: 12px;">
+                        <input type="text" id="new-item-name" placeholder="Nome do Item" style="flex: 2; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                        <input type="number" id="new-item-price" placeholder="Preço" style="flex: 1; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+                        <select id="new-item-category" style="flex: 1; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; background: white;">
+                            <option value="Sushi">Sushi</option>
+                            <option value="Bebida">Bebida</option>
+                        </select>
+                        <button id="btn-add-item" style="background: var(--accent-green); color: white; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">+</button>
+                    </div>
+        
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: left; padding: 8px 0; font-size: 14px; font-weight: 600; color: var(--text-muted);">Item</th>
+                                    <th style="text-align: left; padding: 8px; font-size: 14px; font-weight: 600; color: var(--text-muted);">Preço</th>
+                                    <th style="text-align: left; padding: 8px; font-size: 14px; font-weight: 600; color: var(--text-muted);">Categoria</th>
+                                    <th style="text-align: left; padding: 8px; font-size: 14px; font-weight: 600; color: var(--text-muted);">Status</th>
+                                    <th style="text-align: right; padding: 8px 0; font-size: 14px; font-weight: 600; color: var(--text-muted);">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="settings-menu-body">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </section>
