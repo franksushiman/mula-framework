@@ -85,6 +85,12 @@ app.whenReady().then(async () => {
     return version;
   });
 
+  // IPC health:ping (prova de vida)
+  ipcMain.handle('health:ping', () => {
+    console.log('✔ IPC health:ping recebido no main process');
+    return { ok: true, source: 'main' };
+  });
+
   // IPC para inicializar o WhatsApp
   ipcMain.handle('initialize-whatsapp', async (event, config) => {
     try {
