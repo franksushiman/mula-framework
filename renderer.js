@@ -2547,11 +2547,15 @@ window.renderMenuSettingsTable = function() {
 
     tableBody.innerHTML = window.currentMenu.map(item => `
         <tr data-item-id="${item.id}">
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.name}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${(item.price || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.category || 'N/A'}</td>
-            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">
-                <button onclick="window.toggleMenuItemAvailability('${item.id}')" style="margin-right: 5px; background: none; border: none; cursor: pointer; color: ${item.paused ? '#f0ad4e' : '#5cb85c'}; font-size: 16px;" title="${item.paused ? 'Ativar' : 'Pausar'}">
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${(item.price || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+            <td style="text-align: center; padding: 8px; border-bottom: 1px solid #eee;">
+                <span style="color: ${item.paused ? '#d9534f' : '#5cb85c'}; font-weight: 500;">
+                    ${item.paused ? 'Pausado' : 'Ativo'}
+                </span>
+            </td>
+            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #eee;">
+                <button onclick="window.toggleMenuItemAvailability('${item.id}')" style="margin-right: 5px; background: none; border: none; cursor: pointer; color: ${item.paused ? '#5cb85c' : '#f0ad4e'}; font-size: 16px;" title="${item.paused ? 'Ativar' : 'Pausar'}">
                     <span class="material-icons-round" style="vertical-align: middle;">${item.paused ? 'play_circle' : 'pause_circle'}</span>
                 </button>
                 <button onclick="window.removeMenuItem('${item.id}')" style="background: none; border: none; cursor: pointer; color: #d9534f; font-size: 16px;" title="Remover">

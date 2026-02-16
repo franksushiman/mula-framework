@@ -249,63 +249,78 @@
         </section>
 
         <!-- Configurações View -->
-        <section class="view-section" id="configuracoes-view" style="padding: 40px 20px; justify-content: flex-start; align-items: flex-start; overflow-y: auto; height: calc(100% - 70px);">
-            <div style="width: 100%; max-width: 960px; margin: 0 auto;">
-                <h1 style="margin-bottom: 20px;">Ajustes</h1>
-
-                <!-- Bloco A: Integrações -->
-                <div class="config-section" style="margin-top: 20px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
-                    <h2 style="font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Integrações</h2>
-                    <div class="form-group" style="margin-top: 15px;">
-                        <label for="openai-key" style="display: block; margin-bottom: 5px; font-weight: 500;">OpenAI API Key</label>
-                        <input type="password" id="openai-key" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div class="form-group" style="margin-top: 15px;">
-                        <label for="whatsapp-session" style="display: block; margin-bottom: 5px; font-weight: 500;">Nome da Sessão</label>
-                        <input type="text" id="whatsapp-session" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" placeholder="session-ceia">
-                    </div>
-                    <button id="btn-save-keys" style="margin-top: 20px; padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Salvar Chaves</button>
-                </div>
-
-                <!-- Bloco B: Conexão WhatsApp -->
-                <div class="config-section" style="margin-top: 30px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
-                    <h2 style="font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Conexão WhatsApp</h2>
-                    <div style="display: flex; align-items: center; gap: 20px; margin-top: 15px;">
-                        <button id="btn-generate-qr" style="padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Gerar QR Code</button>
-                        <div>
-                            <strong>Status:</strong> <span id="whatsapp-status">Desconectado</span>
+        <section class="view-section" id="configuracoes-view" style="justify-content: flex-start; padding-top: 40px; gap: 20px; overflow-y: auto; height: calc(100% - 70px);">
+            <div style="width: 100%; max-width: 1200px; padding: 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+                
+                <!-- Coluna Esquerda -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- CARD 1: Integrações (Tech) -->
+                    <div class="kpi-card">
+                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Configurações de API</h3>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div>
+                                <label for="openai-key" style="display: block; margin-bottom: 5px; font-weight: 500;">OpenAI API Key</label>
+                                <input type="password" id="openai-key" placeholder="sk-..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label for="whatsapp-session" style="display: block; margin-bottom: 5px; font-weight: 500;">WhatsApp Session Name</label>
+                                <input type="text" id="whatsapp-session" placeholder="session-ceia" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            </div>
+                            <button id="btn-save-keys" style="align-self: flex-start; margin-top: 10px; padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Salvar Chaves</button>
                         </div>
                     </div>
-                    <div id="qrcode-container" style="margin-top: 20px; text-align: center;">
-                        <!-- QR Code será inserido aqui -->
+
+                    <!-- CARD 2: Conexão WhatsApp -->
+                    <div class="kpi-card">
+                        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Status da Conexão</h3>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <button id="btn-generate-qr" style="padding: 10px 15px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px;">Gerar QR Code</button>
+                            <div>
+                                <strong>Status:</strong> <span id="whatsapp-status">Desconectado</span>
+                            </div>
+                        </div>
+                        <div id="qrcode-container" style="margin-top: 20px; text-align: center; min-height: 150px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-radius: 4px;">
+                            <!-- QR Code será inserido aqui -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Bloco C: Gestão de Cardápio -->
-                <div class="config-section" style="margin-top: 30px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0;">
-                    <h2 style="font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Gestão de Cardápio</h2>
-                    <div class="form-group" style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+                <!-- Coluna Direita -->
+                <!-- CARD 3: Gestão de Cardápio -->
+                <div class="kpi-card" style="grid-column: 2; grid-row: 1 / span 2;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Cardápio do Restaurante</h3>
+                    
+                    <!-- Formulário Inline -->
+                    <div style="display: flex; gap: 10px; align-items: flex-end; padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 15px;">
                         <div style="flex-grow: 1;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nome</label>
+                            <label style="font-size: 12px; margin-bottom: 2px; display: block;">Nome</label>
                             <input type="text" id="new-item-name" placeholder="Ex: Pizza de Calabresa" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                         </div>
                         <div style="width: 100px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Preço</label>
+                            <label style="font-size: 12px; margin-bottom: 2px; display: block;">Preço</label>
                             <input type="number" id="new-item-price" placeholder="29.90" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                         </div>
                         <div style="flex-grow: 1;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Categoria</label>
-                            <input type="text" id="new-item-category" placeholder="Ex: Pizzas" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            <label style="font-size: 12px; margin-bottom: 2px; display: block;">Categoria</label>
+                            <select id="new-item-category" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; height: 36px;">
+                                <option value="Prato Principal">Prato Principal</option>
+                                <option value="Bebida">Bebida</option>
+                                <option value="Sobremesa">Sobremesa</option>
+                                <option value="Entrada">Entrada</option>
+                                <option value="Sushi">Sushi</option>
+                            </select>
                         </div>
                         <button id="btn-add-menu-item" style="padding: 8px 12px; cursor: pointer; background-color: var(--active-icon-bg); color: var(--active-icon-color); border: none; border-radius: 4px; height: 36px;">Adicionar</button>
                     </div>
-                    <table id="menu-items-table" style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+
+                    <!-- Tabela de Itens -->
+                    <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Nome</th>
-                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Preço</th>
-                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Categoria</th>
-                                <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">Ação</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Nome</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Preço</th>
+                                <th style="text-align: center; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Status</th>
+                                <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd; font-size: 14px;">Ação</th>
                             </tr>
                         </thead>
                         <tbody id="settings-menu-body">
