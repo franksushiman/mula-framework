@@ -28,19 +28,12 @@ app.whenReady().then(async () => {
 
   // Config
   ipcMain.handle('load-config', async () => {
-    const config = await dataManager.getConfig();
-    const menu = await dataManager.getMenu();
-    // Combina config e menu para manter compatibilidade com o renderer
-    return {
-      ...config,
-      menuItems: menu.items || [],
-    };
+    return dataManager.getConfig();
   });
 
   ipcMain.handle('save-config', async (event, config) => {
-    const { menuItems, ...restOfConfig } = config;
-    await dataManager.saveMenu({ items: menuItems || [] });
-    await dataManager.saveConfig(restOfConfig);
+    // O dataManager.saveConfig já é inteligente e salva apenas os campos de config
+    await dataManager.saveConfig(config);
     return { success: true };
   });
 

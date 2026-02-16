@@ -158,16 +158,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const key = document.getElementById('openai-key').value;
             const session = document.getElementById('whatsapp-session').value;
             
+            const configToSave = {
+                tech: {
+                    openai_api_key: key,
+                    whatsapp_session_id: session
+                }
+            };
+
             try {
-                const current = await window.electronAPI.loadConfig();
-                // Mantém outras configs, atualiza apenas tech
-                current.tech = { 
-                    ...current.tech, 
-                    openai_api_key: key, 
-                    whatsapp_session_id: session 
-                };
-                
-                await window.electronAPI.saveConfig(current);
+                await window.electronAPI.saveConfig(configToSave);
                 alert('Configurações salvas com sucesso!');
             } catch (err) {
                 console.error('Erro ao salvar:', err);
