@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron src/main.js --debug"
+    "dev": "electron . --debug"
   },
   "dependencies": {
     "axios": "^1.6.0",
