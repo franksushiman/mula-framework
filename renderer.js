@@ -1587,7 +1587,7 @@ window.nav = function(viewId) {
             window.renderFleet();
             break;
         case 'cardapio':
-            // window.initMenu(); // A view de cardápio é um placeholder por enquanto
+            window.initMenu();
             break;
         case 'configuracoes':
             window.loadSettings();
@@ -2736,7 +2736,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.renderDashboardStats(); // Re-renderiza o dashboard com a configuração atualizada
             
             // Atualiza o painel de cardápio se estiver ativo
-            if (document.getElementById('menu-panel').classList.contains('active')) {
+            if (document.getElementById('cardapio-view') && document.getElementById('cardapio-view').classList.contains('active')) {
                 window.initMenu();
             }
             
