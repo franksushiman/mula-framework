@@ -3,153 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ceia V2 - Dashboard</title>
+    <title>Ceia OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-       
-       * {
-           box-sizing: border-box;
-       }
+        :root {
+            --background-color: #f4f5f7;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --dock-background: rgba(255, 255, 255, 0.7);
+            --dock-border: rgba(0, 0, 0, 0.05);
+            --dock-shadow: rgba(0, 0, 0, 0.08);
+            --active-icon-bg: #1a1a1a;
+            --active-icon-color: #ffffff;
+            --inactive-icon-color: #555;
+        }
 
-       body { 
-           font-family: 'Inter', 'Segoe UI', sans-serif; 
-           background: #0a0a0a; 
-           color: #ffffff;
-           margin: 0; 
-           display: flex;
-           flex-direction: column;
-           height: 100vh;
-           overflow: hidden; /* Evita scroll no body */
-       }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-       .main-content {
-           flex: 1;
-           display: flex;
-           flex-direction: column;
-           overflow: hidden;
-           padding-bottom: 60px; /* Espaço para o footer */
-       }
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
 
-       .stats-container { 
-           display: flex; 
-           gap: 40px; 
-           padding: 40px 40px 20px 40px;
-       }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+        }
 
-       .card { 
-           background: transparent; 
-           text-align: center; 
-           flex: 1; 
-       }
+        .main-container {
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
 
-       .card h3 { 
-           margin: 0 0 10px; 
-           color: #888; 
-           font-size: 1em; 
-           font-weight: 400;
-           text-transform: uppercase;
-           letter-spacing: 0.5px;
-       }
+        .view-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            padding-bottom: 100px; /* Space for the dock */
+        }
 
-       .big-number { 
-           font-size: 4em; 
-           font-weight: 700; 
-           color: #fff; 
-           margin: 0; 
-           line-height: 1;
-           transition: color 0.3s ease-in-out;
-       }
+        .view-section.active {
+            display: flex;
+        }
 
-       .online { color: #27ae60; }
+        .placeholder-view {
+            text-align: center;
+            color: var(--text-tertiary);
+        }
 
-       #fleet-container { 
-           flex: 1;
-           overflow-y: auto;
-           padding: 0 40px;
-       }
+        .placeholder-view .material-icons-round {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
 
-       #fleet-container p {
-           text-align: center;
-           color: #555;
-           margin-top: 50px;
-       }
+        .placeholder-view h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
 
-       table { 
-           width: 100%; 
-           border-collapse: collapse; 
-       }
+        /* Dock Styles */
+        .os-dock {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: var(--dock-background);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--dock-border);
+            border-radius: 99px;
+            box-shadow: 0 6px 20px var(--dock-shadow);
+            z-index: 1000;
+        }
 
-       th, td { 
-           padding: 16px 0; 
-           border-bottom: 1px solid #333; 
-           text-align: left; 
-           transition: background-color 0.3s ease-in-out;
-       }
+        .dock-item {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            color: var(--inactive-icon-color);
+        }
 
-       tr:last-child td {
-           border-bottom: none;
-       }
+        .dock-item .material-icons-round {
+            font-size: 26px;
+        }
 
-       th { 
-           color: #888; 
-           font-weight: 400;
-           font-size: 0.9em;
-           text-transform: uppercase;
-       }
+        .dock-item.active {
+            background-color: var(--active-icon-bg);
+            color: var(--active-icon-color);
+        }
 
-       td {
-           color: #eee;
-       }
+        /* Specific View Styles */
+        #map-view {
+            padding: 0;
+        }
+        #map-container {
+            width: 100%;
+            height: 100%;
+            background-color: #e0e0e0; /* Placeholder color */
+        }
 
-       footer {
-           position: fixed;
-           bottom: 0;
-           left: 0;
-           right: 0;
-           background: rgba(0,0,0,0.8);
-           backdrop-filter: blur(10px);
-           -webkit-backdrop-filter: blur(10px);
-           padding: 15px 25px;
-           display: flex;
-           justify-content: space-between;
-           align-items: center;
-           border-top: 1px solid #333;
-           height: 60px;
-       }
+        #dashboard-view {
+            justify-content: flex-start;
+            padding-top: 40px;
+            gap: 20px;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 40px;
+        }
 
-       .status-indicator {
-           width: 10px;
-           height: 10px;
-           background: #27ae60; /* Verde para online */
-           border-radius: 50%;
-           box-shadow: 0 0 8px #27ae60;
-       }
+        .kpi-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9e9e9;
+        }
 
-       footer a {
-           color: #555;
-           text-decoration: none;
-           font-size: 0.8em;
-           transition: color 0.3s ease-in-out;
-       }
+        .kpi-card h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
 
-       footer a:hover {
-           color: #fff;
-       }
-     </style>
+        .kpi-card p {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        #frota-view {
+             justify-content: flex-start;
+             padding-top: 40px;
+             gap: 20px;
+             flex-direction: column;
+        }
+
+        .fleet-status {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .fleet-feed {
+            width: 100%;
+            max-width: 800px;
+            padding: 0 40px;
+        }
+
+    </style>
 </head>
 <body>
-    <div class="main-content">
-        <div class='stats-container'>
-            <div class='card'><h3>Online Agora</h3><p id='online-count' class='big-number'>0</p></div>
-            <div class='card'><h3>Entregas Hoje</h3><p id='delivery-count' class='big-number'>0</p></div>
-        </div>
-        <div id="fleet-container">Carregando...</div>
+    <div class="main-container">
+        <!-- Dashboard View -->
+        <section class="view-section" id="dashboard-view">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Pedidos Hoje</h3>
+                    <p id="kpi-pedidos">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Em Preparo</h3>
+                    <p id="kpi-preparo">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Entregadores Online</h3>
+                    <p id="kpi-entregadores">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Faturamento</h3>
+                    <p id="kpi-faturamento">R$ 0,00</p>
+                </div>
+            </div>
+            <!-- Outros componentes do dashboard aqui -->
+        </section>
+
+        <!-- Map View -->
+        <section class="view-section" id="map-view">
+            <div id="map-container"></div>
+        </section>
+
+        <!-- Pedidos View -->
+        <section class="view-section" id="pedidos-view">
+            <div class="placeholder-view">
+                <span class="material-icons-round">receipt_long</span>
+                <h1>Pedidos</h1>
+            </div>
+        </section>
+
+        <!-- Cardápio View -->
+        <section class="view-section" id="cardapio-view">
+            <div class="placeholder-view">
+                <span class="material-icons-round">restaurant_menu</span>
+                <h1>Cardápio</h1>
+            </div>
+        </section>
+
+        <!-- Frota View -->
+        <section class="view-section" id="frota-view">
+            <div class="fleet-status">Aguardando atividade da frota...</div>
+            <div class="fleet-feed">
+                <!-- Feed de eventos da frota aqui -->
+            </div>
+        </section>
+
+        <!-- Hub View -->
+        <section class="view-section" id="hub-view">
+            <div class="placeholder-view">
+                <span class="material-icons-round">hub</span>
+                <h1>Hub</h1>
+            </div>
+        </section>
+
+        <!-- Financeiro View -->
+        <section class="view-section" id="financeiro-view">
+            <div class="placeholder-view">
+                <span class="material-icons-round">account_balance_wallet</span>
+                <h1>Financeiro</h1>
+            </div>
+        </section>
+
+        <!-- Configurações View -->
+        <section class="view-section" id="configuracoes-view">
+            <div class="placeholder-view">
+                <span class="material-icons-round">settings</span>
+                <h1>Configurações</h1>
+            </div>
+        </section>
     </div>
 
-    <footer>
-        <div class="status-indicator"></div>
-        <a href="https://mula.ia.br/documentacao" target="_blank">Mula Framework V3</a>
-    </footer>
+    <nav class="os-dock">
+        <div class="dock-item" data-view="dashboard"><span class="material-icons-round">dashboard</span></div>
+        <div class="dock-item" data-view="map"><span class="material-icons-round">map</span></div>
+        <div class="dock-item" data-view="pedidos"><span class="material-icons-round">receipt_long</span></div>
+        <div class="dock-item" data-view="cardapio"><span class="material-icons-round">restaurant_menu</span></div>
+        <div class="dock-item" data-view="frota"><span class="material-icons-round">two_wheeler</span></div>
+        <div class="dock-item" data-view="hub"><span class="material-icons-round">hub</span></div>
+        <div class="dock-item" data-view="financeiro"><span class="material-icons-round">account_balance_wallet</span></div>
+        <div class="dock-item" data-view="configuracoes"><span class="material-icons-round">settings</span></div>
+    </nav>
 
     <script src="./renderer.js"></script>
 </body>
