@@ -457,7 +457,7 @@ window.renderMenuTable = function() {
 // Adicionar novo item
 window.addMenuItem = function() {
     const newItem = {
-        id: Date.now(),
+        id: Date.now(), // Usar UUID seria mais robusto, mas mantendo o padrão existente
         name: 'Novo Item',
         description: '',
         category: 'Geral',
@@ -469,13 +469,24 @@ window.addMenuItem = function() {
     };
     
     window.menuItems.push(newItem);
-    window.config.menuItems = window.menuItems;
-    window.renderMenuTable();
-    
-    // Focar na edição do nome
-    setTimeout(() => {
-        window.editMenuItemInline(window.menuItems.length - 1);
-    }, 100);
+    window.config.menuItems = window.menuItems; // Manter consistência com outras funções
+
+    // Salva o cardápio inteiro para persistir o novo item
+    window.electronAPI.saveMenu({ items: window.menuItems }).then(() => {
+        window.showToast('Item adicionado. Preencha os detalhes.', 'info');
+        window.renderMenuTable();
+        
+        // Focar na edição do nome do novo item
+        setTimeout(() => {
+            window.editMenuItemInline(window.menuItems.length - 1);
+        }, 100);
+    }).catch(err => {
+        console.error('Erro ao adicionar item:', err);
+        window.showToast('Erro ao salvar novo item.', 'error');
+        // Reverter a adição local se a gravação falhar
+        window.menuItems.pop();
+        window.config.menuItems = window.menuItems;
+    });
 };
 
 // Alternar status do item
@@ -625,11 +636,14 @@ window.saveMenuItemEdit = function() {
         item.image = newImage;
     }
     
-    window.config.menuItems = window.menuItems;
-    window.electronAPI.saveConfig(window.config).then(() => {
+    window.config.menuItems = window.menuItems; // Manter consistência
+    window.electronAPI.saveMenu({ items: window.menuItems }).then(() => {
         window.showToast('Item salvo', 'success');
         window.currentEditingMenuItemId = null;
         window.renderMenuTable();
+    }).catch(err => {
+        console.error('Erro ao salvar item:', err);
+        window.showToast('Erro ao salvar item.', 'error');
     });
 };
 
@@ -641,11 +655,20 @@ window.cancelMenuItemEdit = function() {
 
 // Excluir item
 window.deleteMenuItem = function(index) {
+    const itemToDelete = window.menuItems[index];
     // Excluir sem confirmação
     window.menuItems.splice(index, 1);
-    window.config.menuItems = window.menuItems;
-    window.electronAPI.saveConfig(window.config).then(() => {
+    window.config.menuItems = window.menuItems; // Manter consistência
+
+    window.electronAPI.saveMenu({ items: window.menuItems }).then(() => {
         window.showToast('Item removido', 'success');
+        window.renderMenuTable();
+    }).catch(err => {
+        console.error('Erro ao remover item:', err);
+        window.showToast('Erro ao remover item.', 'error');
+        // Reverter a exclusão local se a gravação falhar
+        window.menuItems.splice(index, 0, itemToDelete);
+        window.config.menuItems = window.menuItems;
         window.renderMenuTable();
     });
 };
