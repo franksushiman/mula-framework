@@ -4,8 +4,8 @@
   "description": "ERP de delivery/restaurante - Sistema Ceia",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --debug"
+    "start": "npx electron src/main.js",
+    "dev": "npx electron src/main.js --debug"
   },
   "dependencies": {
     "axios": "^1.6.0",
