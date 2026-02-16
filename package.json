@@ -4,7 +4,7 @@
   "description": "ERP de delivery/restaurante - Sistema Ceia",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron src/main.js",
+    "start": "electron .",
     "dev": "electron src/main.js --debug"
   },
   "dependencies": {
