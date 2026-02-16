@@ -179,11 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = menu.items.find(i => i.id === id);
             
             if (item) {
-                // item.paused === true significa que está pausado (indisponível)
-                // Para dataManager.updateItemAvailability, isAvailable = true significa disponível
-                // Portanto, se está pausado (true), queremos disponível (true)
-                // Se está disponível (false), queremos pausado (false)
-                const isNowAvailable = item.paused; // true → true, false → false
+                // A lógica do backend é: item.paused = !isAvailable.
+                // Para alternar o estado, precisamos enviar o valor booleano correto.
+                // - Se o item está pausado (item.paused === true), queremos torná-lo disponível (enviar isAvailable = true).
+                // - Se o item está ativo (item.paused === false), queremos pausá-lo (enviar isAvailable = false).
+                // Portanto, o valor a ser enviado para 'isAvailable' é exatamente o valor atual de 'item.paused'.
+                const isNowAvailable = item.paused;
                 
                 await window.electronAPI.updateItemAvailability(id, isNowAvailable);
                 
@@ -202,14 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Inicialização ---
-    // Ativar a view de configurações por padrão para facilitar o setup
-    switchView('configuracoes');
+    // Ativar a view do dashboard por padrão para uma inicialização limpa.
+    switchView('dashboard');
 
-    // Inicia o carregamento da frota
+    // Inicia o carregamento de dados essenciais em segundo plano.
     initialLoad();
 
-    // Carregar dados de ajustes se a aba já estiver ativa (caso de F5 na aba de config)
-    if (document.getElementById('configuracoes-view').classList.contains('active')) {
-        loadSettingsData();
-    }
+    // Os dados de configurações agora são carregados apenas quando o usuário
+    // clica na aba de Ajustes, prevenindo travamentos na inicialização.
+    // O listener de clique para a aba já cuida disso.
 });
