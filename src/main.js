@@ -4,6 +4,7 @@ require('dotenv').config();
 const dataManager = require('./services/dataManager');
 const FleetService = require('./services/FleetService');
 const TelegramService = require('./services/TelegramService');
+const whatsapp = require('./whatsapp');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -34,6 +35,27 @@ app.whenReady().then(async () => {
   ipcMain.handle('save-config', async (event, config) => {
     // O dataManager.saveConfig já é inteligente e salva apenas os campos de config
     await dataManager.saveConfig(config);
+    
+    // Se houver configuração do WhatsApp, inicializa
+    if (config.tech && config.tech.whatsapp_session_id) {
+      try {
+        // Atualiza a configuração no módulo WhatsApp
+        whatsapp.updateConfig(config);
+        
+        // Inicializa o WhatsApp em segundo plano
+        setTimeout(async () => {
+          try {
+            await whatsapp.initializeWhatsApp(config);
+            console.log('WhatsApp inicializado automaticamente após salvar configuração');
+          } catch (whatsappError) {
+            console.warn('Não foi possível inicializar WhatsApp automaticamente:', whatsappError.message);
+          }
+        }, 1000);
+      } catch (error) {
+        console.warn('Erro ao configurar WhatsApp:', error.message);
+      }
+    }
+    
     return { success: true };
   });
 
@@ -61,6 +83,34 @@ app.whenReady().then(async () => {
   ipcMain.handle('get-app-version', () => {
     const { version } = require('../package.json');
     return version;
+  });
+
+  // IPC para inicializar o WhatsApp
+  ipcMain.handle('initialize-whatsapp', async (event, config) => {
+    try {
+      console.log('Inicializando WhatsApp com configuração...');
+      await whatsapp.initializeWhatsApp(config);
+      return { success: true, message: 'WhatsApp inicializado com sucesso' };
+    } catch (error) {
+      console.error('Erro ao inicializar WhatsApp:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // IPC para obter status do WhatsApp
+  ipcMain.handle('get-whatsapp-status', () => {
+    return whatsapp.getWhatsAppStatus();
+  });
+
+  // IPC para enviar mensagem via WhatsApp
+  ipcMain.handle('send-whatsapp-message', async (event, { phone, message }) => {
+    try {
+      const result = await whatsapp.sendWhatsAppMessage(phone, message);
+      return { success: true, result };
+    } catch (error) {
+      console.error('Erro ao enviar mensagem WhatsApp:', error);
+      return { success: false, message: error.message };
+    }
   });
 
   // IPC para obter a lista de motoristas (lógica em memória existente)

@@ -21,4 +21,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getOpenOrders: () => ipcRenderer.invoke('get-open-orders'),
   createOrder: (orderData) => ipcRenderer.invoke('create-order', orderData),
   updateOrderStatus: (id, status) => ipcRenderer.invoke('update-order-status', { id, status }),
+
+  // WhatsApp
+  initializeWhatsApp: (config) => ipcRenderer.invoke('initialize-whatsapp', config),
+  getWhatsAppStatus: () => ipcRenderer.invoke('get-whatsapp-status'),
+  sendWhatsAppMessage: (phone, message) => ipcRenderer.invoke('send-whatsapp-message', { phone, message }),
 });
