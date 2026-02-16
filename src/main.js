@@ -15,6 +15,9 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+  // Abre o DevTools para depuração.
+  mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(async () => {
