@@ -182,6 +182,11 @@
             padding: 0 40px;
         }
 
+        #financeiro-view {
+            justify-content: flex-start;
+            padding-top: 40px;
+        }
+
     </style>
 </head>
 <body>
@@ -225,9 +230,11 @@
 
         <!-- Financeiro View -->
         <section class="view-section" id="financeiro-view">
-            <div class="placeholder-view">
-                <span class="material-icons-round">account_balance_wallet</span>
-                <h1>Financeiro</h1>
+            <div class="kpi-grid" style="grid-template-columns: 1fr; max-width: 400px;">
+                <div class="kpi-card">
+                    <h3>Fechamento do Dia</h3>
+                    <p>R$ 0,00</p>
+                </div>
             </div>
         </section>
 
