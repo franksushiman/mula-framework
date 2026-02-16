@@ -4,12 +4,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const views = document.querySelectorAll('.view-section');
 
     function switchView(viewId) {
+        if (!viewId) {
+            console.error('switchView chamada sem viewId.');
+            return;
+        }
         views.forEach(view => {
             view.classList.remove('active');
         });
         const activeView = document.getElementById(`${viewId}-view`);
         if (activeView) {
             activeView.classList.add('active');
+        } else {
+            console.error(`[Erro de Navegação] View com ID "${viewId}-view" não foi encontrada no HTML.`);
         }
 
         dockItems.forEach(item => {
