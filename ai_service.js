@@ -2,63 +2,61 @@
 
 const { OpenAI } = require('openai');
 
-// Configurar a instância da OpenAI
-let openai = null;
+// Não manter estado global da instância OpenAI
+// Cada chamada deve receber a chave explicitamente ou falhar
 
-// Função para configurar a OpenAI com a chave do config
-function configureOpenAI(apiKey) {
-    try {
-        if (!apiKey || apiKey.trim() === '') {
-            console.warn('⚠️  Chave OpenAI não fornecida');
-            openai = null;
-            return false;
-        }
-        
-        // Verificar se a chave parece válida
-        if (!apiKey.startsWith('sk-')) {
-            console.warn('⚠️  Formato de chave OpenAI inválido (deve começar com "sk-")');
-            openai = null;
-            return false;
-        }
-        
-        openai = new OpenAI({
-            apiKey: apiKey.trim(),
-            timeout: 30000, // 30 segundos timeout
-        });
-        
-        console.log('✅ OpenAI configurada com sucesso');
-        return true;
-    } catch (error) {
-        console.error('❌ Erro ao configurar OpenAI:', error.message);
-        openai = null;
-        return false;
+/**
+ * Cria uma instância do cliente OpenAI com a chave fornecida
+ * @param {string} apiKey - Chave da API da OpenAI
+ * @returns {OpenAI} - Instância configurada
+ * @throws {Error} - Se a chave for inválida
+ */
+function createOpenAIClient(apiKey) {
+    if (!apiKey || apiKey.trim() === '') {
+        throw new Error('Chave OpenAI não fornecida');
     }
+    
+    if (!apiKey.startsWith('sk-')) {
+        throw new Error('Formato de chave OpenAI inválido (deve começar com "sk-")');
+    }
+    
+    return new OpenAI({
+        apiKey: apiKey.trim(),
+        timeout: 30000, // 30 segundos timeout
+    });
 }
 
-// Inicializar com chave vazia - será configurada quando necessário
-console.log('🤖 Serviço de IA carregado (aguardando configuração)');
+console.log('🤖 Serviço de IA carregado (sem estado global)');
 
 /**
  * Gera uma resposta usando IA para mensagens do WhatsApp
  * @param {string} mensagemUsuario - A mensagem recebida do cliente
  * @param {string} contextoLoja - Informações sobre a loja (cardápio, horários, etc.)
- * @param {string} apiKey - Chave da API da OpenAI (opcional, se não fornecida, tenta usar a configurada)
+ * @param {string|object} apiKeyOrConfig - Chave da API da OpenAI ou objeto de configuração com tech.openai_api_key
  * @returns {Promise<string>} - Resposta gerada pela IA
  */
-async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKey = null) {
+async function gerarRespostaIA(mensagemUsuario, contextoLoja, apiKeyOrConfig = null) {
     try {
-        // Se uma chave foi fornecida, configurar a OpenAI com ela
-        if (apiKey && apiKey.trim() !== '' && apiKey.startsWith('sk-')) {
-            configureOpenAI(apiKey);
+        // Extrair a chave da API do parâmetro
+        let apiKey = null;
+        
+        if (typeof apiKeyOrConfig === 'string') {
+            apiKey = apiKeyOrConfig;
+        } else if (apiKeyOrConfig && apiKeyOrConfig.tech && apiKeyOrConfig.tech.openai_api_key) {
+            apiKey = apiKeyOrConfig.tech.openai_api_key;
         }
         
-        // Verificar se a OpenAI está configurada
-        if (!openai) {
-            // Tentar carregar a chave do config global (se disponível)
-            const config = require('./config_loader'); // Isso pode não existir
-            // Como alternativa, vamos lançar o erro e confiar que a chave já foi configurada via configureOpenAI
-            throw new Error('OpenAI não configurada. Configure a chave na aba de Configurações.');
+        // Validar chave
+        if (!apiKey || apiKey.trim() === '') {
+            throw new Error('Chave OpenAI não configurada. Configure a chave na aba de Configurações.');
         }
+        
+        if (!apiKey.startsWith('sk-')) {
+            throw new Error('Formato de chave OpenAI inválido (deve começar com "sk-")');
+        }
+        
+        // Criar cliente OpenAI com a chave fornecida
+        const openai = createOpenAIClient(apiKey);
         
         // Verificar se o contexto da loja é apenas placeholder ou está vazio
         const isContextoPlaceholder = contextoLoja.includes("Restaurante Ceia Delivery") && 
