@@ -480,12 +480,23 @@ window.addMenuItem = function() {
 // Alternar status do item
 window.toggleMenuItem = function(index) {
     const item = window.menuItems[index];
-    item.paused = !item.paused;
+    if (!item || !item.id) {
+        console.error('Item inválido ou sem ID para alternar status.', item);
+        return;
+    }
     
-    window.config.menuItems = window.menuItems;
-    window.electronAPI.saveConfig(window.config).then(() => {
+    const newPausedState = !item.paused;
+    const isAvailable = !newPausedState;
+
+    // Usa o novo handler específico para maior eficiência
+    window.electronAPI.updateItemAvailability(item.id, isAvailable).then(() => {
+        // Atualiza o estado local após a confirmação do backend
+        item.paused = newPausedState;
         window.showToast(`Item ${item.paused ? 'pausado' : 'ativado'}`, 'success');
         window.renderMenuTable();
+    }).catch(err => {
+        console.error('Erro ao alternar status do item:', err);
+        window.showToast('Erro ao atualizar item.', 'error');
     });
 };
 
