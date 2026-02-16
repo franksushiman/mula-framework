@@ -84,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carrega a frota inicial
     async function initialLoad() {
         try {
+            // Prova de vida da comunicação com o backend
+            const health = await window.electronAPI.healthPing();
+            console.log('✅ Health Check IPC:', health);
+
             const drivers = await window.electronAPI.getDrivers();
             renderFleet(drivers);
         } catch (error) {
