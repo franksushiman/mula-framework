@@ -1,5 +1,6 @@
 import datetime
 import random
+import json
 from typing import List
 
 from fastapi import FastAPI, Request, Depends
@@ -66,14 +67,14 @@ async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_
         customer_name=order_data.customer_name,
         total_value=total,
         status="RECEIVED",
-        items=[item.dict() for item in order_data.items]
+        items_json=json.dumps([item.dict() for item in order_data.items])
     )
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
 
     log_message = f"Novo pedido {public_id} de {order_data.customer_name} (R$ {total:.2f})"
-    db_log = OperationalLog(type="ORDER_CREATED", message=log_message)
+    db_log = OperationalLog(event_type="ORDER_CREATED", message=log_message)
     db.add(db_log)
     db.commit()
 
@@ -87,11 +88,11 @@ async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_
 
 @app.get("/api/feed")
 async def get_feed(db: Session = Depends(get_db)):
-    logs = db.query(OperationalLog).order_by(OperationalLog.created_at.desc()).limit(50).all()
+    logs = db.query(OperationalLog).order_by(OperationalLog.timestamp.desc()).limit(50).all()
     return [
         {
-            "time": log.created_at.strftime("%H:%M"),
-            "type": log.type,
+            "time": log.timestamp.strftime("%H:%M"),
+            "type": log.event_type,
             "message": log.message,
         }
         for log in logs
