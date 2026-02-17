@@ -1,7 +1,7 @@
 import datetime
 from typing import List
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -59,4 +59,24 @@ async def create_order_from_webhook(order: OrderCreate, db: Session = Depends(ge
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
+    return db_order
+
+
+@app.patch("/api/orders/{order_id}/advance", response_model=Order)
+async def advance_order_status(order_id: int, db: Session = Depends(get_db)):
+    db_order = db.query(DBOrder).filter(DBOrder.id == order_id).first()
+    if db_order is None:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    status_transitions = {
+        "CONFIRMED": "PREPARING",
+        "PREPARING": "READY_FOR_PICKUP",
+        "READY_FOR_PICKUP": "DISPATCHED",
+    }
+
+    if db_order.status in status_transitions:
+        db_order.status = status_transitions[db_order.status]
+        db.commit()
+        db.refresh(db_order)
+
     return db_order
