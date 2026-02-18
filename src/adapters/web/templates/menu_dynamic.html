@@ -28,7 +28,6 @@
         </header>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
-            <!-- Exemplo de como os itens do menu seriam renderizados dinamicamente -->
             {% for item in menu_items %}
             <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 group">
                 <div class="h-40 w-full">
@@ -39,7 +38,7 @@
                     <p class="text-sm text-gray-500 mt-1 h-10 overflow-hidden">{{ item.description }}</p>
                     <div class="mt-4 flex justify-between items-center">
                         <span class="text-xl font-bold text-gray-900">R$ {{ "%.2f"|format(item.price) }}</span>
-                        <button class="bg-orange-500 text-white font-bold w-10 h-10 rounded-full flex items-center justify-center text-2xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transform group-hover:scale-110 transition-transform">
+                        <button onclick='handleAddItem({{ item.id }})' class="bg-orange-500 text-white font-bold w-10 h-10 rounded-full flex items-center justify-center text-2xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transform group-hover:scale-110 transition-transform">
                             +
                         </button>
                     </div>
@@ -48,5 +47,178 @@
             {% endfor %}
         </div>
     </div>
+
+    <!-- Modal de Opções -->
+    <div id="options-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 transition-opacity duration-300">
+        <div id="modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all scale-95 opacity-0 duration-300">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-gray-200 flex justify-between items-start">
+                <h2 id="modal-product-name" class="text-2xl font-bold text-gray-800"></h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div id="modal-options-container" class="p-6 max-h-[50vh] overflow-y-auto">
+                <!-- Grupos de opções serão injetados aqui -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-5 bg-gray-50 rounded-b-xl border-t border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-lg font-medium text-gray-600">Total</span>
+                    <span id="modal-total-price" class="text-2xl font-bold text-gray-900"></span>
+                </div>
+                <button id="modal-add-to-cart-btn" onclick="addToCartFromModal()" class="w-full bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+                    Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const menuItems = JSON.parse('{{ menu_items_json|safe }}');
+        let currentProduct = null;
+
+        const modal = document.getElementById('options-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalProductName = document.getElementById('modal-product-name');
+        const modalOptionsContainer = document.getElementById('modal-options-container');
+        const modalTotalPrice = document.getElementById('modal-total-price');
+        const modalAddToCartBtn = document.getElementById('modal-add-to-cart-btn');
+
+        function formatPrice(price) {
+            return `R$ ${price.toFixed(2).replace('.', ',')}`;
+        }
+
+        function handleAddItem(productId) {
+            currentProduct = menuItems.find(p => p.id === productId);
+            if (!currentProduct) return;
+
+            if (currentProduct.option_groups && currentProduct.option_groups.length > 0) {
+                openOptionsModal();
+            } else {
+                // Adiciona direto ao "carrinho" (console.log por enquanto)
+                const cartItem = {
+                    ...currentProduct,
+                    quantity: 1,
+                    obs: ''
+                };
+                console.log("Adicionado ao carrinho:", cartItem);
+                alert(`${currentProduct.name} adicionado ao carrinho!`);
+            }
+        }
+
+        function openOptionsModal() {
+            modalProductName.textContent = currentProduct.name;
+            modalOptionsContainer.innerHTML = '';
+
+            currentProduct.option_groups.forEach(group => {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'mb-6';
+                
+                let requiredText = group.min_selection > 0 ? '<span class="text-red-500">*</span>' : '';
+                let helpText = `(Escolha ${group.min_selection > 0 ? `pelo menos ${group.min_selection}` : 'até'} ${group.max_selection})`;
+                
+                groupEl.innerHTML = `<h3 class="text-lg font-semibold text-gray-700 mb-2">${group.name} ${requiredText}</h3><p class="text-sm text-gray-500 -mt-2 mb-3">${helpText}</p>`;
+
+                group.options.forEach(option => {
+                    const optionId = `option-${option.id}`;
+                    const isRadio = group.max_selection === 1;
+                    const inputType = isRadio ? 'radio' : 'checkbox';
+
+                    const optionEl = document.createElement('div');
+                    optionEl.className = 'flex items-center justify-between mb-2';
+                    optionEl.innerHTML = `
+                        <label for="${optionId}" class="flex items-center cursor-pointer">
+                            <input type="${inputType}" id="${optionId}" name="group-${group.id}" value="${option.id}" class="h-5 w-5 text-orange-600 border-gray-300 focus:ring-orange-500" onchange="updateModalState()">
+                            <span class="ml-3 text-gray-700">${option.name}</span>
+                        </label>
+                        <span class="text-gray-600">${option.price > 0 ? `+ ${formatPrice(option.price)}` : ''}</span>
+                    `;
+                    groupEl.appendChild(optionEl);
+                });
+                modalOptionsContainer.appendChild(groupEl);
+            });
+
+            updateModalState();
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.remove('opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+            currentProduct = null;
+        }
+
+        function updateModalState() {
+            if (!currentProduct) return;
+
+            let totalPrice = currentProduct.price;
+            let allRequirementsMet = true;
+
+            currentProduct.option_groups.forEach(group => {
+                const inputs = modalOptionsContainer.querySelectorAll(`[name="group-${group.id}"]:checked`);
+                const selectionCount = inputs.length;
+
+                if (selectionCount < group.min_selection) {
+                    allRequirementsMet = false;
+                }
+
+                inputs.forEach(input => {
+                    const option = group.options.find(o => o.id == input.value);
+                    if (option) {
+                        totalPrice += option.price;
+                    }
+                });
+            });
+
+            modalTotalPrice.textContent = formatPrice(totalPrice);
+            modalAddToCartBtn.disabled = !allRequirementsMet;
+        }
+
+        function addToCartFromModal() {
+            let obsParts = [];
+            let finalPrice = currentProduct.price;
+
+            currentProduct.option_groups.forEach(group => {
+                const inputs = modalOptionsContainer.querySelectorAll(`[name="group-${group.id}"]:checked`);
+                if (inputs.length > 0) {
+                    let optionNames = [];
+                    inputs.forEach(input => {
+                        const option = group.options.find(o => o.id == input.value);
+                        if (option) {
+                            optionNames.push(option.name);
+                            finalPrice += option.price;
+                        }
+                    });
+                    obsParts.push(`${group.name}: ${optionNames.join(', ')}`);
+                }
+            });
+
+            const cartItem = {
+                id: currentProduct.id,
+                name: currentProduct.name,
+                quantity: 1,
+                price: finalPrice,
+                obs: obsParts.join('; ')
+            };
+
+            console.log("Adicionado ao carrinho:", cartItem);
+            alert(`${cartItem.name} adicionado com sucesso!`);
+            closeModal();
+        }
+
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
 </body>
 </html>

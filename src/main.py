@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from adapters.database.config import SessionLocal, engine, Base
-from adapters.database.models import Order as DBOrder, OperationalLog
+from adapters.database.models import Order as DBOrder, OperationalLog, Product as DBProduct, OptionGroup as DBOptionGroup, Option as DBOption
 
 
 app = FastAPI(title="CEIA OS")
@@ -48,6 +48,37 @@ class ItemSchema(BaseModel):
 class OrderCreateSchema(BaseModel):
     customer_name: str
     items: List[ItemSchema]
+
+
+# Schemas for Product Options
+class OptionSchema(BaseModel):
+    id: int
+    name: str
+    price: float
+
+    class Config:
+        orm_mode = True
+
+class OptionGroupSchema(BaseModel):
+    id: int
+    name: str
+    min_selection: int
+    max_selection: int
+    options: List[OptionSchema]
+
+    class Config:
+        orm_mode = True
+
+class ProductSchema(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    price: float
+    image_url: Optional[str] = None
+    option_groups: List[OptionGroupSchema] = []
+
+    class Config:
+        orm_mode = True
 
 
 # Basic Auth dependency
@@ -87,29 +118,68 @@ async def redirect_to_admin():
 
 
 @app.get("/cardapio", response_class=HTMLResponse)
-async def menu_page(request: Request):
-    # Em um aplicativo real, você buscaria isso do banco de dados
-    dummy_menu_items = [
-        {
-            "name": "Hambúrguer Clássico",
-            "description": "Pão, carne, queijo, alface, tomate e molho especial.",
-            "price": 25.50,
-            "image_url": "https://plus.unsplash.com/premium_photo-1673588224923-374750a2c714?w=500"
-        },
-        {
-            "name": "Batata Frita",
-            "description": "Porção generosa de batatas fritas crocantes e douradas.",
-            "price": 12.00,
-            "image_url": "https://images.unsplash.com/photo-1541592106381-b6d9604c784b?w=500"
-        },
-        {
-            "name": "Refrigerante",
-            "description": "Lata 350ml, diversos sabores.",
-            "price": 5.00,
-            "image_url": "https://images.unsplash.com/photo-1572490122219-2a3ab2c59b57?w=500"
-        }
-    ]
-    return templates.TemplateResponse("menu_dynamic.html", {"request": request, "menu_items": dummy_menu_items})
+async def menu_page(request: Request, db: Session = Depends(get_db)):
+    products_from_db = db.query(DBProduct).all()
+    menu_items = [ProductSchema.from_orm(p) for p in products_from_db]
+    menu_items_for_template = [p.dict() for p in menu_items]
+    return templates.TemplateResponse("menu_dynamic.html", {
+        "request": request, 
+        "menu_items": menu_items_for_template,
+        "menu_items_json": json.dumps(menu_items_for_template)
+    })
+
+
+@app.post("/api/seed_options")
+async def seed_options(db: Session = Depends(get_db)):
+    # Clean up existing products and options to avoid duplicates
+    db.query(DBOption).delete()
+    db.query(DBOptionGroup).delete()
+    db.query(DBProduct).delete()
+
+    # Create a product without options
+    product_coke = DBProduct(
+        name="Refrigerante",
+        description="Lata 350ml, diversos sabores.",
+        price=5.00,
+        image_url="https://images.unsplash.com/photo-1572490122219-2a3ab2c59b57?w=500"
+    )
+
+    # Create a product with options
+    product_temaki = DBProduct(
+        name="Temaki Salmão",
+        description="Delicioso temaki de salmão fresco.",
+        price=28.00,
+        image_url="https://images.unsplash.com/photo-1588825280795-434c4135679b?w=500"
+    )
+
+    # Group 1: Base (required, single choice)
+    group_base = DBOptionGroup(
+        name="Escolha sua base",
+        min_selection=1,
+        max_selection=1,
+        product=product_temaki
+    )
+    option_arroz = DBOption(name="Com arroz", price=0.0, group=group_base)
+    option_sem_arroz = DBOption(name="Sem arroz (Salmão em dobro)", price=10.0, group=group_base)
+
+    # Group 2: Adicionais (optional, multiple choice)
+    group_adicionais = DBOptionGroup(
+        name="Adicionais",
+        min_selection=0,
+        max_selection=2,
+        product=product_temaki
+    )
+    option_cream_cheese = DBOption(name="Cream Cheese", price=2.0, group=group_adicionais)
+    option_cebolinha = DBOption(name="Cebolinha", price=0.0, group=group_adicionais)
+
+    db.add_all([
+        product_coke, product_temaki, 
+        group_base, option_arroz, option_sem_arroz,
+        group_adicionais, option_cream_cheese, option_cebolinha
+    ])
+    db.commit()
+
+    return {"message": "Banco de dados populado com Temaki e opções."}
 
 
 @app.post("/api/orders")
