@@ -74,6 +74,38 @@ def get_db():
 async def dashboard(request: Request, username: str = Depends(get_current_username)):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request, username: str = Depends(get_current_username)):
+    return templates.TemplateResponse("admin.html", {"request": request})
+
+
+@app.get("/cardapio", response_class=HTMLResponse)
+async def menu_page(request: Request):
+    # Em um aplicativo real, você buscaria isso do banco de dados
+    dummy_menu_items = [
+        {
+            "name": "Hambúrguer Clássico",
+            "description": "Pão, carne, queijo, alface, tomate e molho especial.",
+            "price": 25.50,
+            "image_url": "https://plus.unsplash.com/premium_photo-1673588224923-374750a2c714?w=500"
+        },
+        {
+            "name": "Batata Frita",
+            "description": "Porção generosa de batatas fritas crocantes e douradas.",
+            "price": 12.00,
+            "image_url": "https://images.unsplash.com/photo-1541592106381-b6d9604c784b?w=500"
+        },
+        {
+            "name": "Refrigerante",
+            "description": "Lata 350ml, diversos sabores.",
+            "price": 5.00,
+            "image_url": "https://images.unsplash.com/photo-1572490122219-2a3ab2c59b57?w=500"
+        }
+    ]
+    return templates.TemplateResponse("menu_dynamic.html", {"request": request, "menu_items": dummy_menu_items})
+
+
 @app.post("/api/orders")
 async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_db)):
     total = sum(item.price * item.quantity for item in order_data.items)
