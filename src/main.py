@@ -1,9 +1,9 @@
 import datetime
 import random
 import json
-from typing import List
+from typing import List, Optional
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -38,6 +38,7 @@ class ItemSchema(BaseModel):
     name: str
     quantity: int
     price: float
+    obs: Optional[str] = None
 
 class OrderCreateSchema(BaseModel):
     customer_name: str
@@ -59,15 +60,15 @@ async def dashboard(request: Request):
 @app.post("/api/orders")
 async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_db)):
     total = sum(item.price * item.quantity for item in order_data.items)
-    public_id = f"#{random.randint(100, 999)}"
+    public_id = f"{random.randint(1000, 9999)}"
 
     # Assuming DBOrder model has `items` field that can store JSON
     db_order = DBOrder(
         public_id=public_id,
         customer_name=order_data.customer_name,
         total_value=total,
-        status="RECEIVED",
-        items_json=json.dumps([item.dict() for item in order_data.items])
+        status="CONFIRMED",
+        items_json=json.dumps([item.dict(exclude_none=True) for item in order_data.items])
     )
     db.add(db_order)
     db.commit()
@@ -84,6 +85,47 @@ async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_
         "total": total,
         "pix_payload": "BR.GOV.BCB.PIX..." # Placeholder
     }
+
+
+@app.get("/api/orders")
+async def get_orders(db: Session = Depends(get_db)):
+    active_statuses = ["CONFIRMED", "PREPARING", "READY_FOR_PICKUP"]
+    orders_from_db = db.query(DBOrder).filter(DBOrder.status.in_(active_statuses)).order_by(DBOrder.created_at.asc()).all()
+    
+    result = []
+    for order in orders_from_db:
+        result.append({
+            "id": order.public_id,
+            "customer": order.customer_name,
+            "items": json.loads(order.items_json),
+            "status": order.status,
+        })
+    return result
+
+
+@app.patch("/api/orders/{order_id}/advance")
+async def advance_order_status(order_id: str, db: Session = Depends(get_db)):
+    db_order = db.query(DBOrder).filter(DBOrder.public_id == order_id).first()
+    if not db_order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    status_flow = {
+        "CONFIRMED": "PREPARING",
+        "PREPARING": "READY_FOR_PICKUP",
+        "READY_FOR_PICKUP": "DELIVERED",
+    }
+    
+    new_status = status_flow.get(db_order.status)
+    
+    if new_status:
+        db_order.status = new_status
+        log_message = f"Pedido #{db_order.public_id} ({db_order.customer_name}) atualizado para {new_status}"
+        db_log = OperationalLog(event_type="ORDER_STATUS_UPDATE", message=log_message)
+        db.add(db_log)
+        db.commit()
+        return {"message": "Order status advanced", "new_status": new_status}
+    
+    return {"message": "Order cannot be advanced", "status": db_order.status}
 
 
 @app.get("/api/feed")

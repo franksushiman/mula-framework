@@ -76,15 +76,23 @@
 
             function renderOrderCard(order) {
                 const style = getStatusStyle(order.status);
+                const itemsHtml = order.items.map(item => `
+                    <div class="pt-2 mt-2 border-t border-gray-600 first:mt-0 first:pt-0 first:border-t-0">
+                        <p class="text-gray-300">${item.quantity}x ${item.name}</p>
+                        ${item.obs ? `<p class="text-sm text-yellow-400 pl-2"><strong class="font-semibold">Obs:</strong> ${item.obs}</p>` : ''}
+                    </div>
+                `).join('');
+
                 return `
-                    <div onclick="advanceOrder(${order.id})" class="cursor-pointer bg-gray-700 rounded-lg p-4 shadow-md border-l-4 border-${style.color.split('-')[1]}-500 transform hover:scale-105 transition-transform duration-200">
+                    <div onclick="advanceOrder('${order.id}')" class="cursor-pointer bg-gray-700 rounded-lg p-4 shadow-md border-l-4 border-${style.color.split('-')[1]}-500 transform hover:scale-105 transition-transform duration-200">
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-bold text-lg text-gray-100">${order.customer}</h3>
                             <span class="text-sm font-mono text-gray-400">#${order.id}</span>
                         </div>
-                        <p class="text-gray-300 mb-3">${order.item}</p>
-                        ${order.obs ? `<p class="text-sm text-yellow-400 -mt-2 mb-3"><strong class="font-semibold">Obs:</strong> ${order.obs}</p>` : ''}
-                        <div class="text-right">
+                        
+                        ${itemsHtml}
+
+                        <div class="text-right mt-4">
                             <span class="text-xs font-semibold px-3 py-1 rounded-full ${style.color} text-white">
                                 ${style.text}
                             </span>

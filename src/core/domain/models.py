@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 import uuid
 from datetime import datetime
@@ -21,6 +21,7 @@ class OrderItem(BaseModel):
     name: str
     quantity: int
     price: float
+    obs: Optional[str] = None
 
 class Order(BaseModel):
     """Represents a customer order."""
