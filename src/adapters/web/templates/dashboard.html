@@ -125,6 +125,7 @@
                     console.error(`Falha ao avançar o pedido ${orderId}:`, error);
                 }
             }
+            window.advanceOrder = advanceOrder;
 
             async function fetchAndRenderOrders() {
                 try {

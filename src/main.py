@@ -57,7 +57,7 @@ class OptionSchema(BaseModel):
     price: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class OptionGroupSchema(BaseModel):
     id: int
@@ -67,7 +67,7 @@ class OptionGroupSchema(BaseModel):
     options: List[OptionSchema]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ProductSchema(BaseModel):
     id: int
@@ -78,7 +78,7 @@ class ProductSchema(BaseModel):
     option_groups: List[OptionGroupSchema] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Basic Auth dependency
@@ -225,7 +225,7 @@ async def get_orders(db: Session = Depends(get_db)):
         result.append({
             "id": order.public_id,
             "customer": order.customer_name,
-            "items": json.loads(order.items_json),
+            "items": order.items_json,
             "status": order.status,
             "created_at_brt": created_at_brt.strftime("%H:%M")
         })
