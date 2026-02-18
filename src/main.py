@@ -4,9 +4,10 @@ import json
 from typing import List, Optional
 
 import secrets
+from datetime import timedelta
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -80,6 +81,11 @@ async def admin_page(request: Request, username: str = Depends(get_current_usern
     return templates.TemplateResponse("admin.html", {"request": request})
 
 
+@app.get("/cadastro")
+async def redirect_to_admin():
+    return RedirectResponse(url="/admin")
+
+
 @app.get("/cardapio", response_class=HTMLResponse)
 async def menu_page(request: Request):
     # Em um aplicativo real, você buscaria isso do banco de dados
@@ -143,11 +149,15 @@ async def get_orders(db: Session = Depends(get_db)):
     
     result = []
     for order in orders_from_db:
+        # Converte o horário de criação para o fuso de Brasília (UTC-3)
+        created_at_brt = order.created_at - timedelta(hours=3)
+        
         result.append({
             "id": order.public_id,
             "customer": order.customer_name,
             "items": json.loads(order.items_json),
             "status": order.status,
+            "created_at_brt": created_at_brt.strftime("%H:%M")
         })
     return result
 

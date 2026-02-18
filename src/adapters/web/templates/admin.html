@@ -3,19 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Gerenciar Cardápio</title>
+    <title>Admin - Ceia Bistro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto p-8">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold">Gerenciamento do Cardápio</h1>
-            <a href="/dashboard" class="text-sm bg-white hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 border border-gray-300 rounded-lg shadow-sm transition-colors duration-200">
-                Ver Painel de Pedidos
-            </a>
+<body class="bg-gray-50 font-sans">
+    <header class="bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200">
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Admin</h1>
+            <div class="flex items-center space-x-4 text-sm font-medium">
+                <a href="/dashboard" class="text-gray-500 hover:text-gray-900 transition-colors">Cozinha</a>
+                <a href="/admin" class="text-gray-900 ring-1 ring-gray-900/10 bg-gray-100 px-3 py-1 rounded-md">Admin</a>
+                <a href="/cardapio" target="_blank" class="text-gray-500 hover:text-gray-900 transition-colors">Ver Cardápio</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <!-- Formulário para Adicionar Produto -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Adicionar Novo Produto</h2>
+            <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Nome do Produto</label>
+                    <input type="text" id="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700">Preço (R$)</label>
+                    <input type="number" id="price" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="description" class="block text-sm font-medium text-gray-700">Descrição</label>
+                    <textarea id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"></textarea>
+                </div>
+                <div class="md:col-span-2 text-right">
+                    <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        Salvar Produto
+                    </button>
+                </div>
+            </form>
         </div>
-        <p>Esta é a área de administração. Aqui você poderá editar os itens do cardápio.</p>
-        <!-- O conteúdo de gerenciamento do cardápio será adicionado aqui -->
-    </div>
+
+        <!-- Tabela de Produtos -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <h2 class="text-2xl font-bold text-gray-800 p-6">Produtos Cadastrados</h2>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Editar</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Exemplo de linha de produto -->
+                    <tr class="odd:bg-white even:bg-gray-50/50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <img class="h-10 w-10 rounded-md object-cover" src="https://plus.unsplash.com/premium_photo-1673588224923-374750a2c714?w=500" alt="">
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">Hambúrguer Clássico</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">R$ 25,50</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Ativo</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="#" class="text-orange-600 hover:text-orange-900">Editar</a>
+                        </td>
+                    </tr>
+                    <!-- Fim do exemplo -->
+                </tbody>
+            </table>
+        </div>
+    </main>
 </body>
 </html>
