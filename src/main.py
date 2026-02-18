@@ -221,10 +221,16 @@ async def get_orders(db: Session = Depends(get_db)):
         # Converte o horário de criação para o fuso de Brasília (UTC-3)
         created_at_brt = order.created_at - timedelta(hours=3)
         
+        items = order.items_json
+        if isinstance(items, str):
+            items = json.loads(items)
+        else:
+            items = order.items_json
+
         result.append({
             "id": order.public_id,
             "customer": order.customer_name,
-            "items": order.items_json,
+            "items": items,
             "status": order.status,
             "created_at_brt": created_at_brt.strftime("%H:%M")
         })
