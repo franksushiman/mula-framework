@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from adapters.database.config import SessionLocal, engine, Base
@@ -56,8 +56,7 @@ class OptionSchema(BaseModel):
     name: str
     price: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class OptionGroupSchema(BaseModel):
     id: int
@@ -66,8 +65,7 @@ class OptionGroupSchema(BaseModel):
     max_selection: int
     options: List[OptionSchema]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProductSchema(BaseModel):
     id: int
@@ -77,8 +75,7 @@ class ProductSchema(BaseModel):
     image_url: Optional[str] = None
     option_groups: List[OptionGroupSchema] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Basic Auth dependency
@@ -120,8 +117,8 @@ async def redirect_to_admin():
 @app.get("/cardapio", response_class=HTMLResponse)
 async def menu_page(request: Request, db: Session = Depends(get_db)):
     products_from_db = db.query(DBProduct).all()
-    menu_items = [ProductSchema.from_orm(p) for p in products_from_db]
-    menu_items_for_template = [p.dict() for p in menu_items]
+    menu_items = [ProductSchema.model_validate(p) for p in products_from_db]
+    menu_items_for_template = [p.model_dump() for p in menu_items]
     return templates.TemplateResponse("menu_dynamic.html", {
         "request": request, 
         "menu_items": menu_items_for_template,
@@ -193,7 +190,7 @@ async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_
         customer_name=order_data.customer_name,
         total_value=total,
         status="CONFIRMED",
-        items_json=json.dumps([item.dict(exclude_none=True) for item in order_data.items])
+        items_json=json.dumps([item.model_dump(exclude_none=True) for item in order_data.items])
     )
     db.add(db_order)
     db.commit()
