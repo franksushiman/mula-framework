@@ -100,12 +100,12 @@ def get_db():
         db.close()
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, username: str = Depends(get_current_username)):
+async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 @app.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request, username: str = Depends(get_current_username)):
+async def admin_page(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
 
 
