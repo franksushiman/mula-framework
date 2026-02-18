@@ -83,6 +83,7 @@
                             <span class="text-sm font-mono text-gray-400">#${order.id}</span>
                         </div>
                         <p class="text-gray-300 mb-3">${order.item}</p>
+                        ${order.obs ? `<p class="text-sm text-yellow-400 -mt-2 mb-3"><strong class="font-semibold">Obs:</strong> ${order.obs}</p>` : ''}
                         <div class="text-right">
                             <span class="text-xs font-semibold px-3 py-1 rounded-full ${style.color} text-white">
                                 ${style.text}
