@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from adapters.database.config import SessionLocal, engine, Base
 from adapters.database.models import Order as DBOrder, OperationalLog, Product as DBProduct, OptionGroup as DBOptionGroup, Option as DBOption
@@ -116,7 +116,9 @@ async def redirect_to_admin():
 
 @app.get("/cardapio", response_class=HTMLResponse)
 async def menu_page(request: Request, db: Session = Depends(get_db)):
-    products_from_db = db.query(DBProduct).all()
+    products_from_db = db.query(DBProduct).options(
+        joinedload(DBProduct.option_groups).joinedload(DBOptionGroup.options)
+    ).all()
     menu_items = [ProductSchema.model_validate(p) for p in products_from_db]
     menu_items_for_template = [p.model_dump() for p in menu_items]
     return templates.TemplateResponse("menu_dynamic.html", {
