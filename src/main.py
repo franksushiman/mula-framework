@@ -3,7 +3,9 @@ import random
 import json
 from typing import List, Optional
 
+import secrets
 from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +19,8 @@ from adapters.database.models import Order as DBOrder, OperationalLog
 
 
 app = FastAPI(title="CEIA OS")
+
+security = HTTPBasic()
 
 # Cria as tabelas no banco de dados, se não existirem
 Base.metadata.create_all(bind=engine)
@@ -45,6 +49,19 @@ class OrderCreateSchema(BaseModel):
     items: List[ItemSchema]
 
 
+# Basic Auth dependency
+def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, "admin")
+    correct_password = secrets.compare_digest(credentials.password, "ceia")
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Acesso não autorizado",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
+
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()
@@ -54,7 +71,7 @@ def get_db():
         db.close()
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
+async def dashboard(request: Request, username: str = Depends(get_current_username)):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @app.post("/api/orders")
