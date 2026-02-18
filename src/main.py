@@ -210,8 +210,6 @@ async def get_orders(db: Session = Depends(get_db)):
         items = order.items_json
         if isinstance(items, str):
             items = json.loads(items)
-        else:
-            items = order.items_json
 
         result.append({
             "id": order.public_id,
