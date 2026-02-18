@@ -6,7 +6,6 @@ from typing import List, Optional
 import secrets
 from datetime import timedelta
 from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -20,8 +19,6 @@ from adapters.database.models import Order as DBOrder, OperationalLog, Product a
 
 
 app = FastAPI(title="CEIA OS")
-
-security = HTTPBasic()
 
 # Cria as tabelas no banco de dados, se não existirem
 Base.metadata.create_all(bind=engine)
@@ -78,17 +75,6 @@ class ProductSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Basic Auth dependency
-def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_username = secrets.compare_digest(credentials.username, "admin")
-    correct_password = secrets.compare_digest(credentials.password, "ceia")
-    if not (correct_username and correct_password):
-        raise HTTPException(
-            status_code=401,
-            detail="Acesso não autorizado",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
 
 
 # Dependency to get DB session
