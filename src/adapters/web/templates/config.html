@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Ceia OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans flex flex-col min-h-screen">
+    <header class="bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-200">
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">Configurações</h1>
+            <div class="flex items-center space-x-4 text-sm font-medium">
+                <a href="/dashboard" class="text-gray-500 hover:text-gray-900 transition-colors">Cozinha</a>
+                <a href="/admin" class="text-gray-500 hover:text-gray-900 transition-colors">Admin</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
+        <div class="w-full max-w-md">
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Chave da OpenAI</h2>
+                <form id="config-form">
+                    <div>
+                        <label for="openai-key" class="block text-sm font-medium text-gray-700">OpenAI API Key</label>
+                        <input type="password" id="openai-key" name="openai_api_key" value="{{ openai_api_key }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                        <p class="mt-2 text-xs text-gray-500">Sua chave é armazenada localmente no arquivo .env e nunca é compartilhada.</p>
+                    </div>
+                    <div class="mt-6 text-right">
+                        <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-4">
+        <p class="text-xs text-gray-400">
+            <a href="http://mula.ia.br/documentacao" target="_blank" class="hover:text-gray-600">Mula FRamework V3</a>
+        </p>
+    </footer>
+
+    <script>
+        document.getElementById('config-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const apiKey = document.getElementById('openai-key').value;
+            const button = e.target.querySelector('button[type="submit"]');
+            button.disabled = true;
+            button.textContent = 'Salvando...';
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ openai_api_key: apiKey }),
+                });
+                if (response.ok) {
+                    alert('Chave da OpenAI salva com sucesso!');
+                } else {
+                    const errorData = await response.json();
+                    alert(`Ocorreu um erro ao salvar a chave: ${errorData.detail || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                alert('Ocorreu um erro de comunicação ao salvar a chave.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Salvar';
+            }
+        });
+    </script>
+</body>
+</html>

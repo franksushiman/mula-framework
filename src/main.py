@@ -2,6 +2,8 @@ import datetime
 import random
 import json
 from typing import List, Optional
+import os
+from dotenv import load_dotenv, set_key
 
 import secrets
 from datetime import timedelta
@@ -45,6 +47,9 @@ class ItemSchema(BaseModel):
 class OrderCreateSchema(BaseModel):
     customer_name: str
     items: List[ItemSchema]
+
+class ConfigSchema(BaseModel):
+    openai_api_key: Optional[str] = None
 
 
 # Schemas for Product Options
@@ -112,6 +117,25 @@ async def menu_page(request: Request, db: Session = Depends(get_db)):
         "menu_items": menu_items_for_template,
         "menu_items_json": json.dumps(menu_items_for_template)
     })
+
+
+@app.get("/config", response_class=HTMLResponse)
+async def config_page(request: Request):
+    load_dotenv()
+    openai_api_key = os.getenv("OPENAI_API_KEY", "")
+    return templates.TemplateResponse("config.html", {"request": request, "openai_api_key": openai_api_key})
+
+
+@app.post("/api/config")
+async def save_config(config_data: ConfigSchema):
+    dotenv_path = Path('.') / '.env'
+    if not dotenv_path.exists():
+        dotenv_path.touch()
+    
+    key_to_save = config_data.openai_api_key if config_data.openai_api_key is not None else ""
+    set_key(str(dotenv_path), "OPENAI_API_KEY", key_to_save)
+    
+    return {"message": "Configuração salva com sucesso."}
 
 
 @app.post("/api/seed_options")
