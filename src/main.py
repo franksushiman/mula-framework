@@ -189,12 +189,7 @@ async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_
     db.add(db_log)
     db.commit()
 
-    return {
-        "order_id": public_id,
-        "status": db_order.status,
-        "total": total,
-        "pix_payload": "BR.GOV.BCB.PIX..." # Placeholder
-    }
+    return {"message": "Pedido criado"}
 
 
 @app.get("/api/orders")
