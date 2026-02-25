@@ -1,47 +1,26 @@
-import datetime
-import random
-import json
+import os, secrets, json
+from datetime import timedelta
 from typing import List, Optional
-import os
+from pathlib import Path
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from dotenv import load_dotenv, set_key
 
-import secrets
-from datetime import timedelta
-from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import Session, joinedload
+from src.adapters.database.config import get_db, engine, Base
+from src.adapters.database.models import Order, Product, OptionGroup, Option, Motoboy
 
-from adapters.database.config import SessionLocal, engine, Base
-from adapters.database.models import Order as DBOrder, OperationalLog, Product as DBProduct, OptionGroup as DBOptionGroup, Option as DBOption, Motoboy as DBMotoboy
-
-
-app = FastAPI(title="CEIA OS")
-
-# Cria as tabelas no banco de dados, se não existirem
 Base.metadata.create_all(bind=engine)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Configura os templates
+app = FastAPI()
 templates = Jinja2Templates(directory="src/adapters/web/templates")
 
-
-# Pydantic models (Schemas)
+# Schemas
 class ItemSchema(BaseModel):
     name: str
     quantity: int
-    price: float
     obs: Optional[str] = None
 
 class OrderCreateSchema(BaseModel):
@@ -49,266 +28,63 @@ class OrderCreateSchema(BaseModel):
     items: List[ItemSchema]
 
 class ConfigSchema(BaseModel):
-    openai_api_key: Optional[str] = None
-    maps_key: Optional[str] = None
-    asaas_key: Optional[str] = None
+    openai_api_key: str
+    maps_key: Optional[str] = ""
+    asaas_key: Optional[str] = ""
+    telegram_store_token: Optional[str] = ""
 
-
-class MotoboyCreateSchema(BaseModel):
+class MotoboyCreate(BaseModel):
     name: str
     telegram_chat_id: str
 
-
-# Schemas for Product Options
-class OptionSchema(BaseModel):
-    id: int
-    name: str
-    price: float
-
-    model_config = ConfigDict(from_attributes=True)
-
-class OptionGroupSchema(BaseModel):
-    id: int
-    name: str
-    min_selection: int
-    max_selection: int
-    options: List[OptionSchema]
-
-    model_config = ConfigDict(from_attributes=True)
-
-class ProductSchema(BaseModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    price: float
-    image_url: Optional[str] = None
-    option_groups: List[OptionGroupSchema] = []
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-
-
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-
-
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_page(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
-
-
-@app.get("/cadastro")
-async def redirect_to_admin():
-    return RedirectResponse(url="/admin")
-
-
-@app.get("/cardapio", response_class=HTMLResponse)
-async def menu_page(request: Request, db: Session = Depends(get_db)):
-    products_from_db = db.query(DBProduct).options(
-        joinedload(DBProduct.option_groups).joinedload(DBOptionGroup.options)
-    ).all()
-    menu_items = [ProductSchema.model_validate(p) for p in products_from_db]
-    menu_items_for_template = [p.model_dump() for p in menu_items]
-    return templates.TemplateResponse("menu_dynamic.html", {
-        "request": request, 
-        "menu_items": menu_items_for_template,
-        "menu_items_json": json.dumps(menu_items_for_template)
-    })
-
-
+# Rotas de Configuração e QR Code
 @app.get("/config", response_class=HTMLResponse)
 async def config_page(request: Request):
     load_dotenv()
-    openai_api_key = os.getenv("OPENAI_API_KEY", "")
-    maps_api_key = os.getenv("MAPS_API_KEY", "")
-    asaas_api_key = os.getenv("ASAAS_API_KEY", "")
     return templates.TemplateResponse("config.html", {
         "request": request, 
-        "openai_api_key": openai_api_key,
-        "maps_api_key": maps_api_key,
-        "asaas_api_key": asaas_api_key
+        "openai_api_key": os.getenv("OPENAI_API_KEY", ""),
+        "maps_api_key": os.getenv("MAPS_API_KEY", ""),
+        "asaas_api_key": os.getenv("ASAAS_API_KEY", ""),
+        "telegram_store_token": os.getenv("TELEGRAM_STORE_TOKEN", "")
     })
-
 
 @app.post("/api/config")
 async def save_config(config_data: ConfigSchema):
-    dotenv_path = Path('.') / '.env'
-    if not dotenv_path.exists():
-        dotenv_path.touch()
-    
-    set_key(str(dotenv_path), "OPENAI_API_KEY", config_data.openai_api_key or "")
-    set_key(str(dotenv_path), "MAPS_API_KEY", config_data.maps_key or "")
-    set_key(str(dotenv_path), "ASAAS_API_KEY", config_data.asaas_key or "")
-    
-    return {"message": "Configuração salva com sucesso."}
-
-
-@app.post("/api/motoboys")
-async def create_motoboy(motoboy_data: MotoboyCreateSchema, db: Session = Depends(get_db)):
-    db_motoboy = DBMotoboy(
-        name=motoboy_data.name,
-        telegram_chat_id=motoboy_data.telegram_chat_id
-    )
-    db.add(db_motoboy)
-    db.commit()
-    db.refresh(db_motoboy)
-    return {"message": "Motoboy registered successfully."}
-
+    path = Path('.env')
+    if not path.exists(): path.touch()
+    set_key(".env", "OPENAI_API_KEY", config_data.openai_api_key)
+    set_key(".env", "MAPS_API_KEY", config_data.maps_key)
+    set_key(".env", "ASAAS_API_KEY", config_data.asaas_key)
+    set_key(".env", "TELEGRAM_STORE_TOKEN", config_data.telegram_store_token)
+    return {"status": "ok"}
 
 @app.get("/api/whatsapp/qr")
-async def get_whatsapp_qr():
-    qr_file_path = Path("whatsapp_qr.txt")
-    if qr_file_path.exists():
-        qr_string = qr_file_path.read_text()
-        return {"qr": qr_string}
+async def get_qr():
+    qr_path = Path("whatsapp_qr.txt")
+    if qr_path.exists():
+        return {"qr": qr_path.read_text()}
     return {"qr": None}
 
-
-@app.post("/api/seed_options")
-async def seed_options(db: Session = Depends(get_db)):
-    # Clean up existing products and options to avoid duplicates
-    db.query(DBOption).delete()
-    db.query(DBOptionGroup).delete()
-    db.query(DBProduct).delete()
-
-    # Create a product without options
-    product_coke = DBProduct(
-        name="Refrigerante",
-        description="Lata 350ml, diversos sabores.",
-        price=5.00,
-        image_url="https://images.unsplash.com/photo-1572490122219-2a3ab2c59b57?w=500"
-    )
-
-    # Create a product with options
-    product_temaki = DBProduct(
-        name="Temaki Salmão",
-        description="Delicioso temaki de salmão fresco.",
-        price=28.00,
-        image_url="https://images.unsplash.com/photo-1588825280795-434c4135679b?w=500"
-    )
-
-    # Group 1: Base (required, single choice)
-    group_base = DBOptionGroup(
-        name="Escolha sua base",
-        min_selection=1,
-        max_selection=1,
-        product=product_temaki
-    )
-    option_arroz = DBOption(name="Com arroz", price=0.0, group=group_base)
-    option_sem_arroz = DBOption(name="Sem arroz (Salmão em dobro)", price=10.0, group=group_base)
-
-    # Group 2: Adicionais (optional, multiple choice)
-    group_adicionais = DBOptionGroup(
-        name="Adicionais",
-        min_selection=0,
-        max_selection=2,
-        product=product_temaki
-    )
-    option_cream_cheese = DBOption(name="Cream Cheese", price=2.0, group=group_adicionais)
-    option_cebolinha = DBOption(name="Cebolinha", price=0.0, group=group_adicionais)
-
-    db.add_all([
-        product_coke, product_temaki, 
-        group_base, option_arroz, option_sem_arroz,
-        group_adicionais, option_cream_cheese, option_cebolinha
-    ])
-    db.commit()
-
-    return {"message": "Banco de dados populado com Temaki e opções."}
-
-
-@app.post("/api/orders")
-async def create_order(order_data: OrderCreateSchema, db: Session = Depends(get_db)):
-    total = sum(item.price * item.quantity for item in order_data.items)
-    public_id = f"{random.randint(1000, 9999)}"
-
-    # Assuming DBOrder model has `items` field that can store JSON
-    db_order = DBOrder(
-        public_id=public_id,
-        customer_name=order_data.customer_name,
-        total_value=total,
-        status="CONFIRMED",
-        items_json=json.dumps([item.model_dump(exclude_none=True) for item in order_data.items])
-    )
-    db.add(db_order)
-    db.commit()
-    db.refresh(db_order)
-
-    log_message = f"Novo pedido {public_id} de {order_data.customer_name} (R$ {total:.2f})"
-    db_log = OperationalLog(event_type="ORDER_CREATED", message=log_message)
-    db.add(db_log)
-    db.commit()
-
-    return {"message": "Pedido criado"}
-
-
+# Rotas de Pedidos e Motoboys
 @app.get("/api/orders")
 async def get_orders(db: Session = Depends(get_db)):
-    active_statuses = ["CONFIRMED", "PREPARING", "READY_FOR_PICKUP"]
-    orders_from_db = db.query(DBOrder).filter(DBOrder.status.in_(active_statuses)).order_by(DBOrder.created_at.asc()).all()
-    
-    result = []
-    for order in orders_from_db:
-        # Converte o horário de criação para o fuso de Brasília (UTC-3)
-        created_at_brt = order.created_at - timedelta(hours=3)
-        
-        items = order.items_json
-        if isinstance(items, str):
-            items = json.loads(items)
+    orders = db.query(Order).all()
+    return [{"id": o.public_id, "customer": o.customer_name, "items": json.loads(o.items_json), "status": o.status} for o in orders]
 
-        result.append({
-            "id": order.public_id,
-            "customer": order.customer_name,
-            "items": items,
-            "status": order.status,
-            "created_at_brt": created_at_brt.strftime("%H:%M")
-        })
-    return result
+@app.post("/api/orders")
+async def create_order(data: OrderCreateSchema, db: Session = Depends(get_db)):
+    new_order = Order(public_id=str(secrets.randbelow(900)+100), customer_name=data.customer_name, items_json=json.dumps([i.dict() for i in data.items]))
+    db.add(new_order); db.commit(); return {"message": "ok"}
 
+@app.post("/api/motoboys")
+async def register_motoboy(data: MotoboyCreate, db: Session = Depends(get_db)):
+    if not db.query(Motoboy).filter(Motoboy.telegram_chat_id == data.telegram_chat_id).first():
+        db.add(Motoboy(name=data.name, telegram_chat_id=data.telegram_chat_id)); db.commit()
+    return {"status": "ok"}
 
-@app.patch("/api/orders/{order_id}/advance")
-async def advance_order_status(order_id: str, db: Session = Depends(get_db)):
-    db_order = db.query(DBOrder).filter(DBOrder.public_id == order_id).first()
-    if not db_order:
-        raise HTTPException(status_code=404, detail="Order not found")
-
-    status_flow = {
-        "CONFIRMED": "PREPARING",
-        "PREPARING": "READY_FOR_PICKUP",
-        "READY_FOR_PICKUP": "DELIVERED",
-    }
-    
-    new_status = status_flow.get(db_order.status)
-    
-    if new_status:
-        db_order.status = new_status
-        log_message = f"Pedido #{db_order.public_id} ({db_order.customer_name}) atualizado para {new_status}"
-        db_log = OperationalLog(event_type="ORDER_STATUS_UPDATE", message=log_message)
-        db.add(db_log)
-        db.commit()
-        return {"message": "Order status advanced", "new_status": new_status}
-    
-    return {"message": "Order cannot be advanced", "status": db_order.status}
-
-
-@app.get("/api/feed")
-async def get_feed(db: Session = Depends(get_db)):
-    logs = db.query(OperationalLog).order_by(OperationalLog.timestamp.desc()).limit(50).all()
-    return [
-        {
-            "time": log.timestamp.strftime("%H:%M"),
-            "type": log.event_type,
-            "message": log.message,
-        }
-        for log in logs
-    ]
+# Renderização de páginas
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dash(request: Request): return templates.TemplateResponse("dashboard.html", {"request": request})
+@app.get("/admin", response_class=HTMLResponse)
+async def admin(request: Request): return templates.TemplateResponse("admin.html", {"request": request})
