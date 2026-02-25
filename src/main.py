@@ -50,6 +50,8 @@ class OrderCreateSchema(BaseModel):
 
 class ConfigSchema(BaseModel):
     openai_api_key: Optional[str] = None
+    maps_key: Optional[str] = None
+    asaas_key: Optional[str] = None
 
 
 # Schemas for Product Options
@@ -123,7 +125,14 @@ async def menu_page(request: Request, db: Session = Depends(get_db)):
 async def config_page(request: Request):
     load_dotenv()
     openai_api_key = os.getenv("OPENAI_API_KEY", "")
-    return templates.TemplateResponse("config.html", {"request": request, "openai_api_key": openai_api_key})
+    maps_api_key = os.getenv("MAPS_API_KEY", "")
+    asaas_api_key = os.getenv("ASAAS_API_KEY", "")
+    return templates.TemplateResponse("config.html", {
+        "request": request, 
+        "openai_api_key": openai_api_key,
+        "maps_api_key": maps_api_key,
+        "asaas_api_key": asaas_api_key
+    })
 
 
 @app.post("/api/config")
@@ -132,8 +141,9 @@ async def save_config(config_data: ConfigSchema):
     if not dotenv_path.exists():
         dotenv_path.touch()
     
-    key_to_save = config_data.openai_api_key if config_data.openai_api_key is not None else ""
-    set_key(str(dotenv_path), "OPENAI_API_KEY", key_to_save)
+    set_key(str(dotenv_path), "OPENAI_API_KEY", config_data.openai_api_key or "")
+    set_key(str(dotenv_path), "MAPS_API_KEY", config_data.maps_key or "")
+    set_key(str(dotenv_path), "ASAAS_API_KEY", config_data.asaas_key or "")
     
     return {"message": "Configuração salva com sucesso."}
 

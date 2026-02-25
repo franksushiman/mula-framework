@@ -34,14 +34,27 @@
     <main class="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
         <div class="w-full max-w-md">
             <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Chave da OpenAI</h2>
-                <form id="config-form">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Chaves de API</h2>
+                <form id="config-form" class="space-y-6">
                     <div>
                         <label for="openai-key" class="block text-sm font-medium text-gray-700">OpenAI API Key</label>
                         <input type="password" id="openai-key" name="openai_api_key" value="{{ openai_api_key }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
-                        <p class="mt-2 text-xs text-gray-500">Sua chave é armazenada localmente no arquivo .env e nunca é compartilhada.</p>
+                        <p class="mt-2 text-xs text-gray-500">Usada para processamento de pedidos via WhatsApp.</p>
                     </div>
-                    <div class="mt-6 text-right">
+
+                    <div>
+                        <label for="maps-key" class="block text-sm font-medium text-gray-700">Google Maps API Key</label>
+                        <input type="password" id="maps-key" name="maps_key" value="{{ maps_api_key }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                        <p class="mt-2 text-xs text-gray-500">Usada para cálculo de rotas e distância de entrega.</p>
+                    </div>
+
+                    <div>
+                        <label for="asaas-key" class="block text-sm font-medium text-gray-700">Asaas API Key</label>
+                        <input type="password" id="asaas-key" name="asaas_key" value="{{ asaas_api_key }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                        <p class="mt-2 text-xs text-gray-500">Usada para geração de cobranças e pagamentos via PIX.</p>
+                    </div>
+
+                    <div class="pt-2 text-right">
                         <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                             Salvar
                         </button>
@@ -60,7 +73,10 @@
     <script>
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const apiKey = document.getElementById('openai-key').value;
+            const openAIKey = document.getElementById('openai-key').value;
+            const mapsKey = document.getElementById('maps-key').value;
+            const asaasKey = document.getElementById('asaas-key').value;
+
             const button = e.target.querySelector('button[type="submit"]');
             button.disabled = true;
             button.textContent = 'Salvando...';
@@ -71,16 +87,20 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ openai_api_key: apiKey }),
+                    body: JSON.stringify({ 
+                        openai_api_key: openAIKey,
+                        maps_key: mapsKey,
+                        asaas_key: asaasKey
+                    }),
                 });
                 if (response.ok) {
-                    alert('Chave da OpenAI salva com sucesso!');
+                    alert('Configurações salvas com sucesso!');
                 } else {
                     const errorData = await response.json();
-                    alert(`Ocorreu um erro ao salvar a chave: ${errorData.detail || 'Erro desconhecido'}`);
+                    alert(`Ocorreu um erro ao salvar: ${errorData.detail || 'Erro desconhecido'}`);
                 }
             } catch (error) {
-                alert('Ocorreu um erro de comunicação ao salvar a chave.');
+                alert('Ocorreu um erro de comunicação ao salvar as configurações.');
             } finally {
                 button.disabled = false;
                 button.textContent = 'Salvar';
