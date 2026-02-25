@@ -1,6 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const axios = require('axios');
+const fs = require('fs');
 const { VertexAI } = require('@google-cloud/vertexai');
 
 // --- Configuração ---
@@ -31,10 +32,14 @@ const client = new Client({
 client.on('qr', (qr) => {
     console.log('QR Code recebido, escaneie com seu celular:');
     qrcode.generate(qr, { small: true });
+    fs.writeFileSync('whatsapp_qr.txt', qr);
 });
 
 client.on('ready', () => {
     console.log('✅ Cliente do WhatsApp está pronto!');
+    if (fs.existsSync('whatsapp_qr.txt')) {
+        fs.unlinkSync('whatsapp_qr.txt');
+    }
 });
 
 client.on('message', async (message) => {

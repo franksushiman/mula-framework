@@ -165,6 +165,15 @@ async def create_motoboy(motoboy_data: MotoboyCreateSchema, db: Session = Depend
     return {"message": "Motoboy registered successfully."}
 
 
+@app.get("/api/whatsapp/qr")
+async def get_whatsapp_qr():
+    qr_file_path = Path("whatsapp_qr.txt")
+    if qr_file_path.exists():
+        qr_string = qr_file_path.read_text()
+        return {"qr": qr_string}
+    return {"qr": None}
+
+
 @app.post("/api/seed_options")
 async def seed_options(db: Session = Depends(get_db)):
     # Clean up existing products and options to avoid duplicates

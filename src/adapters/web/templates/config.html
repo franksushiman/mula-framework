@@ -31,7 +31,19 @@
         </nav>
     </header>
 
-    <main class="flex-grow container mx-auto p-4 md:p-8 flex items-center justify-center">
+    <main class="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center justify-start space-y-8">
+        <!-- Card de Conexão do WhatsApp -->
+        <div class="w-full max-w-md">
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Conexão do WhatsApp</h2>
+                <div id="whatsapp-connection" class="flex justify-center items-center h-64 min-h-[250px]">
+                    <!-- QR Code ou Status será renderizado aqui -->
+                    <p class="text-gray-500">Carregando status...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card de Chaves de API -->
         <div class="w-full max-w-md">
             <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Chaves de API</h2>
@@ -71,6 +83,7 @@
     </footer>
 
     <script>
+        // Lógica para salvar o formulário de chaves de API
         document.getElementById('config-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const openAIKey = document.getElementById('openai-key').value;
@@ -106,6 +119,29 @@
                 button.textContent = 'Salvar';
             }
         });
+
+        // Lógica para buscar e exibir o QR Code do WhatsApp
+        const whatsappContainer = document.getElementById('whatsapp-connection');
+        const checkWhatsAppStatus = async () => {
+            try {
+                const response = await fetch('/api/whatsapp/qr');
+                const data = await response.json();
+
+                if (data.qr) {
+                    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qr)}`;
+                    whatsappContainer.innerHTML = `<img src="${qrImageUrl}" alt="Escaneie para conectar o WhatsApp">`;
+                } else {
+                    whatsappContainer.innerHTML = `<p class="text-green-600 font-semibold text-lg">WhatsApp Conectado ✅</p>`;
+                }
+            } catch (error) {
+                console.error('Erro ao buscar QR Code do WhatsApp:', error);
+                whatsappContainer.innerHTML = `<p class="text-red-500">Erro ao verificar status do WhatsApp.</p>`;
+            }
+        };
+
+        // Verifica o status imediatamente ao carregar a página e depois a cada 3 segundos
+        checkWhatsAppStatus();
+        setInterval(checkWhatsAppStatus, 3000);
     </script>
 </body>
 </html>
