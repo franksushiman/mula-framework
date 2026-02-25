@@ -61,12 +61,12 @@ client.on('message', async (message) => {
         const orderJson = await extractOrderFromMessage(messageBody, customerName);
 
         // 2. Enviar o pedido para a API do backend
-        const apiResponse = await postOrderToApi(orderJson);
+        await postOrderToApi(orderJson);
 
         // 3. Responder ao cliente com a confirmação
-        const confirmationMessage = `Olá ${customerName}, seu pedido foi recebido! 👍\nID: ${apiResponse.order_id}\nTotal: R$ ${apiResponse.total.toFixed(2)}`;
+        const confirmationMessage = `Olá ${customerName}, seu pedido foi recebido e já está na cozinha! 👍`;
         await message.reply(confirmationMessage);
-        console.log(`[API] Pedido ${apiResponse.order_id} criado e confirmado para ${customerName}.`);
+        console.log(`[API] Pedido criado e confirmado para ${customerName}.`);
 
     } catch (error) {
         console.error('[ERRO] Falha ao processar pedido:', error.message);
