@@ -58,3 +58,11 @@ class OperationalLog(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     event_type = Column(String)
     message = Column(String)
+
+
+class Motoboy(Base):
+    __tablename__ = "motoboys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    telegram_chat_id = Column(String, unique=True, index=True)

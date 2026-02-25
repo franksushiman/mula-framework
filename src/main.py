@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session, joinedload
 
 from adapters.database.config import SessionLocal, engine, Base
-from adapters.database.models import Order as DBOrder, OperationalLog, Product as DBProduct, OptionGroup as DBOptionGroup, Option as DBOption
+from adapters.database.models import Order as DBOrder, OperationalLog, Product as DBProduct, OptionGroup as DBOptionGroup, Option as DBOption, Motoboy as DBMotoboy
 
 
 app = FastAPI(title="CEIA OS")
@@ -52,6 +52,11 @@ class ConfigSchema(BaseModel):
     openai_api_key: Optional[str] = None
     maps_key: Optional[str] = None
     asaas_key: Optional[str] = None
+
+
+class MotoboyCreateSchema(BaseModel):
+    name: str
+    telegram_chat_id: str
 
 
 # Schemas for Product Options
@@ -146,6 +151,18 @@ async def save_config(config_data: ConfigSchema):
     set_key(str(dotenv_path), "ASAAS_API_KEY", config_data.asaas_key or "")
     
     return {"message": "Configuração salva com sucesso."}
+
+
+@app.post("/api/motoboys")
+async def create_motoboy(motoboy_data: MotoboyCreateSchema, db: Session = Depends(get_db)):
+    db_motoboy = DBMotoboy(
+        name=motoboy_data.name,
+        telegram_chat_id=motoboy_data.telegram_chat_id
+    )
+    db.add(db_motoboy)
+    db.commit()
+    db.refresh(db_motoboy)
+    return {"message": "Motoboy registered successfully."}
 
 
 @app.post("/api/seed_options")
