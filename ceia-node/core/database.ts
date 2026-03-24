@@ -21,3 +21,28 @@ export function getZones() { return db.query("SELECT * FROM delivery_zones").all
 export function upsertZone(data: any) { if (data.id) { db.run("UPDATE delivery_zones SET nome=?, taxa=? WHERE id=?", [data.nome, data.taxa, data.id]); } else { db.run("INSERT INTO delivery_zones (nome, taxa, tipo, geometria) VALUES (?, ?, ?, ?)", [data.nome, data.taxa, data.tipo, data.geometria]); } return getZones(); }
 export function deleteZone(id: number) { db.run("DELETE FROM delivery_zones WHERE id = ?", [id]); return getZones(); }
 export function getFleet() { return db.query("SELECT * FROM fleet ORDER BY status DESC").all(); }
+
+export function getDriverByTelegramId(telegram_id: string | number) {
+    return db.query("SELECT * FROM fleet WHERE telegram_id = ?").get(telegram_id);
+}
+
+export function createDriver(data: any) {
+    db.run(
+        "INSERT INTO fleet (telegram_id, nome, cpf, chave_pix, tipo_vinculo, veiculo, status) VALUES (?, ?, ?, ?, ?, ?, 'ONLINE')",
+        [data.telegram_id, data.nome, data.cpf, data.chave_pix, data.tipo_vinculo, data.veiculo]
+    );
+    return getDriverByTelegramId(data.telegram_id);
+}
+
+export function updateDriverStatus(telegram_id: string | number, status: string) {
+    db.run("UPDATE fleet SET status=?, ultima_atualizacao=CURRENT_TIMESTAMP WHERE telegram_id=?", [status, telegram_id]);
+    return getDriverByTelegramId(telegram_id);
+}
+
+export function updateDriverLocation(telegram_id: string | number, lat: number, lng: number) {
+    db.run(
+        "UPDATE fleet SET status='ONLINE', lat=?, lng=?, ultima_atualizacao=CURRENT_TIMESTAMP WHERE telegram_id=?",
+        [lat, lng, telegram_id]
+    );
+    return getDriverByTelegramId(telegram_id);
+}
