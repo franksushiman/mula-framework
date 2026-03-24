@@ -117,6 +117,10 @@
                 <div class="form-group"><label>Nome do Ponto de Coleta (Restaurante)</label><input type="text" id="prof-nome" class="form-control"></div>
                 <div class="form-group"><label>Endereço Base (Ponto de Partida)</label><input type="text" id="prof-endereco" class="form-control"></div>
                 <div class="form-group"><label>WhatsApp Oficial do Restaurante</label><input type="text" id="prof-whatsapp" class="form-control" placeholder="55..."></div>
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
+                <div class="form-group"><label>Google Maps Key</label><input type="password" id="prof-google-maps-key" class="form-control"></div>
+                <div class="form-group"><label>OpenAI API Key</label><input type="password" id="prof-openai-key" class="form-control"></div>
+                <div class="form-group"><label>Meta (Whatsapp) API Token</label><input type="password" id="prof-meta-api-token" class="form-control"></div>
                 <button class="btn" id="btn-salvar-perfil" onclick="salvarPerfil()">Gravar Base</button>
             </div>
         </div>
@@ -300,13 +304,33 @@
         function abrirEdit(id, n, t) { document.getElementById('edit-id').value = id; document.getElementById('zone-nome').value = n; document.getElementById('zone-taxa').value = t; document.getElementById('zoneModal').style.display = 'flex'; }
         function cancelarEdicao() { if(formaTemp) formaTemp.setMap(null); document.getElementById('zoneModal').style.display = 'none'; }
         
+        function loadGoogleMaps(apiKey) {
+            // Evita carregar o script do Google Maps múltiplas vezes
+            if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
+            
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing&callback=initMap`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+
         async function salvarPerfil() {
-            const body = { nome: document.getElementById('prof-nome').value, endereco: document.getElementById('prof-endereco').value, whatsapp: document.getElementById('prof-whatsapp').value, lat: -26.2163, lng: -48.6017 };
+            const body = { 
+                nome: document.getElementById('prof-nome').value, 
+                endereco: document.getElementById('prof-endereco').value, 
+                whatsapp: document.getElementById('prof-whatsapp').value, 
+                openai_key: document.getElementById('prof-openai-key').value,
+                google_maps_key: document.getElementById('prof-google-maps-key').value,
+                meta_api_token: document.getElementById('prof-meta-api-token').value,
+                lat: -26.2163, 
+                lng: -48.6017 
+            };
             await fetch('/api/profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
             
             // FEEDBACK VISUAL NO BOTÃO (SEM ALERT NATIVO)
             const btn = document.getElementById('btn-salvar-perfil');
-            btn.innerText = 'Base Salva!';
+            btn.innerText = 'Base e Chaves Salvas!';
             btn.style.background = '#10b981';
             setTimeout(() => { btn.innerText = 'Gravar Base'; btn.style.background = 'var(--accent)'; }, 2000);
         }
@@ -317,8 +341,14 @@
             document.getElementById('prof-nome').value = d.nome || '';
             document.getElementById('prof-endereco').value = d.endereco || '';
             document.getElementById('prof-whatsapp').value = d.whatsapp || '';
+            document.getElementById('prof-google-maps-key').value = d.google_maps_key || '';
+            document.getElementById('prof-openai-key').value = d.openai_key || '';
+            document.getElementById('prof-meta-api-token').value = d.meta_api_token || '';
+
+            if (d.google_maps_key) {
+                loadGoogleMaps(d.google_maps_key);
+            }
         };
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMPbubFJRTXpfjdRfnttKX6mODOJbuCCI&libraries=drawing&callback=initMap" async defer></script>
 </body>
 </html>
