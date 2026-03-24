@@ -15,7 +15,10 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  // Adiciona um delay para dar tempo ao servidor Bun de iniciar antes de carregar a URL
+  setTimeout(() => {
+    mainWindow.loadURL('http://localhost:3000');
+  }, 500);
 
   // Abrir links externos no navegador padrão
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
