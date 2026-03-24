@@ -40,6 +40,9 @@
         .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
         .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: var(--font-main); font-size: 0.95rem; outline: none; transition: 0.2s; }
         .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 208, 183, 0.15); }
+        .instruction-link { display: block; margin-top: 8px; font-size: 0.75rem; color: var(--text-light); }
+        .instruction-link a { color: var(--text-light); text-decoration: underline; }
+        .instruction-link a:hover { color: var(--accent); }
         
         .btn { background-color: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; width: 100%; transition: 0.2s ease; font-family: var(--font-main); }
         .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 208, 183, 0.2); }
@@ -118,9 +121,21 @@
                 <div class="form-group"><label>Endereço Base (Ponto de Partida)</label><input type="text" id="prof-endereco" class="form-control"></div>
                 <div class="form-group"><label>WhatsApp Oficial do Restaurante</label><input type="text" id="prof-whatsapp" class="form-control" placeholder="55..."></div>
                 <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
-                <div class="form-group"><label>Google Maps Key</label><input type="password" id="prof-google-maps-key" class="form-control"></div>
-                <div class="form-group"><label>OpenAI API Key</label><input type="password" id="prof-openai-key" class="form-control"></div>
-                <div class="form-group"><label>Meta (Whatsapp) API Token</label><input type="password" id="prof-meta-api-token" class="form-control"></div>
+                <div class="form-group">
+                    <label>Google Maps Key</label>
+                    <input type="password" id="prof-google-maps-key" class="form-control">
+                    <small class="instruction-link">Crie seu projeto e chave em: <a href="https://console.cloud.google.com/google/maps-apis" target="_blank">https://console.cloud.google.com/google/maps-apis</a></small>
+                </div>
+                <div class="form-group">
+                    <label>OpenAI API Key</label>
+                    <input type="password" id="prof-openai-key" class="form-control">
+                    <small class="instruction-link">Obtenha sua chave em: <a href="https://platform.openai.com/api-keys" target="_blank">https://platform.openai.com/api-keys</a></small>
+                </div>
+                <div class="form-group">
+                    <label>Meta (Whatsapp) API Token</label>
+                    <input type="password" id="prof-meta-api-token" class="form-control">
+                    <small class="instruction-link">Configure seu App e Token em: <a href="https://developers.facebook.com" target="_blank">https://developers.facebook.com</a></small>
+                </div>
                 <button class="btn" id="btn-salvar-perfil" onclick="salvarPerfil()">Gravar Base</button>
             </div>
         </div>
