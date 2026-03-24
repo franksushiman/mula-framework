@@ -1,6 +1,9 @@
 const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 
+// Adicionado para corrigir problemas de renderização de GPU no Linux
+app.disableHardwareAcceleration();
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
