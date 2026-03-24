@@ -15,10 +15,17 @@ function createWindow() {
     }
   });
 
-  // Adiciona um delay para dar tempo ao servidor Bun de iniciar antes de carregar a URL
-  setTimeout(() => {
-    mainWindow.loadURL('http://localhost:3000');
-  }, 500);
+  const appUrl = 'http://localhost:3000';
+
+  // Tenta carregar a URL com retentativas para aguardar o servidor Bun iniciar.
+  const loadApp = () => {
+    mainWindow.loadURL(appUrl).catch(err => {
+      console.log('Servidor ainda não está pronto, tentando novamente em 1 segundo...');
+      setTimeout(loadApp, 1000);
+    });
+  };
+
+  loadApp();
 
   // Abrir links externos no navegador padrão
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
