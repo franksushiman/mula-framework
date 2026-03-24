@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>CEIA - Gestão de Frota</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>
+        :root { --bg-color: #f8fafc; --sidebar-bg: #0f172a; --card-bg: #ffffff; --text-dark: #0f172a; --text-light: #64748b; --accent: #00d0b7; --accent-hover: #00b39e; --border: #e2e8f0; --font-main: 'Poppins', sans-serif; --font-mono: 'Roboto Mono', monospace; }
+        body { margin: 0; font-family: var(--font-main); display: flex; height: 100vh; background-color: var(--bg-color); color: var(--text-dark); overflow: hidden; }
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 20px 0; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+        .logo-container { font-size: 2.2rem; font-weight: 700; padding: 0 24px 30px; border-bottom: 1px solid #1e293b; margin-bottom: 20px; letter-spacing: -1px; }
+        .logo-dot { color: var(--accent); }
+        .nav-item { padding: 14px 24px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s ease; border-right: 3px solid transparent; font-weight: 500; font-size: 0.95rem; }
+        .nav-item:hover { color: white; background-color: rgba(255,255,255,0.03); }
+        .nav-item.active { background-color: rgba(0, 208, 183, 0.08); color: var(--accent); border-right-color: var(--accent); }
+        
+        .main-content { flex: 1; position: relative; display: flex; flex-direction: column; height: 100%;}
+        .tab-content { display: none; padding: 40px; overflow-y: auto; height: 100%; box-sizing: border-box; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .header-title { font-size: 1.8rem; font-weight: 600; margin-top: 0; margin-bottom: 30px; letter-spacing: -0.5px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 24px; max-width: 600px; }
+        
+        /* Map Layout */
+        .map-section { display: flex; flex-grow: 1; height: calc(100vh - 140px); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .zones-list-panel { width: 320px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: #fff; }
+        .zones-header { padding: 20px; border-bottom: 1px solid var(--border); background: #f8fafc; font-weight: 600; font-size: 1.1rem; }
+        .zones-body { flex: 1; overflow-y: auto; padding: 10px; }
+        .zone-item { padding: 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; transition: 0.2s; background: white; }
+        .zone-item:hover { border-color: var(--accent); box-shadow: 0 4px 6px rgba(0,208,183,0.05); }
+        .zone-title { font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 4px; font-size: 1.05rem; }
+        .zone-taxa { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-light); display: block; margin-bottom: 12px; }
+        .zone-actions { display: flex; gap: 8px; }
+        #map { flex: 1; height: 100%; }
+
+        /* Forms & Buttons */
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: var(--font-main); font-size: 0.95rem; outline: none; transition: 0.2s; }
+        .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 208, 183, 0.15); }
+        
+        .btn { background-color: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; width: 100%; transition: 0.2s ease; font-family: var(--font-main); }
+        .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 208, 183, 0.2); }
+        .btn-cancel { background: transparent; color: var(--text-light); border: 1px solid var(--border); margin-top: 10px; box-shadow: none; }
+        
+        .btn-action { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; font-family: var(--font-main); text-align: center; }
+        .btn-edit { background-color: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+        .btn-del { background-color: #fef2f2; color: #ef4444; border-color: #fee2e2; }
+        .btn-pay { background-color: #ecfdf5; color: #10b981; border-color: #a7f3d0; }
+
+        /* Modals */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-card { background: white; padding: 28px; border-radius: 16px; width: 360px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid var(--border); text-align: center; }
+        
+        .copy-box { display: flex; align-items: center; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 20px; }
+        .copy-input { flex: 1; background: transparent; border: none; font-family: var(--font-mono); font-size: 0.85rem; color: #334155; outline: none; }
+        .btn-copy { background: #0f172a; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        
+        /* Fleet Grid */
+        .fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 20px; align-items: start; }
+        .fleet-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.2s; }
+        .fleet-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 16px; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-offline { background: #f1f5f9; color: #64748b; }
+        .status-online { background: #ecfdf5; color: #10b981; }
+        .status-em_entrega { background: #eff6ff; color: #3b82f6; }
+        
+        .invite-panel { display: flex; gap: 10px; align-items: center; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-container">frota<span class="logo-dot">.</span>ceia</div>
+        <div class="nav-item" onclick="switchTab('tab-operacional', this)">⚡ Despacho</div>
+        <div class="nav-item active" onclick="switchTab('tab-frota', this)">🛵 Minha Frota</div>
+        <div class="nav-item" onclick="switchTab('tab-mapa', this)">🗺️ Mapa de Taxas</div>
+        <div class="nav-item" onclick="switchTab('tab-perfil', this)">🏠 QG Logístico</div>
+    </div>
+
+    <div class="main-content">
+        <div id="tab-operacional" class="tab-content">
+            <h1 class="header-title">Despacho de Corridas</h1>
+            <div class="card">
+                <h3 style="margin-top:0;">Acionar Frota</h3>
+                <div class="form-group"><label>Destino (Endereço do Cliente)</label><input type="text" class="form-control" placeholder="Rua, Número, Bairro"></div>
+                <button class="btn">Localizar Motoboy Disponível</button>
+            </div>
+        </div>
+
+        <div id="tab-frota" class="tab-content active">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h1 class="header-title" style="margin: 0;">Gestão da Frota</h1>
+                <div class="invite-panel">
+                    <input type="text" id="moto-zap" class="form-control" placeholder="WhatsApp (Ex: 47999999999)" style="margin: 0; width: 250px;">
+                    <button id="btn-disparar" class="btn" style="margin: 0; width: auto; padding: 12px 24px;" onclick="dispararConvite()">Disparar Convite</button>
+                </div>
+            </div>
+            <div id="fleet-container" class="fleet-grid"></div>
+        </div>
+
+        <div id="tab-mapa" class="tab-content">
+            <h1 class="header-title">Mapa de Taxas de Entrega</h1>
+            <div class="map-section">
+                <div class="zones-list-panel">
+                    <div class="zones-header">Regiões Mapeadas</div>
+                    <div class="zones-body" id="zones-list-content"></div>
+                </div>
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <div id="tab-perfil" class="tab-content">
+            <h1 class="header-title">QG Logístico</h1>
+            <div class="card">
+                <div class="form-group"><label>Nome do Ponto de Coleta (Restaurante)</label><input type="text" id="prof-nome" class="form-control"></div>
+                <div class="form-group"><label>Endereço Base (Ponto de Partida)</label><input type="text" id="prof-endereco" class="form-control"></div>
+                <div class="form-group"><label>WhatsApp Oficial do Restaurante</label><input type="text" id="prof-whatsapp" class="form-control" placeholder="55..."></div>
+                <button class="btn" id="btn-salvar-perfil" onclick="salvarPerfil()">Gravar Base</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="zoneModal">
+        <div class="modal-card" style="width: 340px;">
+            <h3 id="modal-title">Área de Cobrança</h3>
+            <input type="hidden" id="edit-id">
+            <div class="form-group"><label>Nome da Região</label><input type="text" id="zone-nome" class="form-control" placeholder="Ex: Zona Sul"></div>
+            <div class="form-group"><label>Valor da Corrida (R$)</label><input type="number" id="zone-taxa" step="0.50" class="form-control" placeholder="0.00"></div>
+            <button class="btn" onclick="salvarZona()">Confirmar Valor</button>
+            <button class="btn btn-cancel" onclick="cancelarEdicao()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="pixModal">
+        <div class="modal-card">
+            <h3 style="margin-top:0; color:var(--text-dark);" id="pix-motoboy-nome">Pagar Motoboy</h3>
+            <p id="pix-valor-texto" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 20px;">R$ 0,00</p>
+            
+            <div style="background: white; padding: 10px; border-radius: 12px; border: 1px solid var(--border); display: inline-block; margin-bottom: 20px;">
+                <img id="qr-img" src="" alt="QR Code Pix" style="width: 200px; height: 200px; display: block;">
+            </div>
+
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-light); margin-bottom: 8px; text-align: left;">Pix Copia e Cola Oficial:</label>
+            <div class="copy-box">
+                <input type="text" id="pix-copia-cola" class="copy-input" readonly>
+                <button class="btn-copy" onclick="copiarPix()">Copiar</button>
+            </div>
+            <button class="btn btn-cancel" onclick="fecharModalPix()">Fechar Pagamento</button>
+        </div>
+    </div>
+
+    <script>
+        let map, drawingManager, formaTemp, zonaEdicao = {}, formasMapa = {};
+
+        function switchTab(id, el) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+            if(id === 'tab-mapa' && map) {
+                google.maps.event.trigger(map, "resize");
+            }
+            if(id === 'tab-frota') carregarFrota();
+        }
+
+        // --- FROTA & PIX ---
+        async function carregarFrota() {
+            const res = await fetch('/api/fleet');
+            const frota = await res.json();
+            const container = document.getElementById('fleet-container');
+            
+            container.innerHTML = frota.map(m => {
+                const saldoFreela = m.tipo_vinculo === 'FREELANCER' ? (Math.random() * 80 + 20).toFixed(2) : '0.00';
+                return `
+                <div class="fleet-card">
+                    <div class="fleet-header">
+                        <h3 style="margin:0; font-size:1.15rem;">${m.nome}</h3>
+                        <span class="status-badge status-${m.status.toLowerCase()}">${m.status.replace('_', ' ')}</span>
+                    </div>
+                    <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:8px;"><strong>Vínculo:</strong> ${m.tipo_vinculo}</div>
+                    <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:16px;"><strong>Pix:</strong> <span style="font-family:var(--font-mono);">${m.chave_pix}</span></div>
+                    <div class="zone-actions">
+                        <button class="btn-action btn-edit" onclick="console.log('Abrir ficha de ${m.nome}')">Ficha</button>
+                        <button class="btn-action btn-pay" onclick="abrirPagamento('${m.nome}', '${m.chave_pix}', '${m.tipo_vinculo}', '${saldoFreela}')">Pagar via Pix</button>
+                    </div>
+                </div>`
+            }).join('');
+        }
+
+        function abrirPagamento(nomeOriginal, chavePix, vinculo, saldoMock) {
+            document.getElementById('pix-motoboy-nome').innerText = `Pagar ${nomeOriginal}`;
+            const valor = vinculo === 'FREELANCER' ? saldoMock : null;
+            if (valor) { document.getElementById('pix-valor-texto').innerText = `Corridas: R$ ${valor.replace('.', ',')}`; } 
+            else { document.getElementById('pix-valor-texto').innerText = `Valor Livre (Fixo)`; }
+
+            const payload = gerarPayloadPixPuro(chavePix, "MOTOBOY", "SC", valor);
+            document.getElementById('pix-copia-cola').value = payload;
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
+            document.getElementById('pixModal').style.display = 'flex';
+        }
+
+        function fecharModalPix() { document.getElementById('pixModal').style.display = 'none'; }
+        function copiarPix() {
+            const copyText = document.getElementById('pix-copia-cola');
+            copyText.select(); navigator.clipboard.writeText(copyText.value);
+            const btn = document.querySelector('.btn-copy');
+            btn.innerText = 'Copiado!'; btn.style.background = '#10b981';
+            setTimeout(() => { btn.innerText = 'Copiar'; btn.style.background = '#0f172a'; }, 2000);
+        }
+
+        function gerarPayloadPixPuro(chaveOriginal, nomeOriginal, cidadeOriginal, valorStr) {
+            const chave = chaveOriginal.trim();
+            const limpar = (txt, max) => txt.normalize("NFD").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, max).trim().toUpperCase();
+            const nome = limpar(nomeOriginal, 25) || "MOTOBOY";
+            const cidade = limpar(cidadeOriginal, 15) || "CIDADE";
+            let valorFormatado = '';
+            if (valorStr && parseFloat(valorStr) > 0) valorFormatado = parseFloat(valorStr).toFixed(2);
+            
+            const emv = (id, val) => id + String(val.length).padStart(2, '0') + val;
+
+            const payloadBase = "000201" + emv("26", emv("00", "br.gov.bcb.pix") + emv("01", chave)) + "52040000" + "5303986" + (valorFormatado ? emv("54", valorFormatado) : "") + "5802BR" + emv("59", nome) + emv("60", cidade) + emv("62", emv("05", "CEIA")) + "6304";
+            
+            let crc = 0xFFFF;
+            for (let i = 0; i < payloadBase.length; i++) {
+                crc ^= payloadBase.charCodeAt(i) << 8;
+                for (let j = 0; j < 8; j++) {
+                    if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
+                    else crc = crc << 1;
+                }
+            }
+            return payloadBase + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        async function dispararConvite() {
+            const inputZap = document.getElementById('moto-zap');
+            const zap = inputZap.value.replace(/\D/g, ''); 
+            const btn = document.getElementById('btn-disparar');
+
+            if(!zap || zap.length < 10) { 
+                btn.innerText = "Número Inválido!";
+                btn.style.background = "#ef4444";
+                setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 2000);
+                return; 
+            }
+            
+            btn.innerText = "Disparando..."; btn.style.opacity = "0.7";
+            try {
+                const res = await fetch('/api/fleet/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ whatsapp_motoboy: zap }) });
+                if(res.ok) {
+                    btn.innerText = "Enviado!"; btn.style.background = "#10b981"; btn.style.opacity = "1";
+                    inputZap.value = '';
+                    setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 3000);
+                }
+            } catch (err) { 
+                btn.innerText = "Erro!"; btn.style.background = "#ef4444"; btn.style.opacity = "1"; 
+                setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 2000);
+            }
+        }
+
+        // --- MAPA E PERFIL ---
+        async function initMap() {
+            const res = await fetch('/api/profile'); const p = await res.json();
+            const pos = { lat: p.lat || -26.2163, lng: p.lng || -48.6017 };
+            map = new google.maps.Map(document.getElementById("map"), { zoom: 13, center: pos, disableDefaultUI: true, zoomControl: true, styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }] });
+            drawingManager = new google.maps.drawing.DrawingManager({ drawingControl: true, drawingControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT, drawingModes: ['polygon', 'circle'] }, polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' } });
+            drawingManager.setMap(map);
+
+            google.maps.event.addListener(drawingManager, 'overlaycomplete', e => {
+                formaTemp = e.overlay; drawingManager.setDrawingMode(null);
+                document.getElementById('edit-id').value = ''; document.getElementById('zone-nome').value = ''; document.getElementById('zone-taxa').value = '';
+                zonaEdicao.tipo = e.type; zonaEdicao.geo = e.type === 'polygon' ? e.overlay.getPath().getArray().map(p => ({lat:p.lat(), lng:p.lng()})) : {center: {lat:e.overlay.getCenter().lat(), lng:e.overlay.getCenter().lng()}, radius: e.overlay.getRadius()};
+                document.getElementById('zoneModal').style.display = 'flex'; document.getElementById('zone-nome').focus();
+            });
+            carregarZonas();
+        }
+
+        async function carregarZonas() {
+            const res = await fetch('/api/zones'); const zonas = await res.json();
+            const list = document.getElementById('zones-list-content'); list.innerHTML = '';
+            Object.values(formasMapa).forEach(f => f.setMap(null)); formasMapa = {};
+            if(zonas.length === 0) { list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-light); font-size: 0.9rem;">Desenhe no mapa.</div>'; return; }
+            zonas.forEach(z => {
+                const geo = JSON.parse(z.geometria);
+                const shape = z.tipo === 'polygon' ? new google.maps.Polygon({paths:geo, map:map, fillOpacity:0.15, fillColor:'#00d0b7', strokeColor:'#00b39e', strokeWeight:2}) : new google.maps.Circle({center:geo.center, radius:geo.radius, map:map, fillOpacity:0.15, fillColor:'#00d0b7', strokeColor:'#00b39e', strokeWeight:2});
+                formasMapa[z.id] = shape;
+                // EXCLUSÃO IMEDIATA, SEM POPUP NATIVO
+                list.innerHTML += `<div class="zone-item" onmouseenter="realcar(${z.id})" onmouseleave="voltar(${z.id})"><span class="zone-title">${z.nome}</span><span class="zone-taxa">Valor: R$ ${z.taxa.toFixed(2)}</span><div class="zone-actions"><button class="btn-action btn-edit" onclick="abrirEdit(${z.id},'${z.nome}',${z.taxa})">Editar</button><button class="btn-action btn-del" onclick="delZona(${z.id})">Excluir</button></div></div>`;
+            });
+        }
+
+        function realcar(id) { formasMapa[id].setOptions({fillOpacity: 0.4}); }
+        function voltar(id) { formasMapa[id].setOptions({fillOpacity: 0.15}); }
+        async function salvarZona() { const id = document.getElementById('edit-id').value; await fetch('/api/zones', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: id || null, nome: document.getElementById('zone-nome').value, taxa: document.getElementById('zone-taxa').value, tipo: id ? null : zonaEdicao.tipo, geometria: id ? null : JSON.stringify(zonaEdicao.geo) }) }); document.getElementById('zoneModal').style.display = 'none'; if(formaTemp) formaTemp.setMap(null); carregarZonas(); }
+        
+        // FUNÇÃO DE EXCLUSÃO LIMPA E DIRETA
+        async function delZona(id) { await fetch(`/api/zones/${id}`, { method: 'DELETE' }); carregarZonas(); }
+        
+        function abrirEdit(id, n, t) { document.getElementById('edit-id').value = id; document.getElementById('zone-nome').value = n; document.getElementById('zone-taxa').value = t; document.getElementById('zoneModal').style.display = 'flex'; }
+        function cancelarEdicao() { if(formaTemp) formaTemp.setMap(null); document.getElementById('zoneModal').style.display = 'none'; }
+        
+        async function salvarPerfil() {
+            const body = { nome: document.getElementById('prof-nome').value, endereco: document.getElementById('prof-endereco').value, whatsapp: document.getElementById('prof-whatsapp').value, lat: -26.2163, lng: -48.6017 };
+            await fetch('/api/profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+            
+            // FEEDBACK VISUAL NO BOTÃO (SEM ALERT NATIVO)
+            const btn = document.getElementById('btn-salvar-perfil');
+            btn.innerText = 'Base Salva!';
+            btn.style.background = '#10b981';
+            setTimeout(() => { btn.innerText = 'Gravar Base'; btn.style.background = 'var(--accent)'; }, 2000);
+        }
+
+        window.onload = async () => {
+            carregarFrota();
+            const res = await fetch('/api/profile'); const d = await res.json();
+            document.getElementById('prof-nome').value = d.nome || '';
+            document.getElementById('prof-endereco').value = d.endereco || '';
+            document.getElementById('prof-whatsapp').value = d.whatsapp || '';
+        };
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCMPbubFJRTXpfjdRfnttKX6mODOJbuCCI&libraries=drawing&callback=initMap" async defer></script>
+</body>
+</html>
