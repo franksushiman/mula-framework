@@ -406,8 +406,23 @@
                     }
                     if (data.status === 'CONNECTED') {
                         clearInterval(window.qrInterval);
-                        document.getElementById('modal-qr-whatsapp').style.display = 'none';
-                        alert('✅ WhatsApp Conectado com Sucesso!');
+                        const modalBox = document.querySelector('#modal-qr-whatsapp > div');
+                        const htmlOriginal = modalBox.innerHTML; // Guarda o visual do QR code
+                        
+                        // Injeta a mensagem de sucesso direto no modal
+                        modalBox.innerHTML = `
+                            <div style="text-align: center; padding: 30px 10px;">
+                                <div style="font-size: 60px; margin-bottom: 15px;">✅</div>
+                                <h3 style="color: #25D366; margin: 0; font-size: 22px;">WhatsApp Conectado!</h3>
+                                <p style="color: #666; font-size: 15px; margin-top: 10px;">O robô já está operando em background.</p>
+                            </div>
+                        `;
+                        
+                        // Fecha o modal suavemente após 2.5 segundos e restaura o HTML
+                        setTimeout(() => {
+                            document.getElementById('modal-qr-whatsapp').style.display = 'none';
+                            modalBox.innerHTML = htmlOriginal; 
+                        }, 2500);
                     }
                 } catch (e) {}
             }, 2000);

@@ -304,6 +304,7 @@ serve({
 });
 console.log("🚀 Nó MULA Logística rodando liso na porta 3000");
 startTelegramPolling().catch(err => console.error("Erro fatal no Telegram Polling:", err));
+startWhatsApp();
 
 // --- Varredor de Radar ---
 setInterval(() => {
