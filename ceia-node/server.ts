@@ -1,4 +1,5 @@
 import { serve } from "bun";
+import OpenAI from "openai";
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers } from "./core/database";
@@ -9,6 +10,17 @@ let waClient: any = null;
 let currentQR: string = '';
 let waStatus: string = 'DISCONNECTED';
 let realBotUsername = '';
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // Raio da Terra em km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
 
 function startWhatsApp() {
     if (waClient) return;
@@ -22,6 +34,77 @@ function startWhatsApp() {
         waStatus = 'CONNECTED';
         console.log('✅ WhatsApp Conectado e Pronto!');
     });
+
+    waClient.on('message', async (msg: any) => {
+        try {
+            const profile = getProfile() as any;
+            if (!profile || !profile.openai_key) {
+                console.log("⚠️ Chave da OpenAI não configurada. Ignorando mensagem do WhatsApp.");
+                return;
+            }
+
+            const openai = new OpenAI({ apiKey: profile.openai_key });
+            let messageText = msg.body;
+
+            // a) Tratamento de Áudio
+            if (msg.hasMedia) {
+                const media = await msg.downloadMedia();
+                if (media && (media.mimetype.startsWith('audio/ogg') || media.mimetype.startsWith('audio/mpeg') || media.mimetype.startsWith('audio/mp4'))) {
+                    console.log("🎤 Transcrevendo áudio...");
+                    const audioBuffer = Buffer.from(media.data, 'base64');
+                    const audioFile = new File([audioBuffer], "audio.ogg", { type: media.mimetype });
+                    
+                    const transcription = await openai.audio.transcriptions.create({
+                        model: "whisper-1",
+                        file: audioFile,
+                    });
+                    messageText = transcription.text;
+                    console.log(`📝 Transcrição: "${messageText}"`);
+                }
+            }
+
+            if (!messageText || messageText.trim() === '') return;
+
+            // b) Classificação (GPT-4o-mini)
+            const classificationResponse = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    { role: "system", content: "Você é o classificador de intenções da logística. Responda APENAS com uma destas duas palavras:\n- MENU: se o cliente pedir cardápio, quiser comprar, ou disser oi/bom dia.\n- STATUS: se o cliente perguntar onde está a comida, se já saiu, ou tempo de entrega.\nSe não for nenhum dos dois, responda NADA." },
+                    { role: "user", content: messageText }
+                ],
+                max_tokens: 10,
+            });
+
+            const intent = classificationResponse.choices[0].message.content?.trim().toUpperCase();
+            console.log(`🧠 Intenção detectada: ${intent}`);
+
+            // c) Regra "MENU"
+            if (intent === 'MENU') {
+                if (profile.link_cardapio) {
+                    await msg.reply(`Olá! Faça seu pedido rapidamente pelo nosso cardápio digital: ${profile.link_cardapio}`);
+                }
+            }
+            // d) Regra "STATUS"
+            else if (intent === 'STATUS') {
+                const clienteTelefone = msg.from.replace('@c.us', '');
+                const dispatch = db.query("SELECT * FROM active_dispatches WHERE cliente_telefone LIKE ? ORDER BY id DESC LIMIT 1").get(`%${clienteTelefone}%`) as any;
+
+                if (!dispatch) {
+                    return; // Silêncio
+                }
+
+                const motoboy = getDriverById(dispatch.motoboy_id) as any;
+                if (motoboy && motoboy.lat && motoboy.lng && dispatch.lat_destino && dispatch.lng_destino) {
+                    const distance = haversineDistance(motoboy.lat, motoboy.lng, dispatch.lat_destino, dispatch.lng_destino);
+                    const etaMinutes = Math.round((distance / 30) * 60); // Assumindo 30km/h
+                    await msg.reply(`🛵 Seu pedido já está com o entregador! Ele está a caminho e a previsão de chegada é em aproximadamente ${etaMinutes} minutos.`);
+                }
+            }
+        } catch (error) {
+            console.error("❌ Erro ao processar mensagem do WhatsApp com IA:", error);
+        }
+    });
+
     waClient.initialize();
 }
 
@@ -265,11 +348,36 @@ serve({
 
         // ROTA DE DESPACHO
         if (req.method === 'POST' && url.pathname === '/api/dispatch') {
-            const { motoboy_id, valor, endereco } = await req.json();
+            const { motoboy_id, valor, endereco, cliente_telefone } = await req.json();
             const motoboy = db.query("SELECT * FROM fleet WHERE id = $id").get({ $id: motoboy_id }) as any;
             const profile = getProfile() as any;
             
             if (motoboy && motoboy.chat_id && profile?.telegram_bot_token) {
+                // Geocode destination
+                let lat_destino, lng_destino;
+                if (profile.google_maps_key && endereco) {
+                    try {
+                        const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(endereco)}&key=${profile.google_maps_key}`;
+                        const geoRes = await fetch(geoUrl);
+                        const geoData = await geoRes.json();
+                        if (geoData.status === 'OK' && geoData.results.length > 0) {
+                            const location = geoData.results[0].geometry.location;
+                            lat_destino = location.lat;
+                            lng_destino = location.lng;
+                        }
+                    } catch (e) { console.error("Erro de geocoding:", e); }
+                }
+
+                // Insert into active_dispatches
+                db.query(`INSERT INTO active_dispatches (motoboy_id, cliente_telefone, endereco, lat_destino, lng_destino) VALUES ($motoboy_id, $cliente_telefone, $endereco, $lat, $lng)`)
+                  .run({
+                      $motoboy_id: motoboy_id,
+                      $cliente_telefone: cliente_telefone,
+                      $endereco: endereco,
+                      $lat: lat_destino,
+                      $lng: lng_destino
+                  });
+                
                 if (motoboy.tipo_vinculo === 'FREELANCER') {
                     db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + $valor WHERE id = $id").run({ $valor: valor, $id: motoboy_id });
                 }
