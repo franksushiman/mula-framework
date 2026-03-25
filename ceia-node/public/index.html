@@ -120,6 +120,10 @@
                 <div class="form-group"><label>Nome do Ponto de Coleta (Restaurante)</label><input type="text" id="prof-nome" class="form-control"></div>
                 <div class="form-group"><label>Endereço Base (Ponto de Partida)</label><input type="text" id="prof-endereco" class="form-control"></div>
                 <div class="form-group"><label>WhatsApp Oficial do Restaurante</label><input type="text" id="prof-whatsapp" class="form-control" placeholder="55..."></div>
+                <div class="form-group">
+                    <label>Link do Cardápio (iFood, Anotaí, etc.)</label>
+                    <input type="url" id="prof-link-cardapio" class="form-control" placeholder="https://...">
+                </div>
                 <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
                 <div class="form-group">
                     <label>Google Maps Key</label>
@@ -453,7 +457,8 @@
             const body = { 
                 nome: document.getElementById('prof-nome').value, 
                 endereco: document.getElementById('prof-endereco').value, 
-                whatsapp: document.getElementById('prof-whatsapp').value, 
+                whatsapp: document.getElementById('prof-whatsapp').value,
+                link_cardapio: document.getElementById('prof-link-cardapio').value,
                 openai_key: document.getElementById('prof-openai-key').value,
                 google_maps_key: document.getElementById('prof-google-maps-key').value,
                 meta_api_token: document.getElementById('prof-meta-api-token').value,
@@ -480,6 +485,7 @@
             document.getElementById('prof-nome').value = d.nome || '';
             document.getElementById('prof-endereco').value = d.endereco || '';
             document.getElementById('prof-whatsapp').value = d.whatsapp || '';
+            document.getElementById('prof-link-cardapio').value = d.link_cardapio || '';
             document.getElementById('prof-google-maps-key').value = d.google_maps_key || '';
             document.getElementById('prof-openai-key').value = d.openai_key || '';
             document.getElementById('prof-meta-api-token').value = d.meta_api_token || '';
