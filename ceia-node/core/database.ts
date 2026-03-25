@@ -6,7 +6,7 @@ export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS node_profile (id INTEGER PRIMARY KEY CHECK (id = 1), nome TEXT, endereco TEXT, whatsapp TEXT, lat REAL, lng REAL, link_cardapio TEXT, openai_key TEXT, google_maps_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT)`);
     db.run(`INSERT OR IGNORE INTO node_profile (id) VALUES (1)`);
     db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, taxa REAL NOT NULL, tipo TEXT NOT NULL, geometria TEXT NOT NULL)`);
-    db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER)`);
 }
 
 export function getProfile() { return db.query("SELECT * FROM node_profile WHERE id = 1").get(); }
@@ -79,8 +79,15 @@ export function updateDriverStatus(telegram_id: string | number, status: string)
 
 export function updateDriverLocation(telegram_id: string | number, lat: number, lng: number) {
     db.run(
-        "UPDATE fleet SET status='ONLINE', lat=?, lng=?, ultima_atualizacao=CURRENT_TIMESTAMP WHERE telegram_id=?",
-        [lat, lng, telegram_id]
+        "UPDATE fleet SET status='ONLINE', lat=?, lng=?, ultima_atualizacao=CURRENT_TIMESTAMP, last_location_time=? WHERE telegram_id=?",
+        [lat, lng, Date.now(), telegram_id]
     );
     return getDriverByTelegramId(telegram_id);
+}
+
+export function sweepInactiveDrivers() {
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    const stm = db.query("UPDATE fleet SET status = 'OFFLINE' WHERE status = 'ONLINE' AND last_location_time < ?");
+    const result = stm.run(fiveMinutesAgo);
+    return result.changes > 0;
 }

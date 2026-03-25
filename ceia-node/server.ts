@@ -1,5 +1,5 @@
 import { serve } from "bun";
-import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver } from "./core/database";
+import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers } from "./core/database";
 
 inicializarBanco();
 
@@ -222,3 +222,11 @@ serve({
 });
 console.log("🚀 Nó MULA Logística rodando liso na porta 3000");
 startTelegramPolling();
+
+// --- Varredor de Radar ---
+setInterval(() => {
+    const wereDriversUpdated = sweepInactiveDrivers();
+    if (wereDriversUpdated) {
+        console.log("🧹 Varredor de Radar: Motoboys inativos movidos para OFFLINE.");
+    }
+}, 60000);
