@@ -188,6 +188,16 @@
         </div>
     </div>
 
+    <div id="modal-mapa-radar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+       <div style="background:var(--card-bg); padding:20px; border-radius:12px; width:90%; max-width:700px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+           <h3 id="titulo-mapa-radar" style="margin:0; color:var(--text-main);">Radar</h3>
+           <button onclick="document.getElementById('modal-mapa-radar').style.display='none'" style="background:var(--danger); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">Fechar (X)</button>
+         </div>
+         <div id="canvas-mapa-radar" style="width:100%; height:450px; background:#e0e0e0; border-radius:8px;"></div>
+       </div>
+     </div>
+
     <script>
         let map, drawingManager, formaTemp, zonaEdicao = {}, formasMapa = {};
 
@@ -220,6 +230,7 @@
                     <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:16px;"><strong>Pix:</strong> <span style="font-family:var(--font-mono);">${m.chave_pix}</span></div>
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="abrirModalEdicao(${m.id}, \`${m.nome}\`, \`${m.cpf || ''}\`, \`${m.tipo_vinculo}\`, \`${m.chave_pix}\`)">✏️ Editar</button>
+                        <button onclick="abrirRadarMotoboy(${m.lat}, ${m.lng}, '${m.nome}')" style="display: ${m.status === 'ONLINE' && m.lat && m.lng ? 'inline-block' : 'none'}; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;">📍 Radar</button>
                         <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id})">🗑️ Excluir</button>
                         ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
                         <button class="btn-action btn-pay" onclick="abrirPagamento(\`${m.nome}\`, \`${m.chave_pix}\`, \`${m.tipo_vinculo}\`, \`${saldoFreela}\`)">Pagar via Pix</button>
@@ -363,6 +374,22 @@
                 await fetch(`/api/fleet/${id}`, { method: 'DELETE' });
                 carregarFrota();
             }
+        }
+
+        function abrirRadarMotoboy(lat, lng, nome) {
+            document.getElementById('modal-mapa-radar').style.display = 'flex';
+            document.getElementById('titulo-mapa-radar').innerText = `📍 Posição de ${nome}`;
+            const latFloat = parseFloat(lat);
+            const lngFloat = parseFloat(lng);
+            const mapInstance = new google.maps.Map(document.getElementById('canvas-mapa-radar'), {
+                center: { lat: latFloat, lng: lngFloat },
+                zoom: 16
+            });
+            new google.maps.Marker({
+                position: { lat: latFloat, lng: lngFloat },
+                map: mapInstance,
+                title: nome
+            });
         }
 
         // --- MAPA E PERFIL ---
