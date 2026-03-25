@@ -2,7 +2,7 @@ import { serve } from "bun";
 import OpenAI from "openai";
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
-import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers } from "./core/database";
+import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers, getDriverHistory } from "./core/database";
 
 inicializarBanco();
 
@@ -89,7 +89,7 @@ function startWhatsApp() {
                 const dispatch = db.query("SELECT * FROM active_dispatches WHERE cliente_telefone LIKE ? AND status = 'AGUARDANDO_CONFIRMACAO' ORDER BY id DESC LIMIT 1").get(`%${clienteTelefone}%`) as any;
 
                 if (dispatch) {
-                    db.query("UPDATE active_dispatches SET status = 'FINALIZADO' WHERE id = ?").run(dispatch.id);
+                    db.query("UPDATE active_dispatches SET status = 'FINALIZADO', finalizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(dispatch.id);
                     
                     const driver = getDriverById(dispatch.motoboy_id) as any;
                     if (driver && driver.tipo_vinculo === 'FREELANCER') {
@@ -665,6 +665,11 @@ serve({
                 return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
             }
             return new Response(JSON.stringify({ error: 'Motoboy não encontrado ou sem Telegram' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (req.method === 'GET' && url.pathname.match(/^\/api\/fleet\/(\d+)\/history$/)) {
+            const id = parseInt(url.pathname.split('/')[3]);
+            return new Response(JSON.stringify(getDriverHistory(id)), { headers: { "Content-Type": "application/json" } });
         }
 
         // ROTA PARA FROTA DE DESPACHO (RADAR)

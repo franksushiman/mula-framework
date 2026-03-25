@@ -213,6 +213,16 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modal-historico">
+        <div class="modal-card" style="width: 500px; text-align: left; max-height: 80vh; display: flex; flex-direction: column;">
+            <h3 style="margin-top:0;" id="historico-titulo">Histórico de Entregas</h3>
+            <div id="historico-conteudo" style="flex: 1; overflow-y: auto; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 15px 0;">
+                <!-- O conteúdo será injetado aqui -->
+            </div>
+            <button class="btn btn-cancel" onclick="document.getElementById('modal-historico').style.display = 'none';">Fechar</button>
+        </div>
+    </div>
+
     <div id="modal-mapa-radar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
        <div style="position: relative; background:var(--card-bg); padding:20px; border-radius:12px; width:90%; max-width:700px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
          <button onclick="fecharRadar()" style="position: absolute; top: 10px; right: 10px; z-index: 10001; background: #ff4757; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">×</button>
@@ -354,6 +364,7 @@
                    ` : ''}
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="abrirModalEdicao(${m.id}, \`${m.nome}\`, \`${m.cpf || ''}\`, \`${m.tipo_vinculo}\`, \`${m.chave_pix}\`)">✏️ Editar</button>
+                        <button class="btn-action" onclick="abrirHistorico(${m.id}, '${m.nome}')" style="background-color: #f1f5f9; color: #475569;">📜 Histórico</button>
                         <button onclick="abrirRadarMotoboy(${m.lat}, ${m.lng}, '${m.nome}')" style="display: ${m.status === 'ONLINE' && m.lat && m.lng ? 'inline-block' : 'none'}; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;">📍 Radar</button>
                         <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id}, this)">🗑️ Excluir</button>
                         ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
@@ -644,6 +655,42 @@
             document.getElementById('modal-despacho').style.display = 'flex';
             document.getElementById('despacho-endereco').focus();
         };
+
+        async function abrirHistorico(motoboyId, nome) {
+            const modal = document.getElementById('modal-historico');
+            const titulo = document.getElementById('historico-titulo');
+            const conteudo = document.getElementById('historico-conteudo');
+            
+            titulo.innerText = `Histórico de Entregas: ${nome}`;
+            conteudo.innerHTML = '<p style="text-align: center; color: var(--text-light);">Carregando histórico...</p>';
+            modal.style.display = 'flex';
+
+            try {
+                const res = await fetch(`/api/fleet/${motoboyId}/history`);
+                const historico = await res.json();
+
+                if (historico.length === 0) {
+                    conteudo.innerHTML = '<p style="text-align: center; color: var(--text-light);">Nenhuma entrega finalizada encontrada.</p>';
+                    return;
+                }
+
+                conteudo.innerHTML = historico.map(d => {
+                    const dataFormatada = new Date(d.finalizado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    return `
+                    <div style="padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+                        <div style="font-weight: 500; color: var(--text-dark);">${d.endereco}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; color: var(--text-light);">
+                            <span>R$ ${parseFloat(d.valor_corrida).toFixed(2)}</span>
+                            <span>${dataFormatada}</span>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                conteudo.innerHTML = '<p style="text-align: center; color: #ef4444;">Erro ao carregar o histórico.</p>';
+            }
+        }
 
         async function confirmarDespacho() {
             const motoboyId = document.getElementById('despacho-motoboy-id').value;

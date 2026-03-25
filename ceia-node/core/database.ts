@@ -8,7 +8,7 @@ export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS node_profile (id INTEGER PRIMARY KEY CHECK (id = 1), nome TEXT, endereco TEXT, whatsapp TEXT, lat REAL, lng REAL, link_cardapio TEXT, openai_key TEXT, google_maps_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT)`);
     db.run(`INSERT OR IGNORE INTO node_profile (id) VALUES (1)`);
     db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, tipo TEXT, coordenadas TEXT, valor REAL)`);
-    db.run(`CREATE TABLE IF NOT EXISTS active_dispatches (id INTEGER PRIMARY KEY AUTOINCREMENT, motoboy_id INTEGER, cliente_telefone TEXT, endereco TEXT, lat_destino REAL, lng_destino REAL, status TEXT DEFAULT 'AGUARDANDO_ACEITE', aviso_chegada_enviado INTEGER DEFAULT 0, last_offer_time INTEGER, offered_drivers TEXT, valor_corrida REAL)`);
+    db.run(`CREATE TABLE IF NOT EXISTS active_dispatches (id INTEGER PRIMARY KEY AUTOINCREMENT, motoboy_id INTEGER, cliente_telefone TEXT, endereco TEXT, lat_destino REAL, lng_destino REAL, status TEXT DEFAULT 'AGUARDANDO_ACEITE', aviso_chegada_enviado INTEGER DEFAULT 0, last_offer_time INTEGER, offered_drivers TEXT, valor_corrida REAL, finalizado_em DATETIME)`);
     db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT, saldo REAL DEFAULT 0)`);
 }
 
@@ -73,6 +73,10 @@ export function updateDriver(id: number, data: any) {
 export function deleteDriver(id: number) {
     db.run("DELETE FROM fleet WHERE id = ?", [id]);
     return { success: true };
+}
+
+export function getDriverHistory(driverId: number) {
+    return db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'FINALIZADO' ORDER BY finalizado_em DESC").all(driverId);
 }
 
 export function upsertDriver(data: any) {
