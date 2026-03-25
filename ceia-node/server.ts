@@ -83,6 +83,32 @@ function startWhatsApp() {
             const openai = new OpenAI({ apiKey: profile.openai_key });
             let messageText = msg.body;
 
+            // PRE-CHECK: Confirmação de entrega do cliente
+            if (messageText && ['sim', 'ok', 's', 'recebido', 'confirmo'].includes(messageText.trim().toLowerCase())) {
+                const clienteTelefone = msg.from.replace('@c.us', '');
+                const dispatch = db.query("SELECT * FROM active_dispatches WHERE cliente_telefone LIKE ? AND status = 'AGUARDANDO_CONFIRMACAO' ORDER BY id DESC LIMIT 1").get(`%${clienteTelefone}%`) as any;
+
+                if (dispatch) {
+                    db.query("UPDATE active_dispatches SET status = 'FINALIZADO' WHERE id = ?").run(dispatch.id);
+                    
+                    const driver = getDriverById(dispatch.motoboy_id) as any;
+                    if (driver && driver.tipo_vinculo === 'FREELANCER') {
+                        db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + ? WHERE id = ?").run(dispatch.valor_corrida, driver.id);
+                    }
+
+                    await msg.reply('Obrigado por confirmar! 👍');
+
+                    const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA', 'AGUARDANDO_CONFIRMACAO')").get(dispatch.motoboy_id) as any;
+                    if (remainingDeliveries.count === 0) {
+                        updateDriverStatus(driver.telegram_id, 'ONLINE');
+                        if (profile && profile.telegram_bot_token && driver.chat_id) {
+                            await sendMessage(profile.telegram_bot_token, driver.chat_id, "🏁 Todas as entregas foram confirmadas pelos clientes! Você está ONLINE novamente.");
+                        }
+                    }
+                    return; // Finaliza o processamento aqui
+                }
+            }
+
             // a) Tratamento de Áudio
             if (msg.hasMedia) {
                 const media = await msg.downloadMedia();
@@ -243,7 +269,9 @@ async function answerCallbackQuery(token: string, callbackQueryId: string) {
 }
 
 async function sendDriverDashboard(token: string, telegramId: string | number, chatId: number) {
-    const deliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA') ORDER BY status").all(telegramId) as any[];
+    const driver = getDriverByTelegramId(telegramId) as any;
+    if (!driver) return;
+    const deliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA', 'AGUARDANDO_CONFIRMACAO') ORDER BY status").all(driver.id) as any[];
 
     if (deliveries.length === 0) return;
 
@@ -252,6 +280,7 @@ async function sendDriverDashboard(token: string, telegramId: string | number, c
     
     const aceitas = deliveries.filter(d => d.status === 'ACEITO');
     const emRota = deliveries.filter(d => d.status === 'EM_ROTA');
+    const aguardando = deliveries.filter(d => d.status === 'AGUARDANDO_CONFIRMACAO');
 
     if (aceitas.length > 0) {
         text += "*Aguardando coleta na base:*\n";
@@ -270,6 +299,13 @@ async function sendDriverDashboard(token: string, telegramId: string | number, c
         });
     }
     
+    if (aguardando.length > 0) {
+        text += "\n*Aguardando Confirmação do Cliente:*\n";
+        aguardando.forEach(d => {
+            text += ` - ✅ ${d.endereco}\n`;
+        });
+    }
+
     await sendMessage(token, chatId, text, { 
         parse_mode: 'Markdown',
         reply_markup: JSON.stringify({ inline_keyboard: keyboard })
@@ -313,9 +349,7 @@ async function offerToNextDriver(dispatchId: number) {
         console.log(`[DISPATCH ${dispatchId}] Motoboy ${previousDriverId} não respondeu/recusou. Oferecendo para ${nextDriver.id}...`);
         const valor = dispatch.valor_corrida;
 
-        if (nextDriver.tipo_vinculo === 'FREELANCER') {
-            db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + ? WHERE id = ?").run(valor, nextDriver.id);
-        }
+        // O saldo do novo motoboy será creditado apenas na confirmação do cliente.
 
         const newOfferedDrivers = JSON.stringify([...offeredDriversIds, nextDriver.id]);
         db.query(`UPDATE active_dispatches SET motoboy_id = ?, last_offer_time = ?, offered_drivers = ? WHERE id = ?`)
@@ -337,9 +371,6 @@ async function offerToNextDriver(dispatchId: number) {
 
     if (previousDriverId) {
         const previousDriver = getDriverById(previousDriverId) as any;
-        if (previousDriver && previousDriver.tipo_vinculo === 'FREELANCER') {
-            db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) - ? WHERE id = ?").run(dispatch.valor_corrida, previousDriver.id);
-        }
         if (previousDriver && previousDriver.chat_id) {
             await sendMessage(token, previousDriver.chat_id, "⏳ O tempo para aceitar a corrida esgotou. A oferta foi passada para o próximo motoboy disponível.");
         }
@@ -425,19 +456,36 @@ async function startTelegramPolling() {
                                 await sendDriverDashboard(token, telegramId, cb.message.chat.id);
                             }
                         } else if (action === 'finish' && type === 'ride' && !isNaN(dispatchId)) {
-                            const dispatch = db.query("SELECT endereco FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
-                            db.query("UPDATE active_dispatches SET status = 'FINALIZADO' WHERE id = ?").run(dispatchId);
+                            db.query("UPDATE active_dispatches SET status = 'AGUARDANDO_CONFIRMACAO' WHERE id = ?").run(dispatchId);
+                            
+                            const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
+                            const profile = getProfile() as any;
+
                             if (cb.message) {
-                                await sendMessage(token, cb.message.chat.id, `✅ Entrega para "${dispatch?.endereco}" finalizada!`);
+                                await sendMessage(token, cb.message.chat.id, `✅ Entrega para "${dispatch?.endereco}" finalizada!\n\nAguardando cliente confirmar recebimento...`);
+                            }
+                            
+                            if (waClient && waStatus === 'CONNECTED' && dispatch && profile) {
+                                const numeroCliente = `${dispatch.cliente_telefone}@c.us`;
+                                const nomeRestaurante = profile.nome || "nosso restaurante";
+                                const msgConfirmacao = `Olá! Seu pedido de *${nomeRestaurante}* foi marcado como entregue pelo motoboy.\n\nPor favor, responda com *SIM* para confirmar que você recebeu o pedido.`;
+                                try {
+                                    await waClient.sendMessage(numeroCliente, msgConfirmacao);
+                                } catch(err) {
+                                    console.error(`❌ Erro ao enviar pedido de confirmação para ${dispatch.cliente_telefone}:`, err);
+                                }
                             }
 
-                            const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status = 'EM_ROTA'").get(telegramId) as any;
+                            const driver = getDriverByTelegramId(telegramId) as any;
+                            const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status = 'EM_ROTA'").get(driver.id) as any;
                             if (remainingDeliveries.count === 0) {
-                                updateDriverStatus(telegramId, 'ONLINE');
-                                if (cb.message) {
-                                    await sendMessage(token, cb.message.chat.id, "🏁 Todas as entregas foram finalizadas! Você está ONLINE e disponível para novas corridas.");
+                                const allDeliveriesDone = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA')").get(driver.id) as any;
+                                if(allDeliveriesDone.count === 0 && cb.message) {
+                                    await sendMessage(token, cb.message.chat.id, "🏁 Última entrega da rota finalizada. Você ficará ONLINE assim que todos os clientes confirmarem o recebimento.");
                                 }
-                            } else if (cb.message) {
+                            }
+
+                            if (cb.message) {
                                 await sendDriverDashboard(token, telegramId, cb.message.chat.id);
                             }
                         }
@@ -690,9 +738,7 @@ serve({
                   });
                 const dispatchId = insertResult.lastInsertRowid;
                 
-                if (motoboy.tipo_vinculo === 'FREELANCER') {
-                    db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + $valor WHERE id = $id").run({ $valor: valor, $id: motoboy_id });
-                }
+                // O Saldo será adicionado apenas após a confirmação do cliente.
 
                 const title = `Nova Corrida: R$ ${valor.toFixed(2)}`;
                 const keyboard = {

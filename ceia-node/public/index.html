@@ -345,7 +345,7 @@
                                <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.85rem;">
                                    <div style="font-weight: 500;">${d.endereco}</div>
                                    <div style="margin-top: 4px;">
-                                       <span style="background: ${d.status === 'ACEITO' ? '#eff6ff' : '#e0f2f1'}; color: ${d.status === 'ACEITO' ? '#2563eb' : '#047857'}; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">${d.status === 'ACEITO' ? 'NA BASE' : 'EM ROTA'}</span>
+                                       <span style="background: ${d.status === 'ACEITO' ? '#eff6ff' : (d.status === 'EM_ROTA' ? '#e0f2f1' : '#fef9c3')}; color: ${d.status === 'ACEITO' ? '#2563eb' : (d.status === 'EM_ROTA' ? '#047857' : '#854d0e')}; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">${d.status === 'ACEITO' ? 'NA BASE' : (d.status === 'EM_ROTA' ? 'EM ROTA' : 'AGUARDANDO OK')}</span>
                                    </div>
                                </div>
                            `).join('')}

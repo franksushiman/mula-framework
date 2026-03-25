@@ -44,7 +44,7 @@ export function upsertZone(data: any) {
 export function deleteZone(id: number) { db.run("DELETE FROM delivery_zones WHERE id = ?", [id]); return getZones(); }
 export function getFleet() { 
     const fleet = db.query("SELECT * FROM fleet ORDER BY status DESC").all() as any[];
-    const activeDispatches = db.query("SELECT * FROM active_dispatches WHERE status IN ('ACEITO', 'EM_ROTA')").all() as any[];
+    const activeDispatches = db.query("SELECT * FROM active_dispatches WHERE status IN ('ACEITO', 'EM_ROTA', 'AGUARDANDO_CONFIRMACAO')").all() as any[];
 
     return fleet.map(driver => {
         return {
