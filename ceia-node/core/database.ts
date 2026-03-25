@@ -10,6 +10,31 @@ export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, tipo TEXT, coordenadas TEXT, valor REAL)`);
     db.run(`CREATE TABLE IF NOT EXISTS active_dispatches (id INTEGER PRIMARY KEY AUTOINCREMENT, motoboy_id INTEGER, cliente_telefone TEXT, endereco TEXT, lat_destino REAL, lng_destino REAL, status TEXT DEFAULT 'AGUARDANDO_ACEITE', aviso_chegada_enviado INTEGER DEFAULT 0, last_offer_time INTEGER, offered_drivers TEXT, valor_corrida REAL, finalizado_em DATETIME)`);
     db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT, saldo REAL DEFAULT 0)`);
+
+    // Migrações simples para garantir que colunas adicionadas em novas versões existam.
+    try {
+        const tableInfo = db.query(`PRAGMA table_info(active_dispatches)`).all();
+        const columns = tableInfo.map((col: any) => col.name);
+        
+        if (!columns.includes('last_offer_time')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'last_offer_time'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN last_offer_time INTEGER');
+        }
+        if (!columns.includes('offered_drivers')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'offered_drivers'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN offered_drivers TEXT');
+        }
+        if (!columns.includes('valor_corrida')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'valor_corrida'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN valor_corrida REAL');
+        }
+        if (!columns.includes('finalizado_em')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'finalizado_em'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN finalizado_em DATETIME');
+        }
+    } catch (e) {
+        console.error("Erro ao migrar o banco de dados:", e);
+    }
 }
 
 export function getProfile() { return db.query("SELECT * FROM node_profile WHERE id = 1").get(); }
