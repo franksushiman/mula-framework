@@ -449,11 +449,14 @@ async function startTelegramPolling() {
                             await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
                             await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada.");
                         } else if (action === 'start' && type === 'route') {
-                            const driverDeliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'ACEITO'").all(telegramId) as any[];
-                            if(driverDeliveries.length > 0) {
-                                db.query(`UPDATE active_dispatches SET status = 'EM_ROTA' WHERE motoboy_id = ? AND status = 'ACEITO'`).run(telegramId);
-                                await sendMessage(token, cb.message.chat.id, "🚀 Rota iniciada! Boa entrega!");
-                                await sendDriverDashboard(token, telegramId, cb.message.chat.id);
+                            const driver = getDriverByTelegramId(telegramId) as any;
+                            if (driver) {
+                                const driverDeliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'ACEITO'").all(driver.id) as any[];
+                                if (driverDeliveries.length > 0) {
+                                    db.query(`UPDATE active_dispatches SET status = 'EM_ROTA' WHERE motoboy_id = ? AND status = 'ACEITO'`).run(driver.id);
+                                    await sendMessage(token, cb.message.chat.id, "🚀 Rota iniciada! Boa entrega!");
+                                    await sendDriverDashboard(token, telegramId, cb.message.chat.id);
+                                }
                             }
                         } else if (action === 'finish' && type === 'ride' && !isNaN(dispatchId)) {
                             db.query("UPDATE active_dispatches SET status = 'AGUARDANDO_CONFIRMACAO' WHERE id = ?").run(dispatchId);
