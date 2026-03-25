@@ -1,6 +1,8 @@
 import { Database } from "bun:sqlite";
 
 export const db = new Database("mula_node.sqlite", { create: true });
+db.exec("PRAGMA journal_mode = WAL;");
+db.exec("PRAGMA busy_timeout = 5000;");
 
 export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS node_profile (id INTEGER PRIMARY KEY CHECK (id = 1), nome TEXT, endereco TEXT, whatsapp TEXT, lat REAL, lng REAL, link_cardapio TEXT, openai_key TEXT, google_maps_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT)`);

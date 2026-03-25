@@ -181,8 +181,8 @@ async function startTelegramPolling() {
                 }
             }
         } catch (err) {
-            console.error("Erro no polling do Telegram (rede?):", err);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            console.error("⚠️ Erro de rede no polling do Telegram. Tentando novamente em 5s...", err);
+            await new Promise(r => setTimeout(r, 5000));
         }
     }
 }
@@ -303,7 +303,7 @@ serve({
     }
 });
 console.log("🚀 Nó MULA Logística rodando liso na porta 3000");
-startTelegramPolling();
+startTelegramPolling().catch(err => console.error("Erro fatal no Telegram Polling:", err));
 
 // --- Varredor de Radar ---
 setInterval(() => {
