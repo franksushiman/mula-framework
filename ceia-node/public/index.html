@@ -170,6 +170,10 @@
             <h3 style="margin-top:0; color:var(--text-dark);" id="pix-motoboy-nome">Pagar Motoboy</h3>
             <p id="pix-valor-texto" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 20px;">R$ 0,00</p>
             
+            <div style="text-align: center;">
+                <img id="qr-pix-img" src="" alt="QR Code Pix" style="width: 200px; height: 200px; margin: 15px auto; display: none; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            </div>
+            
             <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-light); margin-bottom: 8px; text-align: left;">Pix Copia e Cola Oficial:</label>
             <div class="copy-box">
                 <input type="text" id="pix-copia-cola" class="copy-input" readonly>
@@ -326,6 +330,18 @@
 
             // Insere a chave real no input
             document.getElementById('pix-copia-cola').value = chavePix || '';
+
+            const qrImg = document.getElementById('qr-pix-img');
+            if (qrImg) {
+                if (chavePix && chavePix !== 'Nenhuma chave cadastrada' && chavePix.trim() !== '') {
+                    // Gera o QR code real dinamicamente
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(chavePix)}`;
+                    qrImg.style.display = 'block';
+                } else {
+                    // Esconde se não tiver chave
+                    qrImg.style.display = 'none';
+                }
+            }
 
             // Abre o modal
             document.getElementById('pixModal').style.display = 'flex';
