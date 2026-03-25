@@ -111,11 +111,6 @@
                     <div class="zones-body" id="zones-list-content"></div>
                 </div>
                 <div id="map"></div>
-                <div id="controles-mapa" style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 10;">
-                    <button onclick="ativarDesenhoPoligono()" style="width: 50px; height: 50px; background: white; border: 2px solid #ccc; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">POLÍG</button>
-                    <button onclick="ativarDesenhoCirculo()" style="width: 50px; height: 50px; background: white; border: 2px solid #ccc; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">RAIO</button>
-                    <button onclick="pararDesenho()" style="width: 50px; height: 50px; background: #eee; border: 2px solid #999; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">MÃO</button>
-                </div>
             </div>
         </div>
 
@@ -544,15 +539,6 @@
             }
         }
 
-        window.ativarDesenhoPoligono = function() {
-            if (drawingManager) drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-        };
-        window.ativarDesenhoCirculo = function() {
-            if (drawingManager) drawingManager.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE);
-        };
-        window.pararDesenho = function() {
-            if (drawingManager) drawingManager.setDrawingMode(null);
-        };
 
         function abrirRadarMotoboy(lat, lng, nome) {
             document.getElementById('modal-mapa-radar').style.display = 'flex';
@@ -587,28 +573,30 @@
             const res = await fetch('/api/profile'); const p = await res.json();
             const pos = { lat: p.lat || -26.2163, lng: p.lng || -48.6017 };
             map = new google.maps.Map(document.getElementById("map"), { zoom: 13, center: pos, disableDefaultUI: true, zoomControl: true, styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }] });
-            drawingManager = new google.maps.drawing.DrawingManager({ drawingControl: false, drawingControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT, drawingModes: ['polygon', 'circle'] }, polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' } });
+            
+            drawingManager = new google.maps.drawing.DrawingManager({
+                drawingMode: null,
+                drawingControl: true,
+                drawingControlOptions: { position: google.maps.ControlPosition.TOP_CENTER, drawingModes: ['polygon', 'circle'] },
+                polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, 
+                circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }
+            });
             drawingManager.setMap(map);
 
             google.maps.event.addListener(drawingManager, 'overlaycomplete', async function(event) {
                 const overlay = event.overlay;
-                const tipo = event.type;
-                drawingManager.setDrawingMode(null);
-                
                 const nomeRegiao = prompt("Qual o nome desta região? (Ex: Centro)");
                 if (!nomeRegiao) { overlay.setMap(null); return; }
                 
-                const valorTaxa = prompt(`Qual o valor da entrega para a região '${nomeRegiao}'? (Ex: 7.50)`);
+                const valorTaxa = prompt(`Qual o valor da entrega para '${nomeRegiao}'? (Ex: 7.50)`);
                 if (!valorTaxa) { overlay.setMap(null); return; }
 
                 let coordenadas;
-                if (tipo === 'polygon') {
+                if (event.type === 'polygon') {
                     const path = overlay.getPath();
                     coordenadas = [];
-                    for (let i = 0; i < path.getLength(); i++) {
-                        coordenadas.push({ lat: path.getAt(i).lat(), lng: path.getAt(i).lng() });
-                    }
-                } else if (tipo === 'circle') {
+                    for (let i = 0; i < path.getLength(); i++) { coordenadas.push({ lat: path.getAt(i).lat(), lng: path.getAt(i).lng() }); }
+                } else if (event.type === 'circle') {
                     coordenadas = {
                         center: {lat: overlay.getCenter().lat(), lng: overlay.getCenter().lng()}, 
                         radius: overlay.getRadius()
@@ -616,13 +604,12 @@
                 }
 
                 await fetch('/api/zones', { 
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ nome: nomeRegiao, tipo: tipo, coordenadas: JSON.stringify(coordenadas), valor: parseFloat(valorTaxa.replace(',', '.')) }) 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ nome: nomeRegiao, tipo: event.type, coordenadas: JSON.stringify(coordenadas), valor: parseFloat(valorTaxa.replace(',', '.')) }) 
                 });
-                
                 alert(`✅ Região ${nomeRegiao} salva com taxa de R$ ${valorTaxa}!`);
-                carregarZonas(); // Recarrega para mostrar a nova zona na lista
+                carregarZonas();
             });
             carregarZonas();
         }

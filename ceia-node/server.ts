@@ -228,18 +228,12 @@ serve({
         }
         if (req.method === "POST" && url.pathname === "/api/profile") { const body = await req.json(); return new Response(JSON.stringify(updateProfile(body)), { headers: { "Content-Type": "application/json" } }); }
         
-        if (req.method === 'POST' && url.pathname === '/api/rates') {
+        if (req.method === "GET" && url.pathname === "/api/zones") return new Response(JSON.stringify(getZones()), { headers: { "Content-Type": "application/json" } });
+        if (req.method === 'POST' && url.pathname === '/api/zones') {
             const body = await req.json();
-            db.query("INSERT INTO delivery_rates (km_ate, valor) VALUES ($km, $valor)").run({ $km: body.km_ate, $valor: body.valor });
+            db.query("INSERT INTO delivery_zones (nome, tipo, coordenadas, valor) VALUES ($n, $t, $c, $v)").run({ $n: body.nome, $t: body.tipo, $c: body.coordenadas, $v: body.valor });
             return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' }});
         }
-        if (req.method === 'GET' && url.pathname === '/api/rates') {
-            const rates = db.query("SELECT * FROM delivery_rates ORDER BY km_ate ASC").all();
-            return new Response(JSON.stringify(rates), { headers: { 'Content-Type': 'application/json' }});
-        }
-
-        if (req.method === "GET" && url.pathname === "/api/zones") return new Response(JSON.stringify(getZones()), { headers: { "Content-Type": "application/json" } });
-        if (req.method === "POST" && url.pathname === "/api/zones") { const body = await req.json(); return new Response(JSON.stringify(upsertZone(body)), { headers: { "Content-Type": "application/json" } }); }
         if (req.method === "DELETE" && url.pathname.startsWith("/api/zones/")) { const id = parseInt(url.pathname.split("/").pop()); return new Response(JSON.stringify(deleteZone(id)), { headers: { "Content-Type": "application/json" } }); }
         
         if (req.method === "GET" && url.pathname === "/api/fleet") return new Response(JSON.stringify(getFleet()), { headers: { "Content-Type": "application/json" } });
