@@ -734,16 +734,12 @@ serve({
             const restaurantLat = profile?.lat || -26.244;
             const restaurantLng = profile?.lng || -48.625;
             
-            // Lógica de Despacho Múltiplo:
-            // 1. Motoboy precisa estar ONLINE e com GPS.
-            // 2. Não pode ter nenhuma entrega EM_ROTA.
-            // 3. Pode ter no máximo 2 entregas ACEITAS (para poder receber a 3ª).
             const availableFleet = db.query(`
-                SELECT f.*
+                SELECT 
+                    f.*,
+                    (SELECT COUNT(*) FROM active_dispatches WHERE motoboy_id = f.id AND status = 'EM_ROTA') as entregas_ativas
                 FROM fleet f
                 WHERE f.status = 'ONLINE' AND f.lat IS NOT NULL AND f.lng IS NOT NULL
-                AND NOT EXISTS (SELECT 1 FROM active_dispatches WHERE motoboy_id = f.id AND status = 'EM_ROTA')
-                AND (SELECT COUNT(*) FROM active_dispatches WHERE motoboy_id = f.id AND status = 'ACEITO') < 3
             `).all() as any[];
 
             const fleetWithDistance = availableFleet.map(driver => {

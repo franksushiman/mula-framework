@@ -288,11 +288,18 @@
                 
                 container.innerHTML = frota.map(m => {
                     const distanciaKm = m.distance.toFixed(1);
+                    const bagStatusHtml = m.entregas_ativas > 0
+                        ? `<span style="background: #fffbeb; color: #b45309; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">📦 ${m.entregas_ativas} na Bag</span>`
+                        : `<span style="background: #f0fdf4; color: #15803d; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">🎒 Bag Vazia</span>`;
+
                     return `
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
                         <div>
-                            <strong>${m.nome}</strong> 
-                            <span style="color: var(--text-light); font-size: 13px; margin-left: 8px;">📍 a ${distanciaKm} km</span>
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <strong style="font-size: 1.05rem;">${m.nome}</strong> 
+                                ${bagStatusHtml}
+                            </div>
+                            <div style="color: var(--text-light); font-size: 13px;">📍 a ${distanciaKm} km</div>
                         </div>
                         <button id="btn-despacho-${m.id}" onclick="despacharCorrida(${m.id}, '${m.nome}')" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Despachar</button>
                     </div>`;
