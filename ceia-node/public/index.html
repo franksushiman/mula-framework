@@ -299,21 +299,31 @@
                         <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id}, this)">🗑️ Excluir</button>
                         ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
                         ${alertBtn}
-                        <button class="btn-action btn-pay" onclick="abrirPagamento(\`${m.nome}\`, \`${m.chave_pix}\`, \`${m.tipo_vinculo}\`, \`${saldoFreela}\`)">Pagar via Pix</button>
+                        <button class="btn-action btn-pay" onclick="abrirPagamento(\`${m.nome}\`, \`${m.chave_pix || ''}\`, ${m.saldo || 0})">Pagar via Pix</button>
                     </div>
                 </div>`
             }).join('');
         }
 
-        function abrirPagamento(nomeOriginal, chavePix, vinculo, saldoMock) {
-            document.getElementById('pix-motoboy-nome').innerText = `Pagar ${nomeOriginal}`;
-            const valor = vinculo === 'FREELANCER' ? saldoMock : null;
-            if (valor) { document.getElementById('pix-valor-texto').innerText = `Corridas: R$ ${valor.replace('.', ',')}`; } 
-            else { document.getElementById('pix-valor-texto').innerText = `Valor Livre (Fixo)`; }
+        function abrirPagamento(nome, chavePix, saldo) {
+            // Atualiza o título
+            document.getElementById('pix-motoboy-nome').innerHTML = `Pagar ${nome}`;
 
-            const payload = gerarPayloadPixPuro(chavePix, "MOTOBOY", "SC", valor);
-            document.getElementById('pix-copia-cola').value = payload;
-            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(payload)}`;
+            // Formata o valor real recebido para BRL
+            const valorFormatado = parseFloat(saldo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            // Atualiza o elemento de valor
+            const valorElement = document.getElementById('pix-valor-texto'); 
+            if (valorElement) {
+                valorElement.innerHTML = `Corridas: R$ ${valorFormatado}`;
+                valorElement.style.color = 'var(--success)';
+            }
+
+            // Esconde o QR Code e insere a chave real no input
+            document.getElementById('qr-img').style.display = 'none';
+            document.getElementById('pix-copia-cola').value = chavePix || '';
+
+            // Abre o modal
             document.getElementById('pixModal').style.display = 'flex';
         }
 
