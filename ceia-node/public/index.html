@@ -337,6 +337,21 @@
                            </span>
                        </div>
                    </div>
+                   ${m.deliveries && m.deliveries.length > 0 ? `
+                   <div style="margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+                       <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dark);">Entregas na Mochila:</h4>
+                       <div style="display: flex; flex-direction: column; gap: 8px;">
+                           ${m.deliveries.map(d => `
+                               <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.85rem;">
+                                   <div style="font-weight: 500;">${d.endereco}</div>
+                                   <div style="margin-top: 4px;">
+                                       <span style="background: ${d.status === 'ACEITO' ? '#eff6ff' : '#e0f2f1'}; color: ${d.status === 'ACEITO' ? '#2563eb' : '#047857'}; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">${d.status === 'ACEITO' ? 'NA BASE' : 'EM ROTA'}</span>
+                                   </div>
+                               </div>
+                           `).join('')}
+                       </div>
+                   </div>
+                   ` : ''}
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="abrirModalEdicao(${m.id}, \`${m.nome}\`, \`${m.cpf || ''}\`, \`${m.tipo_vinculo}\`, \`${m.chave_pix}\`)">✏️ Editar</button>
                         <button onclick="abrirRadarMotoboy(${m.lat}, ${m.lng}, '${m.nome}')" style="display: ${m.status === 'ONLINE' && m.lat && m.lng ? 'inline-block' : 'none'}; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;">📍 Radar</button>

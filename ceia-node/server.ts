@@ -242,6 +242,40 @@ async function answerCallbackQuery(token: string, callbackQueryId: string) {
     }
 }
 
+async function sendDriverDashboard(token: string, telegramId: string | number, chatId: number) {
+    const deliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA') ORDER BY status").all(telegramId) as any[];
+
+    if (deliveries.length === 0) return;
+
+    let text = "🎒 *SUA MOCHILA DE ENTREGAS:*\n\n";
+    let keyboard: any[] = [];
+    
+    const aceitas = deliveries.filter(d => d.status === 'ACEITO');
+    const emRota = deliveries.filter(d => d.status === 'EM_ROTA');
+
+    if (aceitas.length > 0) {
+        text += "*Aguardando coleta na base:*\n";
+        aceitas.forEach(d => {
+            text += ` - 📍 ${d.endereco}\n`;
+        });
+        text += "\n";
+        keyboard.push([{ text: "🚀 Coletar e Iniciar Rota", callback_data: "start_route_0" }]);
+    }
+    
+    if (emRota.length > 0) {
+        text += "*Entregas em Rota:*\n";
+        emRota.forEach(d => {
+            text += ` - 📍 ${d.endereco}\n`;
+            keyboard.push([{ text: `🏁 Finalizar "${d.endereco.substring(0, 20)}..."`, callback_data: `finish_ride_${d.id}` }]);
+        });
+    }
+    
+    await sendMessage(token, chatId, text, { 
+        parse_mode: 'Markdown',
+        reply_markup: JSON.stringify({ inline_keyboard: keyboard })
+    });
+}
+
 let dispatchMonitorInterval: Timer | null = null;
 
 async function offerToNextDriver(dispatchId: number) {
@@ -277,7 +311,7 @@ async function offerToNextDriver(dispatchId: number) {
 
     if (nextDriver) {
         console.log(`[DISPATCH ${dispatchId}] Motoboy ${previousDriverId} não respondeu/recusou. Oferecendo para ${nextDriver.id}...`);
-        const valor = calcularTaxa(dispatch.lat_destino, dispatch.lng_destino);
+        const valor = dispatch.valor_corrida;
 
         if (nextDriver.tipo_vinculo === 'FREELANCER') {
             db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + ? WHERE id = ?").run(valor, nextDriver.id);
@@ -304,8 +338,7 @@ async function offerToNextDriver(dispatchId: number) {
     if (previousDriverId) {
         const previousDriver = getDriverById(previousDriverId) as any;
         if (previousDriver && previousDriver.tipo_vinculo === 'FREELANCER') {
-            const valor = calcularTaxa(dispatch.lat_destino, dispatch.lng_destino);
-            db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) - ? WHERE id = ?").run(valor, previousDriver.id);
+            db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) - ? WHERE id = ?").run(dispatch.valor_corrida, previousDriver.id);
         }
         if (previousDriver && previousDriver.chat_id) {
             await sendMessage(token, previousDriver.chat_id, "⏳ O tempo para aceitar a corrida esgotou. A oferta foi passada para o próximo motoboy disponível.");
@@ -365,29 +398,47 @@ async function startTelegramPolling() {
                     if (update.callback_query) {
                         const cb = update.callback_query;
                         const telegramId = cb.from.id.toString();
-                        const parts = cb.data.split('_');
-                        
-                        if (parts.length === 3 && parts[1] === 'ride') {
-                            const action = parts[0];
-                            const dispatchId = parseInt(parts[2]);
+                        const [action, type, idStr] = cb.data.split('_');
+                        const dispatchId = parseInt(idStr);
 
-                            if (action === 'accept' && !isNaN(dispatchId)) {
-                                const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
-                                if (dispatch && dispatch.status === 'AGUARDANDO_ACEITE' && dispatch.motoboy_id.toString() === telegramId) {
-                                    updateDriverStatus(telegramId, 'OCUPADO');
-                                    db.query("UPDATE active_dispatches SET status = 'EM_ROTA' WHERE id = ?").run(dispatchId);
-                                    
-                                    await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
-                                    await sendMessage(token, cb.message.chat.id, "✅ Corrida Aceita! Dirija-se ao destino.");
-                                } else {
-                                    await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
-                                    await sendMessage(token, cb.message.chat.id, "⚠️ Esta corrida não está mais disponível para você.");
-                                }
-
-                            } else if (action === 'decline' && !isNaN(dispatchId)) {
+                        if (action === 'accept' && type === 'ride' && !isNaN(dispatchId)) {
+                            const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
+                            if (dispatch && dispatch.status === 'AGUARDANDO_ACEITE' && dispatch.motoboy_id.toString() === telegramId) {
+                                updateDriverStatus(telegramId, 'OCUPADO');
+                                db.query("UPDATE active_dispatches SET status = 'ACEITO' WHERE id = ?").run(dispatchId);
                                 await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
-                                await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada. Buscando próximo motoboy...");
-                                offerToNextDriver(dispatchId);
+                                await sendMessage(token, cb.message.chat.id, "✅ Corrida aceita e adicionada à sua mochila!");
+                                await sendDriverDashboard(token, telegramId, cb.message.chat.id);
+                            } else {
+                                await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
+                                await sendMessage(token, cb.message.chat.id, "⚠️ Esta corrida não está mais disponível para você.");
+                            }
+                        } else if (action === 'decline' && type === 'ride' && !isNaN(dispatchId)) {
+                            await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
+                            await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada. Buscando próximo motoboy...");
+                            offerToNextDriver(dispatchId);
+                        } else if (action === 'start' && type === 'route') {
+                            const driverDeliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'ACEITO'").all(telegramId) as any[];
+                            if(driverDeliveries.length > 0) {
+                                db.query(`UPDATE active_dispatches SET status = 'EM_ROTA' WHERE motoboy_id = ? AND status = 'ACEITO'`).run(telegramId);
+                                await sendMessage(token, cb.message.chat.id, "🚀 Rota iniciada! Boa entrega!");
+                                await sendDriverDashboard(token, telegramId, cb.message.chat.id);
+                            }
+                        } else if (action === 'finish' && type === 'ride' && !isNaN(dispatchId)) {
+                            const dispatch = db.query("SELECT endereco FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
+                            db.query("UPDATE active_dispatches SET status = 'FINALIZADO' WHERE id = ?").run(dispatchId);
+                            if (cb.message) {
+                                await sendMessage(token, cb.message.chat.id, `✅ Entrega para "${dispatch?.endereco}" finalizada!`);
+                            }
+
+                            const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status = 'EM_ROTA'").get(telegramId) as any;
+                            if (remainingDeliveries.count === 0) {
+                                updateDriverStatus(telegramId, 'ONLINE');
+                                if (cb.message) {
+                                    await sendMessage(token, cb.message.chat.id, "🏁 Todas as entregas foram finalizadas! Você está ONLINE e disponível para novas corridas.");
+                                }
+                            } else if (cb.message) {
+                                await sendDriverDashboard(token, telegramId, cb.message.chat.id);
                             }
                         }
                         
@@ -574,15 +625,16 @@ serve({
             const restaurantLat = profile?.lat || -26.244;
             const restaurantLng = profile?.lng || -48.625;
             
-            // Busca apenas motoboys ONLINE, sem entrega ativa e com localização conhecida
+            // Lógica de Despacho Múltiplo:
+            // 1. Motoboy precisa estar ONLINE e com GPS.
+            // 2. Não pode ter nenhuma entrega EM_ROTA.
+            // 3. Pode ter no máximo 2 entregas ACEITAS (para poder receber a 3ª).
             const availableFleet = db.query(`
                 SELECT f.*
                 FROM fleet f
                 WHERE f.status = 'ONLINE' AND f.lat IS NOT NULL AND f.lng IS NOT NULL
-                AND NOT EXISTS (
-                    SELECT 1 FROM active_dispatches ad 
-                    WHERE ad.motoboy_id = f.id AND ad.status IN ('EM_ROTA', 'AGUARDANDO_ACEITE')
-                )
+                AND NOT EXISTS (SELECT 1 FROM active_dispatches WHERE motoboy_id = f.id AND status = 'EM_ROTA')
+                AND (SELECT COUNT(*) FROM active_dispatches WHERE motoboy_id = f.id AND status = 'ACEITO') < 3
             `).all() as any[];
 
             const fleetWithDistance = availableFleet.map(driver => {
@@ -625,7 +677,7 @@ serve({
                      return new Response(JSON.stringify({ error: 'Endereço fora da área de entrega mapeada. A taxa não pôde ser calculada.' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
                 }
 
-                const insertResult = db.query(`INSERT INTO active_dispatches (motoboy_id, cliente_telefone, endereco, lat_destino, lng_destino, last_offer_time, offered_drivers) VALUES ($motoboy_id, $cliente_telefone, $endereco, $lat, $lng, $time, $offered)`)
+                const insertResult = db.query(`INSERT INTO active_dispatches (motoboy_id, cliente_telefone, endereco, lat_destino, lng_destino, last_offer_time, offered_drivers, valor_corrida) VALUES ($motoboy_id, $cliente_telefone, $endereco, $lat, $lng, $time, $offered, $valor)`)
                   .run({
                       $motoboy_id: motoboy_id,
                       $cliente_telefone: cliente_telefone,
@@ -633,7 +685,8 @@ serve({
                       $lat: lat_destino,
                       $lng: lng_destino,
                       $time: Date.now(),
-                      $offered: JSON.stringify([motoboy_id])
+                      $offered: JSON.stringify([motoboy_id]),
+                      $valor: valor
                   });
                 const dispatchId = insertResult.lastInsertRowid;
                 
