@@ -1,5 +1,5 @@
 import { serve } from "bun";
-import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, upsertDriver, updateDriverStatus, updateDriverLocation } from "./core/database";
+import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation } from "./core/database";
 
 inicializarBanco();
 
@@ -7,17 +7,31 @@ inicializarBanco();
 const chatStates: { [key:string]: { step: string, data: any } } = {};
 
 // Telegram API Helper
-async function sendMessage(token: string, chatId: number, text: string) {
+async function sendMessage(token: string, chatId: number, text: string, extraParams: any = {}) {
     if (!token) return;
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
     try {
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: text })
+            body: JSON.stringify({ chat_id: chatId, text: text, ...extraParams })
         });
     } catch(e) {
         console.error("Erro ao enviar mensagem para o Telegram:", e);
+    }
+}
+
+async function editMessageText(token: string, chatId: number, messageId: number, text: string) {
+    if (!token) return;
+    const url = `https://api.telegram.org/bot${token}/editMessageText`;
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: text })
+        });
+    } catch(e) {
+        console.error("Erro ao editar mensagem para o Telegram:", e);
     }
 }
 
@@ -55,6 +69,18 @@ async function startTelegramPolling() {
             if (data.ok && data.result.length > 0) {
                 for (const update of data.result) {
                     lastUpdateId = update.update_id;
+
+                    if (update.callback_query) {
+                        const cb = update.callback_query;
+                        const telegramId = cb.from.id.toString();
+                        
+                        if (cb.data === 'accept_ride_123') {
+                            updateDriverStatus(telegramId, 'OCUPADO');
+                            await editMessageText(token, cb.message.chat.id, cb.message.message_id, "✅ Corrida Aceita! Dirija-se à base.");
+                        }
+                        continue;
+                    }
+
                     const message = update.message;
                     if (!message) continue;
 
@@ -81,7 +107,7 @@ async function startTelegramPolling() {
                                 await sendMessage(token, chatId, "Bem-vindo! Este bot é para uso exclusivo de motoboys. Use o link de convite do seu restaurante.");
                                 continue;
                             }
-                            chatStates[telegramId] = { step: 'awaiting_nome', data: { telegram_id: telegramId } };
+                            chatStates[telegramId] = { step: 'awaiting_nome', data: { telegram_id: telegramId, chat_id: chatId } };
                             await sendMessage(token, chatId, "Bem-vindo ao CEIA! Vamos começar seu cadastro. Por favor, digite seu NOME COMPLETO:");
                         }
                         continue;
@@ -132,6 +158,31 @@ serve({
         if (req.method === "DELETE" && url.pathname.startsWith("/api/zones/")) { const id = parseInt(url.pathname.split("/").pop()); return new Response(JSON.stringify(deleteZone(id)), { headers: { "Content-Type": "application/json" } }); }
         
         if (req.method === "GET" && url.pathname === "/api/fleet") return new Response(JSON.stringify(getFleet()), { headers: { "Content-Type": "application/json" } });
+
+        // ROTA DE DESPACHO
+        if (req.method === "POST" && url.pathname === "/api/dispatch") {
+            const body = await req.json();
+            const profile = getProfile() as any;
+            const driver = getDriverById(body.motoboy_id) as any;
+
+            if (!driver || !driver.chat_id || !profile?.telegram_bot_token) {
+                return new Response(JSON.stringify({ success: false, message: "Motoboy ou token não encontrado." }), { status: 404, headers: { "Content-Type": "application/json" } });
+            }
+            
+            const messageText = `🚨 *NOVA CORRIDA* 🚨\n📍 Destino: ${body.destino}\n💰 Taxa: R$ ${body.valor_taxa}`;
+            const keyboard = {
+                inline_keyboard: [[
+                    { text: "✅ Aceitar Corrida", callback_data: "accept_ride_123" }
+                ]]
+            };
+            
+            await sendMessage(profile.telegram_bot_token, driver.chat_id, messageText, {
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
+            });
+            
+            return new Response(JSON.stringify({ success: true, message: "Sinal enviado." }), { headers: { "Content-Type": "application/json" } });
+        }
 
         // A ROTA TÁTICA DO CONVITE
         if (req.method === "POST" && url.pathname === "/api/fleet/invite") {

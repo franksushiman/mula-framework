@@ -207,6 +207,7 @@
                     <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:16px;"><strong>Pix:</strong> <span style="font-family:var(--font-mono);">${m.chave_pix}</span></div>
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="console.log('Abrir ficha de ${m.nome}')">Ficha</button>
+                        ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
                         <button class="btn-action btn-pay" onclick="abrirPagamento('${m.nome}', '${m.chave_pix}', '${m.tipo_vinculo}', '${saldoFreela}')">Pagar via Pix</button>
                     </div>
                 </div>`
@@ -280,6 +281,42 @@
             } catch (err) { 
                 btn.innerText = "Erro!"; btn.style.background = "#ef4444"; btn.style.opacity = "1"; 
                 setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 2000);
+            }
+        }
+        
+        async function despacharTeste(motoboyId) {
+            const btn = document.getElementById(`despachar-${motoboyId}`);
+            if (!btn) return;
+
+            btn.innerText = 'Enviando...';
+            try {
+                const res = await fetch('/api/dispatch', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        motoboy_id: motoboyId, 
+                        destino: "Rua do Container, 100", 
+                        valor_taxa: "15.00" 
+                    }) 
+                });
+
+                if (res.ok) {
+                    btn.innerText = 'Sinal OK!';
+                    btn.style.background = '#10b981';
+                    setTimeout(() => {
+                        btn.innerText = 'Despachar Teste';
+                        btn.style.background = ''; // Resets to CSS default
+                    }, 2000);
+                } else {
+                    throw new Error('Falha no envio');
+                }
+            } catch(err) {
+                btn.innerText = 'Erro!';
+                btn.style.background = '#ef4444';
+                setTimeout(() => {
+                    btn.innerText = 'Despachar Teste';
+                    btn.style.background = '';
+                }, 2000);
             }
         }
 
