@@ -259,14 +259,40 @@
                 const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
                 const statusColor = m.status === 'ONLINE' ? '#2ecc71' : '#ff4757';
                 const statusBg = m.status === 'ONLINE' ? '#e8f8f5' : '#ffebee';
+
+                const vinculoLabel = m.tipo_vinculo || 'FREELANCER';
+                const vinculoColor = m.tipo_vinculo === 'FIXO' ? 'var(--info)' : 'var(--warning)';
+                const vinculoBg = m.tipo_vinculo === 'FIXO' ? '#e1f5fe' : '#fff3e0';
+                
+                const veiculoDisplay = m.veiculo_tipo || 'N/A';
+                const placaDisplay = m.veiculo_id ? `(${m.veiculo_id.toUpperCase()})` : '';
                 return `
                 <div class="fleet-card">
                     <div class="fleet-header">
                         <h3 style="margin:0; font-size:1.15rem;">${m.nome}</h3>
                         <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">${statusLabel}</span>
                     </div>
-                    <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:8px;"><strong>Vínculo:</strong> ${m.tipo_vinculo}</div>
-                    <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:16px;"><strong>Pix:</strong> <span style="font-family:var(--font-mono);">${m.chave_pix}</span></div>
+                    <div style="font-size: 13px; color: var(--text-main); line-height: 1.8; margin-bottom:16px;">
+                       <div style="margin-bottom: 5px;">
+                           <strong style="color: var(--text-sub);">Vínculo:</strong> 
+                           <span style="background: ${vinculoBg}; color: ${vinculoColor}; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-left: 5px;">${vinculoLabel}</span>
+                       </div>
+                       
+                       <div style="margin-bottom: 5px; display: flex; align-items: center;">
+                           <strong style="color: var(--text-sub);">Veículo:</strong> 
+                           <span style="background: #e8f5e9; color: var(--success); padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-left: 5px;">
+                               ${veiculoDisplay}
+                           </span>
+                           <span style="color: #666; font-size: 12px; margin-left: 5px; font-family: monospace;">${placaDisplay}</span>
+                       </div>
+
+                       <div>
+                           <strong style="color: var(--text-sub);">Pix:</strong> 
+                           <span style="color: #666; font-family: monospace; letter-spacing: 1px; margin-left: 5px;">
+                               ${m.chave_pix || 'Pix Não Cadastrado'}
+                           </span>
+                       </div>
+                   </div>
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="abrirModalEdicao(${m.id}, \`${m.nome}\`, \`${m.cpf || ''}\`, \`${m.tipo_vinculo}\`, \`${m.chave_pix}\`)">✏️ Editar</button>
                         <button onclick="abrirRadarMotoboy(${m.lat}, ${m.lng}, '${m.nome}')" style="display: ${m.status === 'ONLINE' && m.lat && m.lng ? 'inline-block' : 'none'}; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;">📍 Radar</button>
