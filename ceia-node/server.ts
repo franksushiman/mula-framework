@@ -396,6 +396,33 @@ serve({
             return new Response(JSON.stringify({ error: 'Motoboy não encontrado ou sem Telegram' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
 
+        // ROTA PARA FROTA DE DESPACHO (RADAR)
+        if (req.method === 'GET' && url.pathname === '/api/dispatch/fleet') {
+            const profile = getProfile() as any;
+            const restaurantLat = profile?.lat || -26.244;
+            const restaurantLng = profile?.lng || -48.625;
+            
+            // Busca apenas motoboys ONLINE, sem entrega ativa e com localização conhecida
+            const availableFleet = db.query(`
+                SELECT f.*
+                FROM fleet f
+                WHERE f.status = 'ONLINE' AND f.lat IS NOT NULL AND f.lng IS NOT NULL
+                AND NOT EXISTS (
+                    SELECT 1 FROM active_dispatches ad 
+                    WHERE ad.motoboy_id = f.id AND ad.status = 'EM_ROTA'
+                )
+            `).all() as any[];
+
+            const fleetWithDistance = availableFleet.map(driver => {
+                const distance = haversineDistance(restaurantLat, restaurantLng, driver.lat, driver.lng);
+                return { ...driver, distance: distance };
+            });
+
+            fleetWithDistance.sort((a, b) => a.distance - b.distance);
+            
+            return new Response(JSON.stringify(fleetWithDistance), { headers: { "Content-Type": "application/json" } });
+        }
+
         // ROTA DE DESPACHO
         if (req.method === 'POST' && url.pathname === '/api/dispatch') {
             const { motoboy_id, valor, endereco, cliente_telefone } = await req.json();
