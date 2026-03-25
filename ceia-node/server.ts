@@ -97,7 +97,25 @@ function startWhatsApp() {
                 if (motoboy && motoboy.lat && motoboy.lng && dispatch.lat_destino && dispatch.lng_destino) {
                     const distance = haversineDistance(motoboy.lat, motoboy.lng, dispatch.lat_destino, dispatch.lng_destino);
                     const etaMinutes = Math.round((distance / 30) * 60); // Assumindo 30km/h
-                    await msg.reply(`🛵 Seu pedido já está com o entregador! Ele está a caminho e a previsão de chegada é em aproximadamente ${etaMinutes} minutos.`);
+                    
+                    let landmark = '';
+                    if (profile.google_maps_key) {
+                        try {
+                            const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${motoboy.lat},${motoboy.lng}&radius=150&rankby=prominence&key=${profile.google_maps_key}`;
+                            const placesRes = await fetch(placesUrl);
+                            const placesData = await placesRes.json();
+                            if (placesData.status === 'OK' && placesData.results.length > 0) {
+                                landmark = placesData.results[0].name;
+                            }
+                        } catch(e) { console.error("Erro ao buscar Places:", e); }
+                    }
+
+                    let replyMessage = `🛵 Seu pedido já está com o entregador! Ele está a caminho e a previsão de chegada é em aproximadamente ${etaMinutes} minutos.`;
+                    if (landmark) {
+                        replyMessage = `🛵 Seu pedido já está com o entregador! Ele está passando perto de *${landmark}* e a previsão de chegada é em aproximadamente ${etaMinutes} minutos.`;
+                    }
+                    
+                    await msg.reply(replyMessage);
                 }
             }
         } catch (error) {
