@@ -445,9 +445,9 @@ async function startTelegramPolling() {
                                 await sendMessage(token, cb.message.chat.id, "⚠️ Esta corrida não está mais disponível para você.");
                             }
                         } else if (action === 'decline' && type === 'ride' && !isNaN(dispatchId)) {
+                            db.query("UPDATE active_dispatches SET status = 'RECUSADA' WHERE id = ?").run(dispatchId);
                             await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
-                            await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada. Buscando próximo motoboy...");
-                            offerToNextDriver(dispatchId);
+                            await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada.");
                         } else if (action === 'start' && type === 'route') {
                             const driverDeliveries = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'ACEITO'").all(telegramId) as any[];
                             if(driverDeliveries.length > 0) {
