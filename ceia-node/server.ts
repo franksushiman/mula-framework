@@ -445,7 +445,7 @@ async function startTelegramPolling() {
                                 await sendMessage(token, cb.message.chat.id, "⚠️ Esta corrida não está mais disponível para você.");
                             }
                         } else if (action === 'decline' && type === 'ride' && !isNaN(dispatchId)) {
-                            db.query("UPDATE active_dispatches SET status = 'RECUSADA' WHERE id = ?").run(dispatchId);
+                            db.query("UPDATE active_dispatches SET status = 'RECUSADA', motoboy_id = NULL WHERE id = ?").run(dispatchId);
                             await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
                             await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada.");
                         } else if (action === 'start' && type === 'route') {
