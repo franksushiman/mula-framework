@@ -310,9 +310,9 @@
             container.innerHTML = frota.map(m => {
                 const saldoFreela = m.tipo_vinculo === 'FREELANCER' ? (Math.random() * 80 + 20).toFixed(2) : '0.00';
                 const alertBtn = m.status === 'OFFLINE' ? `<button onclick="alertarMotoboy(${m.id}, this)" style="background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">🔔 Chamar</button>` : '';
-                const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
-                const statusColor = m.status === 'ONLINE' ? '#2ecc71' : '#ff4757';
-                const statusBg = m.status === 'ONLINE' ? '#e8f8f5' : '#ffebee';
+                const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : (m.status === 'OCUPADO' ? 'EM ROTA' : 'OFFLINE');
+                const statusColor = m.status === 'ONLINE' ? '#2ecc71' : (m.status === 'OCUPADO' ? '#3b82f6' : '#ff4757');
+                const statusBg = m.status === 'ONLINE' ? '#e8f8f5' : (m.status === 'OCUPADO' ? '#eff6ff' : '#ffebee');
 
                 const vinculoLabel = m.tipo_vinculo || 'FREELANCER';
                 const vinculoColor = m.tipo_vinculo === 'FIXO' ? 'var(--info)' : 'var(--warning)';
@@ -696,7 +696,7 @@
         }
 
         async function forcarBaixa(dispatchId, btn) {
-            if (!confirm('Tem certeza que deseja forçar a baixa desta entrega? O saldo será pago ao motoboy e a entrega finalizada.')) {
+            if (!confirm('Tem certeza que deseja DELETAR esta entrega travada? \n\nEsta ação não pode ser desfeita e NENHUM pagamento será feito ao motoboy.')) {
                 return;
             }
             btn.innerHTML = '...'; btn.disabled = true;
