@@ -255,11 +255,14 @@
             
             container.innerHTML = frota.map(m => {
                 const saldoFreela = m.tipo_vinculo === 'FREELANCER' ? (Math.random() * 80 + 20).toFixed(2) : '0.00';
+                const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
+                const statusColor = m.status === 'ONLINE' ? '#2ecc71' : '#ff4757';
+                const statusBg = m.status === 'ONLINE' ? '#e8f8f5' : '#ffebee';
                 return `
                 <div class="fleet-card">
                     <div class="fleet-header">
                         <h3 style="margin:0; font-size:1.15rem;">${m.nome}</h3>
-                        <span class="status-badge status-${m.status.toLowerCase()}">${m.status.replace('_', ' ')}</span>
+                        <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">${statusLabel}</span>
                     </div>
                     <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:8px;"><strong>Vínculo:</strong> ${m.tipo_vinculo}</div>
                     <div style="font-size:0.9rem; color:var(--text-light); margin-bottom:16px;"><strong>Pix:</strong> <span style="font-family:var(--font-mono);">${m.chave_pix}</span></div>
