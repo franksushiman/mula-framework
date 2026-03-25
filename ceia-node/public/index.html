@@ -240,26 +240,47 @@
                 google.maps.event.trigger(map, "resize");
             }
             if(id === 'tab-frota') carregarFrota();
+            if(id === 'tab-operacional') carregarFrotaDespacho();
         }
 
         // --- FROTA & PIX ---
+        async function carregarFrotaDespacho() {
+            try {
+                const res = await fetch('/api/dispatch/fleet');
+                const frota = await res.json();
+                const container = document.getElementById('lista-despacho');
+                
+                if (!container) return;
+
+                if (frota.length === 0) {
+                    container.innerHTML = '<p style="color:#999; text-align:center;">Nenhum motoboy disponível no momento.</p>';
+                    return;
+                }
+                
+                container.innerHTML = frota.map(m => {
+                    const distanciaKm = m.distance.toFixed(1);
+                    return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
+                        <div>
+                            <strong>${m.nome}</strong> 
+                            <span style="color: var(--text-light); font-size: 13px; margin-left: 8px;">📍 a ${distanciaKm} km</span>
+                        </div>
+                        <button id="btn-despacho-${m.id}" onclick="despacharCorrida(${m.id}, '${m.nome}')" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Despachar</button>
+                    </div>`;
+                }).join('');
+            } catch (error) {
+                console.error("Erro ao carregar frota para despacho:", error);
+                const container = document.getElementById('lista-despacho');
+                if (container) container.innerHTML = '<p style="color:#ef4444; text-align:center;">Erro ao carregar frota.</p>';
+            }
+        }
+
         async function carregarFrota() {
             const res = await fetch('/api/fleet');
             const frota = await res.json();
             const container = document.getElementById('fleet-container');
-            let htmlDespacho = '';
             
             container.innerHTML = frota.map(m => {
-                if (m.status === 'ONLINE') {
-                    htmlDespacho += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
-                        <div>
-                            <strong>${m.nome}</strong> 
-                            <span style="font-size: 11px; background: ${m.tipo_vinculo === 'FIXO' ? '#e1f5fe' : '#fff3e0'}; color: ${m.tipo_vinculo === 'FIXO' ? '#3b82f6' : '#f59e0b'}; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold;">${m.tipo_vinculo || 'FREELANCER'}</span>
-                        </div>
-                        <button id="btn-despacho-${m.id}" onclick="despacharCorrida(${m.id}, '${m.nome}')" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Despachar</button>
-                    </div>`;
-                }
                 const saldoFreela = m.tipo_vinculo === 'FREELANCER' ? (Math.random() * 80 + 20).toFixed(2) : '0.00';
                 const alertBtn = m.status === 'OFFLINE' ? `<button onclick="alertarMotoboy(${m.id}, this)" style="background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">🔔 Chamar</button>` : '';
                 const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
@@ -309,9 +330,6 @@
                     </div>
                 </div>`
             }).join('');
-
-            const painelDespacho = document.getElementById('lista-despacho');
-            if(painelDespacho) painelDespacho.innerHTML = htmlDespacho || '<p style="color:#999; text-align:center;">Nenhum motoboy online no momento.</p>';
         }
 
         window.gerarPayloadPix = function(chave, nome, valor) {
@@ -746,6 +764,7 @@
 
         window.onload = async () => {
             carregarFrota();
+            carregarFrotaDespacho();
             const res = await fetch('/api/profile'); const d = await res.json();
             console.log("Perfil carregado:", d);
             document.getElementById('prof-nome').value = d.nome || '';
@@ -764,8 +783,12 @@
 
         setInterval(() => {
             const frotaTab = document.getElementById('tab-frota');
+            const despachoTab = document.getElementById('tab-operacional');
             if (frotaTab && frotaTab.classList.contains('active')) {
                 carregarFrota();
+            }
+            if (despachoTab && despachoTab.classList.contains('active')) {
+                carregarFrotaDespacho();
             }
         }, 10000);
     </script>
