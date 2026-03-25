@@ -105,6 +105,12 @@
 
         <div id="tab-mapa" class="tab-content">
             <h1 class="header-title">Mapa de Taxas de Entrega</h1>
+            <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid #eee;">
+                <span style="font-weight: bold; color: var(--text-main); margin-right: 10px;">Ferramentas:</span>
+                <button onclick="ativarDesenho()" style="background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">✏️ Desenhar Área</button>
+                <button onclick="pararDesenho()" style="background: #636e72; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">✋ Mover Mapa</button>
+                <button onclick="limparRascunho()" style="background: var(--danger); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">🗑️ Limpar Rascunho</button>
+            </div>
             <div class="map-section">
                 <div class="zones-list-panel">
                     <div class="zones-header">Regiões Mapeadas</div>
@@ -396,6 +402,19 @@
             }
         }
 
+        window.ativarDesenho = function() {
+            if (drawingManager) drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+        };
+        window.pararDesenho = function() {
+            if (drawingManager) drawingManager.setDrawingMode(null);
+        };
+        window.limparRascunho = function() {
+            if (formaTemp) {
+                formaTemp.setMap(null);
+                formaTemp = null;
+            }
+        };
+
         function abrirRadarMotoboy(lat, lng, nome) {
             document.getElementById('modal-mapa-radar').style.display = 'flex';
             document.getElementById('titulo-mapa-radar').innerText = `📍 Posição de ${nome}`;
@@ -417,7 +436,7 @@
             const res = await fetch('/api/profile'); const p = await res.json();
             const pos = { lat: p.lat || -26.2163, lng: p.lng || -48.6017 };
             map = new google.maps.Map(document.getElementById("map"), { zoom: 13, center: pos, disableDefaultUI: true, zoomControl: true, styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }] });
-            drawingManager = new google.maps.drawing.DrawingManager({ drawingControl: true, drawingControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT, drawingModes: ['polygon', 'circle'] }, polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' } });
+            drawingManager = new google.maps.drawing.DrawingManager({ drawingControl: false, drawingControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT, drawingModes: ['polygon', 'circle'] }, polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' } });
             drawingManager.setMap(map);
 
             google.maps.event.addListener(drawingManager, 'overlaycomplete', e => {
