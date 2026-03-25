@@ -168,8 +168,19 @@ serve({
         if (req.method === "DELETE" && url.pathname.startsWith("/api/zones/")) { const id = parseInt(url.pathname.split("/").pop()); return new Response(JSON.stringify(deleteZone(id)), { headers: { "Content-Type": "application/json" } }); }
         
         if (req.method === "GET" && url.pathname === "/api/fleet") return new Response(JSON.stringify(getFleet()), { headers: { "Content-Type": "application/json" } });
-        if (req.method === "PUT" && url.pathname.startsWith("/api/fleet/")) { const id = parseInt(url.pathname.split("/").pop()); const body = await req.json(); return new Response(JSON.stringify(updateDriver(id, body)), { headers: { "Content-Type": "application/json" } }); }
-        if (req.method === "DELETE" && url.pathname.startsWith("/api/fleet/")) { const id = parseInt(url.pathname.split("/").pop()); return new Response(JSON.stringify(deleteDriver(id)), { headers: { "Content-Type": "application/json" } }); }
+        if (req.method === "PUT" && url.pathname.startsWith("/api/fleet/")) {
+            const id = parseInt(url.pathname.split("/").pop() || '0');
+            if (id) {
+                const body = await req.json();
+                return new Response(JSON.stringify(updateDriver(id, body)), { headers: { "Content-Type": "application/json" } });
+            }
+        }
+        if (req.method === "DELETE" && url.pathname.startsWith("/api/fleet/")) {
+            const id = parseInt(url.pathname.split("/").pop() || '0');
+            if (id) {
+                return new Response(JSON.stringify(deleteDriver(id)), { headers: { "Content-Type": "application/json" } });
+            }
+        }
 
         // ROTA DE DESPACHO
         if (req.method === "POST" && url.pathname === "/api/dispatch") {

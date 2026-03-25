@@ -86,8 +86,8 @@ export function updateDriverLocation(telegram_id: string | number, lat: number, 
 }
 
 export function sweepInactiveDrivers() {
-    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-    const stm = db.query("UPDATE fleet SET status = 'OFFLINE' WHERE status = 'ONLINE' AND last_location_time < ?");
-    const result = stm.run(fiveMinutesAgo);
+    const fiveMinutesAgo = Date.now() - 300000;
+    const stm = db.query("UPDATE fleet SET status = 'OFFLINE' WHERE status = 'ONLINE' AND last_location_time < $tempo");
+    const result = stm.run({ $tempo: fiveMinutesAgo });
     return result.changes > 0;
 }

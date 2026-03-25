@@ -203,7 +203,7 @@
      </div>
 
     <script>
-        let map, drawingManager, formaTemp, zonaEdicao = {}, formasMapa = {};
+        let map, drawingManager, formaTemp, zonaEdicao = {}, formasMapa = {}, deleteTimer;
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -235,7 +235,7 @@
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="abrirModalEdicao(${m.id}, \`${m.nome}\`, \`${m.cpf || ''}\`, \`${m.tipo_vinculo}\`, \`${m.chave_pix}\`)">✏️ Editar</button>
                         <button onclick="abrirRadarMotoboy(${m.lat}, ${m.lng}, '${m.nome}')" style="display: ${m.status === 'ONLINE' && m.lat && m.lng ? 'inline-block' : 'none'}; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;">📍 Radar</button>
-                        <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id})">🗑️ Excluir</button>
+                        <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id}, this)">🗑️ Excluir</button>
                         ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
                         <button class="btn-action btn-pay" onclick="abrirPagamento(\`${m.nome}\`, \`${m.chave_pix}\`, \`${m.tipo_vinculo}\`, \`${saldoFreela}\`)">Pagar via Pix</button>
                     </div>
@@ -378,10 +378,21 @@
             carregarFrota();
         }
 
-        async function deletarMotoboy(id) {
-            if (confirm("Tem certeza que deseja excluir este entregador?")) {
+        async function deletarMotoboy(id, btn) {
+            if (btn.innerText === "🗑️ Tem certeza?") {
                 await fetch(`/api/fleet/${id}`, { method: 'DELETE' });
                 carregarFrota();
+            } else {
+                const originalText = btn.innerHTML;
+                const originalBg = btn.style.background;
+                btn.innerText = "🗑️ Tem certeza?";
+                btn.style.background = "#ff4757"; // Vermelho perigo
+                btn.style.color = "white";
+                clearTimeout(deleteTimer);
+                deleteTimer = setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = originalBg;
+                }, 3000);
             }
         }
 
