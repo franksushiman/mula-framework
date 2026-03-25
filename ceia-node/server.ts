@@ -80,8 +80,13 @@ function startWhatsApp() {
 
             // c) Regra "MENU"
             if (intent === 'MENU') {
+                const chat = await msg.getChat();
+                await chat.sendSeen();
+
                 if (profile.link_cardapio) {
                     await msg.reply(`Olá! Faça seu pedido rapidamente pelo nosso cardápio digital: ${profile.link_cardapio}`);
+                } else {
+                    await msg.reply('Olá! No momento nosso cardápio online não está configurado. Por favor, envie seu pedido que anotaremos para você.');
                 }
             }
             // d) Regra "STATUS"
