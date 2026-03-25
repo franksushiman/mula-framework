@@ -570,14 +570,55 @@
             const pos = { lat: p.lat || -26.2163, lng: p.lng || -48.6017 };
             map = new google.maps.Map(document.getElementById("map"), { zoom: 13, center: pos, disableDefaultUI: true, zoomControl: true, styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }] });
             
-            drawingManager = new google.maps.drawing.DrawingManager({
+            // 1. Instancia o DrawingManager com os controles nativos DESLIGADOS (drawingControl: false)
+            const drawingManager = new google.maps.drawing.DrawingManager({
                 drawingMode: null,
-                drawingControl: true,
-                drawingControlOptions: { position: google.maps.ControlPosition.TOP_CENTER, drawingModes: ['polygon', 'circle'] },
-                polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, 
-                circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }
+                drawingControl: false,
+                polygonOptions: { fillColor: '#2ecc71', fillOpacity: 0.3, strokeWeight: 2, strokeColor: '#27ae60', editable: true },
+                circleOptions: { fillColor: '#3498db', fillOpacity: 0.3, strokeWeight: 2, strokeColor: '#2980b9', editable: true }
             });
             drawingManager.setMap(map);
+
+            // 2. Cria o painel de botões customizados elegantes
+            const customControlDiv = document.createElement('div');
+            customControlDiv.style.margin = '15px';
+            customControlDiv.style.display = 'flex';
+            customControlDiv.style.gap = '10px';
+            customControlDiv.innerHTML = `
+                <button id="btn-mover" style="background: var(--primary, #2c3e50); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s;">🖐️ Mover Mapa</button>
+                <button id="btn-polig" style="background: white; color: #333; border: 1px solid #ccc; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s;">📐 Desenhar Área</button>
+                <button id="btn-raio" style="background: white; color: #333; border: 1px solid #ccc; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s;">⭕ Desenhar Raio</button>
+            `;
+
+            // 3. Empurra os botões para o topo do mapa
+            map.controls[google.maps.ControlPosition.TOP_CENTER].push(customControlDiv);
+
+            // 4. Lógica de clique e mudança de visual (botão ativo)
+            const btnMover = customControlDiv.querySelector('#btn-mover');
+            const btnPolig = customControlDiv.querySelector('#btn-polig');
+            const btnRaio = customControlDiv.querySelector('#btn-raio');
+
+            const resetButtons = () => {
+                [btnMover, btnPolig, btnRaio].forEach(b => {
+                    b.style.background = 'white';
+                    b.style.color = '#333';
+                    b.style.border = '1px solid #ccc';
+                });
+            };
+
+            const setActive = (btn) => {
+                resetButtons();
+                btn.style.background = 'var(--primary, #2c3e50)';
+                btn.style.color = 'white';
+                btn.style.border = '1px solid transparent';
+            };
+
+            btnMover.onclick = () => { drawingManager.setDrawingMode(null); setActive(btnMover); };
+            btnPolig.onclick = () => { drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON); setActive(btnPolig); };
+            btnRaio.onclick = () => { drawingManager.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE); setActive(btnRaio); };
+
+            // Inicia com o botão Mover ativo
+            setActive(btnMover);
 
             google.maps.event.addListener(drawingManager, 'overlaycomplete', async function(event) {
                 const overlay = event.overlay;
