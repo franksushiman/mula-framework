@@ -38,6 +38,8 @@ async function editMessageText(token: string, chatId: number, messageId: number,
 // --- Telegram Long Polling Bot ---
 let lastUpdateId = 0;
 
+const msgInstrucaoGPS = "📍 *Como ficar ONLINE para receber corridas:*\n\n1. Clique no ícone de clipe de papel 📎 ao lado do chat.\n2. Escolha a opção 'Localização'.\n3. Clique em **'Compartilhar Localização em Tempo Real'** (recomendado: 8 horas).\n\n⏳ Assim que o radar captar seu sinal, você estará ONLINE na base!";
+
 async function startTelegramPolling() {
     console.log("🤖 Iniciando polling do Telegram...");
     // Pequeno delay para garantir que o banco de dados esteja pronto.
@@ -97,10 +99,13 @@ async function startTelegramPolling() {
                     const text: string = message.text;
 
                     if (text.startsWith('/start')) {
-                        const driver = getDriverByTelegramId(telegramId);
+                        const driver = getDriverByTelegramId(telegramId) as any;
                         if (driver) {
-                            updateDriverStatus(telegramId, 'ONLINE');
-                            await sendMessage(token, chatId, `Olá ${(driver as any).nome}, você está online! Compartilhe sua localização em tempo real aqui.`);
+                            if (driver.status === 'ONLINE') {
+                                await sendMessage(token, chatId, "✅ Você está **ONLINE** e visível no radar da base!\n\n🏍️ Fique atento, as corridas chegarão por aqui.", { parse_mode: 'Markdown' });
+                            } else { // OFFLINE ou qualquer outro
+                                await sendMessage(token, chatId, `❌ Você está **OFFLINE** na base.\n\n${msgInstrucaoGPS}`, { parse_mode: 'Markdown' });
+                            }
                         } else {
                             const payload = text.split(' ')[1];
                             if (!payload) {
