@@ -672,6 +672,28 @@ serve({
             return new Response(JSON.stringify(getDriverHistory(id)), { headers: { "Content-Type": "application/json" } });
         }
 
+        if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/force-complete$/)) {
+            const id = parseInt(url.pathname.split('/')[3]);
+            const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
+
+            if (dispatch && dispatch.motoboy_id) {
+                db.query("UPDATE active_dispatches SET status = 'FINALIZADO', finalizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+
+                const driver = getDriverById(dispatch.motoboy_id) as any;
+                if (driver && driver.tipo_vinculo === 'FREELANCER') {
+                    db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + ? WHERE id = ?").run(dispatch.valor_corrida, driver.id);
+                }
+
+                const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA', 'AGUARDANDO_CONFIRMACAO')").get(dispatch.motoboy_id) as any;
+                if (driver && remainingDeliveries.count === 0) {
+                    updateDriverStatus(driver.telegram_id, 'ONLINE');
+                }
+
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            }
+            return new Response(JSON.stringify({ error: 'Entrega não encontrada ou sem motoboy associado.' }), { status: 404, headers: { 'Content-Type': 'application/json' }});
+        }
+
         // ROTA PARA FROTA DE DESPACHO (RADAR)
         if (req.method === 'GET' && url.pathname === '/api/dispatch/fleet') {
             const profile = getProfile() as any;

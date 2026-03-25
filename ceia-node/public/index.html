@@ -353,8 +353,11 @@
                        <div style="display: flex; flex-direction: column; gap: 8px;">
                            ${m.deliveries.map(d => `
                                <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.85rem;">
-                                   <div style="font-weight: 500;">${d.endereco}</div>
-                                   <div style="margin-top: 4px;">
+                                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                       <div style="font-weight: 500;">${d.endereco}</div>
+                                       <button onclick="forcarBaixa(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Forçar Baixa</button>
+                                   </div>
+                                   <div>
                                        <span style="background: ${d.status === 'ACEITO' ? '#eff6ff' : (d.status === 'EM_ROTA' ? '#e0f2f1' : '#fef9c3')}; color: ${d.status === 'ACEITO' ? '#2563eb' : (d.status === 'EM_ROTA' ? '#047857' : '#854d0e')}; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">${d.status === 'ACEITO' ? 'NA BASE' : (d.status === 'EM_ROTA' ? 'EM ROTA' : 'AGUARDANDO OK')}</span>
                                    </div>
                                </div>
@@ -689,6 +692,26 @@
 
             } catch (error) {
                 conteudo.innerHTML = '<p style="text-align: center; color: #ef4444;">Erro ao carregar o histórico.</p>';
+            }
+        }
+
+        async function forcarBaixa(dispatchId, btn) {
+            if (!confirm('Tem certeza que deseja forçar a baixa desta entrega? O saldo será pago ao motoboy e a entrega finalizada.')) {
+                return;
+            }
+            btn.innerHTML = '...'; btn.disabled = true;
+            try {
+                const res = await fetch(`/api/dispatches/${dispatchId}/force-complete`, { method: 'POST' });
+                if (res.ok) {
+                    carregarFrota();
+                } else {
+                    const err = await res.json();
+                    alert(`Erro: ${err.error || 'Não foi possível forçar a baixa.'}`);
+                    btn.innerHTML = 'Forçar Baixa'; btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Erro de conexão ao forçar a baixa.');
+                btn.innerHTML = 'Forçar Baixa'; btn.disabled = false;
             }
         }
 
