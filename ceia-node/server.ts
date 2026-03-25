@@ -1,18 +1,14 @@
 import { serve } from "bun";
-import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, createDriver, updateDriverStatus, updateDriverLocation } from "./core/database";
+import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, upsertDriver, updateDriverStatus, updateDriverLocation } from "./core/database";
 
 inicializarBanco();
 
 // State for registration process
-const userRegistrationState: { [key:string]: { step: string, data: any } } = {};
+const chatStates: { [key:string]: { step: string, data: any } } = {};
 
 // Telegram API Helper
-async function sendMessage(chatId: number, text: string) {
-    const token = process.env.TELEGRAM_TOKEN;
-    if (!token) {
-        console.error("TELEGRAM_TOKEN não configurado nas variáveis de ambiente.");
-        return;
-    }
+async function sendMessage(token: string, chatId: number, text: string) {
+    if (!token) return;
     const url = `https://api.telegram.org/bot${token}/sendMessage`;
     try {
         await fetch(url, {
@@ -25,81 +21,100 @@ async function sendMessage(chatId: number, text: string) {
     }
 }
 
-async function handleTelegramWebhook(req: Request) {
-    try {
-        const body = await req.json() as any;
-        const message = body.message;
-        
-        if (!message) return new Response("OK");
+// --- Telegram Long Polling Bot ---
+let lastUpdateId = 0;
 
-        const chatId = message.chat.id;
-        const telegramId = message.from.id.toString();
+async function startTelegramPolling() {
+    console.log("🤖 Iniciando polling do Telegram...");
+    // Pequeno delay para garantir que o banco de dados esteja pronto.
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const profile = getProfile() as any;
+    const token = profile?.telegram_bot_token;
 
-        // Location updates
-        if (message.location) {
-            const { latitude, longitude } = message.location;
-            updateDriverLocation(telegramId, latitude, longitude);
-            return new Response("OK");
-        }
-
-        if (!message.text) return new Response("OK");
-        const text:string = message.text;
-
-        // Command /start
-        if (text.startsWith('/start')) {
-            const driver = getDriverByTelegramId(telegramId);
-            if (driver) {
-                updateDriverStatus(telegramId, 'ONLINE');
-                await sendMessage(chatId, `Olá ${(driver as any).nome}, você está online! Por favor, compartilhe sua localização para começar a receber corridas.`);
-            } else {
-                const payload = text.split(' ')[1];
-                if (!payload) {
-                    await sendMessage(chatId, "Bem-vindo! Este bot é para uso exclusivo de motoboys. Por favor, use o link de convite do seu restaurante.");
-                    return new Response("OK");
-                }
-                userRegistrationState[telegramId] = { step: 'awaiting_nome', data: { telegram_id: telegramId } };
-                await sendMessage(chatId, "Bem-vindo ao CEIA! Vamos começar seu cadastro. Por favor, digite seu NOME COMPLETO:");
-            }
-            return new Response("OK");
-        }
-        
-        // Registration conversation
-        const currentState = userRegistrationState[telegramId];
-        if (currentState) {
-            switch (currentState.step) {
-                case 'awaiting_nome':
-                    currentState.data.nome = text;
-                    currentState.step = 'awaiting_cpf';
-                    await sendMessage(chatId, "Ótimo! Agora, seu CPF:");
-                    break;
-                case 'awaiting_cpf':
-                    currentState.data.cpf = text;
-                    currentState.step = 'awaiting_pix';
-                    await sendMessage(chatId, "Ok. Qual sua Chave Pix?");
-                    break;
-                case 'awaiting_pix':
-                    currentState.data.chave_pix = text;
-                    currentState.step = 'awaiting_vinculo';
-                    await sendMessage(chatId, "Vínculo com o restaurante (Responda com 'FIXO' ou 'FREELANCER'):");
-                    break;
-                case 'awaiting_vinculo':
-                    currentState.data.tipo_vinculo = text.toUpperCase() === 'FIXO' ? 'FIXO' : 'FREELANCER';
-                    currentState.step = 'awaiting_veiculo';
-                    await sendMessage(chatId, "Perfeito. E para fechar, qual sua moto? (Ex: Honda Biz 125)");
-                    break;
-                case 'awaiting_veiculo':
-                    currentState.data.veiculo = text;
-                    createDriver(currentState.data);
-                    delete userRegistrationState[telegramId]; // Clean up state
-                    await sendMessage(chatId, "Cadastro concluído! Você está online. Por favor, compartilhe sua localização para começar a receber corridas.");
-                    break;
-            }
-        }
-    } catch(err) {
-        console.error("Erro no webhook do Telegram:", err);
+    if (!token) {
+        console.log("⚠️ Token do Telegram não configurado. Polling não será iniciado. Por favor, configure-o no QG Logístico.");
+        return;
     }
+    console.log("✅ Token do Telegram encontrado. Iniciando bot...");
 
-    return new Response("OK");
+    while (true) {
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}&timeout=60`);
+            if (!res.ok) {
+                console.error(`Erro na API do Telegram: ${res.status} ${res.statusText}`);
+                if (res.status === 401) {
+                    console.error("O token do bot do Telegram é inválido. Polling interrompido.");
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 30000));
+                continue;
+            }
+            const data = await res.json() as any;
+
+            if (data.ok && data.result.length > 0) {
+                for (const update of data.result) {
+                    lastUpdateId = update.update_id;
+                    const message = update.message;
+                    if (!message) continue;
+
+                    const chatId = message.chat.id;
+                    const telegramId = message.from.id.toString();
+                    
+                    if (message.location) {
+                        const { latitude, longitude } = message.location;
+                        updateDriverLocation(telegramId, latitude, longitude);
+                        continue;
+                    }
+
+                    if (!message.text) continue;
+                    const text: string = message.text;
+
+                    if (text.startsWith('/start')) {
+                        const driver = getDriverByTelegramId(telegramId);
+                        if (driver) {
+                            updateDriverStatus(telegramId, 'ONLINE');
+                            await sendMessage(token, chatId, `Olá ${(driver as any).nome}, você está online! Compartilhe sua localização em tempo real aqui.`);
+                        } else {
+                            const payload = text.split(' ')[1];
+                            if (!payload) {
+                                await sendMessage(token, chatId, "Bem-vindo! Este bot é para uso exclusivo de motoboys. Use o link de convite do seu restaurante.");
+                                continue;
+                            }
+                            chatStates[telegramId] = { step: 'awaiting_nome', data: { telegram_id: telegramId } };
+                            await sendMessage(token, chatId, "Bem-vindo ao CEIA! Vamos começar seu cadastro. Por favor, digite seu NOME COMPLETO:");
+                        }
+                        continue;
+                    }
+
+                    const currentState = chatStates[telegramId];
+                    if (currentState) {
+                        switch (currentState.step) {
+                            case 'awaiting_nome':
+                                currentState.data.nome = text;
+                                currentState.step = 'awaiting_vinculo';
+                                await sendMessage(token, chatId, "Ótimo! Qual seu Vínculo com o restaurante (Responda 'FIXO' ou 'FREELANCER'):");
+                                break;
+                            case 'awaiting_vinculo':
+                                currentState.data.tipo_vinculo = text.toUpperCase() === 'FIXO' ? 'FIXO' : 'FREELANCER';
+                                currentState.step = 'awaiting_pix';
+                                await sendMessage(token, chatId, "Ok. Para finalizar, qual sua Chave Pix?");
+                                break;
+                            case 'awaiting_pix':
+                                currentState.data.chave_pix = text;
+                                upsertDriver(currentState.data);
+                                delete chatStates[telegramId];
+                                await sendMessage(token, chatId, "Cadastro concluído! Você está online. Compartilhe sua localização em tempo real aqui.");
+                                break;
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Erro no polling do Telegram (rede?):", err);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+    }
 }
 
 serve({
@@ -139,11 +154,8 @@ serve({
             return new Response(JSON.stringify({ success: true, link: linkTelegram }), { headers: { "Content-Type": "application/json" } });
         }
 
-        if (req.method === "POST" && url.pathname === "/api/telegram/webhook") {
-            return handleTelegramWebhook(req);
-        }
-
         return new Response("Not Found", { status: 404 });
     }
 });
 console.log("🚀 Nó MULA Logística rodando liso na porta 3000");
+startTelegramPolling();

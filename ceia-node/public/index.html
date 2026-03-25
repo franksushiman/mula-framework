@@ -136,6 +136,11 @@
                     <input type="password" id="prof-meta-api-token" class="form-control">
                     <small class="instruction-link">Configure seu App e Token em: <a href="https://developers.facebook.com" target="_blank">https://developers.facebook.com</a></small>
                 </div>
+                <div class="form-group">
+                    <label>Telegram Bot Token</label>
+                    <input type="password" id="prof-telegram-token" class="form-control">
+                    <small class="instruction-link">Crie seu bot e pegue o token com o @BotFather: <a href="https://t.me/botfather" target="_blank">https://t.me/botfather</a></small>
+                </div>
                 <button class="btn" id="btn-salvar-perfil" onclick="salvarPerfil()">Gravar Base</button>
             </div>
         </div>
@@ -338,6 +343,7 @@
                 openai_key: document.getElementById('prof-openai-key').value,
                 google_maps_key: document.getElementById('prof-google-maps-key').value,
                 meta_api_token: document.getElementById('prof-meta-api-token').value,
+                telegram_bot_token: document.getElementById('prof-telegram-token').value,
                 lat: -26.2163, 
                 lng: -48.6017 
             };
@@ -359,6 +365,7 @@
             document.getElementById('prof-google-maps-key').value = d.google_maps_key || '';
             document.getElementById('prof-openai-key').value = d.openai_key || '';
             document.getElementById('prof-meta-api-token').value = d.meta_api_token || '';
+            document.getElementById('prof-telegram-token').value = d.telegram_bot_token || '';
 
             if (d.google_maps_key) {
                 loadGoogleMaps(d.google_maps_key);
