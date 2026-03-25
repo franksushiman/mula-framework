@@ -213,6 +213,33 @@ async function startTelegramPolling() {
                             $time: Date.now(), 
                             $telegramId: telegramId 
                         });
+
+                        const driver = getDriverByTelegramId(telegramId) as any;
+                        if (driver) {
+                            const entregasAtivas = db.query("SELECT * FROM active_dispatches WHERE motoboy_id = $id AND status = 'EM_ROTA' AND aviso_chegada_enviado = 0").all({ $id: driver.id }) as any[];
+                            
+                            for (const entrega of entregasAtivas) {
+                                if (entrega.lat_destino && entrega.lng_destino) {
+                                    const distanciaKm = haversineDistance(message.location.latitude, message.location.longitude, entrega.lat_destino, entrega.lng_destino);
+                                    
+                                    if (distanciaKm <= 0.3) {
+                                        db.query("UPDATE active_dispatches SET aviso_chegada_enviado = 1 WHERE id = $id").run({ $id: entrega.id });
+                                        
+                                        const msgAviso = `*Aviso de Entrega:*\n\nSeu pedido está se aproximando do endereço de destino.\n\nPor favor, dirija-se ao portão ou recepção para agilizar o recebimento. Agradecemos a preferência.`;
+                                        const numeroCliente = `${entrega.cliente_telefone}@c.us`;
+                                        
+                                        if (waClient && waStatus === 'CONNECTED') {
+                                            try {
+                                                await waClient.sendMessage(numeroCliente, msgAviso);
+                                                console.log(`🚀 Aviso de aproximação enviado para ${entrega.cliente_telefone}`);
+                                            } catch(err) {
+                                                console.error(`❌ Erro ao enviar aviso de aproximação para ${entrega.cliente_telefone}:`, err);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         continue;
                     }
                     
