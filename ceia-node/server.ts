@@ -268,7 +268,7 @@ serve({
             
             // O Link Carimbado
             const linkTelegram = `https://t.me/FrotaCeiaBot?start=${storeId}_${motoZap}`;
-            const mensagem = `Você foi convidado para a frota ${profile?.nome || 'do restaurante'}. Conclua seu cadastro clicando aqui: ${linkTelegram}`;
+            let mensagem = `Você foi convidado para a frota ${profile?.nome || 'do restaurante'}. Conclua seu cadastro clicando aqui: ${linkTelegram}`;
 
             console.log(`\n📦 [NÓ SOBERANO] Ordem de disparo recebida!`);
             console.log(`📱 Destino: ${motoZap}`);
