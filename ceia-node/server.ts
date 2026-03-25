@@ -246,6 +246,18 @@ serve({
                 return new Response(JSON.stringify(deleteDriver(id)), { headers: { "Content-Type": "application/json" } });
             }
         }
+        if (req.method === 'POST' && url.pathname.match(/^\/api\/fleet\/(\d+)\/alert$/)) {
+            const id = url.pathname.split('/')[3];
+            const motoboy = db.query("SELECT * FROM fleet WHERE id = $id").get({ $id: id }) as any;
+            const profile = getProfile() as any;
+            
+            if (motoboy && motoboy.chat_id && profile?.telegram_bot_token) {
+                const msg = "🔔 *O QG ESTÁ CHAMANDO!*\n\nPrecisamos de você *ONLINE*. Por favor, ative a sua **Localização em Tempo Real** agora mesmo pelo clipe (📎).";
+                sendMessage(profile.telegram_bot_token, motoboy.chat_id, msg, { parse_mode: 'Markdown' });
+                return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+            }
+            return new Response(JSON.stringify({ error: 'Motoboy não encontrado ou sem Telegram' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
 
         // ROTA DE DESPACHO
         if (req.method === "POST" && url.pathname === "/api/dispatch") {
