@@ -766,7 +766,10 @@ serve({
                 let lat_destino, lng_destino;
                 if (profile.google_maps_key && endereco) {
                     try {
-                        const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(endereco)}&key=${profile.google_maps_key}`;
+                        const searchRadius = 20000; // 20km de raio para relevância
+                        const locationBias = (profile.lat && profile.lng) ? `&location=${profile.lat}%2C${profile.lng}&radius=${searchRadius}` : '';
+                        const geoUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(endereco)}&key=${profile.google_maps_key}${locationBias}`;
+                        
                         const geoRes = await fetch(geoUrl);
                         const geoData = await geoRes.json();
                         if (geoData.status === 'OK' && geoData.results.length > 0) {
