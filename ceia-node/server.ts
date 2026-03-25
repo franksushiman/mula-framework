@@ -109,6 +109,19 @@ function startWhatsApp() {
                 }
             }
 
+            // PRE-CHECK 2: Encaminhar mensagem do cliente para o motoboy
+            const clienteTelefoneCheck = msg.from.replace('@c.us', '');
+            const activeDispatchForCustomer = db.query("SELECT * FROM active_dispatches WHERE cliente_telefone LIKE ? AND status = 'EM_ROTA' ORDER BY id DESC LIMIT 1").get(`%${clienteTelefoneCheck}%`) as any;
+
+            if (activeDispatchForCustomer) {
+                const driver = getDriverById(activeDispatchForCustomer.motoboy_id) as any;
+                if (driver && driver.chat_id && profile && profile.telegram_bot_token) {
+                    const msgParaMotoboy = `[MENSAGEM DO CLIENTE]:\n\n${msg.body}`;
+                    await sendMessage(profile.telegram_bot_token, driver.chat_id, msgParaMotoboy);
+                    return; // Mensagem encaminhada, interrompe o fluxo para não ir para IA
+                }
+            }
+
             // a) Tratamento de Áudio
             if (msg.hasMedia) {
                 const media = await msg.downloadMedia();
@@ -295,7 +308,10 @@ async function sendDriverDashboard(token: string, telegramId: string | number, c
         text += "*Entregas em Rota:*\n";
         emRota.forEach(d => {
             text += ` - 📍 ${d.endereco}\n`;
-            keyboard.push([{ text: `🏁 Finalizar "${d.endereco.substring(0, 20)}..."`, callback_data: `finish_ride_${d.id}` }]);
+            keyboard.push([
+                { text: `💬 Mensagem Cliente`, callback_data: `message_customer_${d.id}` },
+                { text: `🏁 Finalizar Entrega`, callback_data: `finish_ride_${d.id}` }
+            ]);
         });
     }
     
@@ -448,6 +464,9 @@ async function startTelegramPolling() {
                             db.query("UPDATE active_dispatches SET status = 'RECUSADA', motoboy_id = NULL WHERE id = ?").run(dispatchId);
                             await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
                             await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada.");
+                        } else if (action === 'message' && type === 'customer' && !isNaN(dispatchId)) {
+                            chatStates[telegramId] = { step: 'awaiting_customer_message', data: { dispatch_id: dispatchId } };
+                            await sendMessage(token, cb.message.chat.id, "Digite a mensagem para o cliente:");
                         } else if (action === 'start' && type === 'route') {
                             const driver = getDriverByTelegramId(telegramId) as any;
                             if (driver) {
@@ -566,6 +585,19 @@ async function startTelegramPolling() {
                     const currentState = chatStates[telegramId];
                     if (currentState) {
                         switch (currentState.step) {
+                            case 'awaiting_customer_message':
+                                const dispatchId = currentState.data.dispatch_id;
+                                const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
+                                if (dispatch && dispatch.cliente_telefone && waClient && waStatus === 'CONNECTED') {
+                                    const numeroCliente = `${dispatch.cliente_telefone}@c.us`;
+                                    const msgParaCliente = `[MENSAGEM DO ENTREGADOR]:\n\n${text}`;
+                                    await waClient.sendMessage(numeroCliente, msgParaCliente);
+                                    await sendMessage(token, chatId, "✅ Mensagem enviada ao cliente!");
+                                } else {
+                                    await sendMessage(token, chatId, "❌ Não foi possível enviar a mensagem.");
+                                }
+                                delete chatStates[telegramId];
+                                break;
                             case 'awaiting_nome':
                                 currentState.data.nome = text;
                                 currentState.step = 'awaiting_cpf';
