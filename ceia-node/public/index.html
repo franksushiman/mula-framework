@@ -179,10 +179,10 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="editModal">
+    <div class="modal-overlay" id="modal-edicao">
         <div class="modal-card" style="width: 400px; text-align: left;">
             <h3 style="margin-top:0;">Editar Entregador</h3>
-            <input type="hidden" id="edit-motoboy-id">
+            <input type="hidden" id="edit-id">
             <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nome" class="form-control"></div>
             <div class="form-group"><label>CPF</label><input type="text" id="edit-cpf" class="form-control"></div>
             <div class="form-group"><label>Vínculo</label><input type="text" id="edit-vinculo" class="form-control" placeholder="FIXO ou FREELANCER"></div>
@@ -349,7 +349,7 @@
             }
         }
 
-        function fecharModalEdicao() { document.getElementById('editModal').style.display = 'none'; }
+        function fecharModalEdicao() { document.getElementById('modal-edicao').style.display = 'none'; }
         
         window.fecharRadar = function() {
             const modal = document.getElementById('modal-mapa-radar');
@@ -357,16 +357,16 @@
         };
 
         function abrirModalEdicao(id, nome, cpf, vinculo, pix) {
-            document.getElementById('edit-motoboy-id').value = id;
+            document.getElementById('edit-id').value = id;
             document.getElementById('edit-nome').value = nome;
             document.getElementById('edit-cpf').value = cpf;
             document.getElementById('edit-vinculo').value = vinculo;
             document.getElementById('edit-pix').value = pix;
-            document.getElementById('editModal').style.display = 'flex';
+            document.getElementById('modal-edicao').style.display = 'flex';
         }
         
         async function salvarEdicaoMotoboy() {
-            const id = document.getElementById('edit-motoboy-id').value;
+            const id = document.getElementById('edit-id').value;
             const body = {
                 nome: document.getElementById('edit-nome').value,
                 cpf: document.getElementById('edit-cpf').value,

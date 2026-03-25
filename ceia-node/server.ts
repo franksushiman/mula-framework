@@ -1,5 +1,5 @@
 import { serve } from "bun";
-import { inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers } from "./core/database";
+import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers } from "./core/database";
 
 inicializarBanco();
 
@@ -168,12 +168,12 @@ serve({
         if (req.method === "DELETE" && url.pathname.startsWith("/api/zones/")) { const id = parseInt(url.pathname.split("/").pop()); return new Response(JSON.stringify(deleteZone(id)), { headers: { "Content-Type": "application/json" } }); }
         
         if (req.method === "GET" && url.pathname === "/api/fleet") return new Response(JSON.stringify(getFleet()), { headers: { "Content-Type": "application/json" } });
-        if (req.method === "PUT" && url.pathname.startsWith("/api/fleet/")) {
-            const id = parseInt(url.pathname.split("/").pop() || '0');
-            if (id) {
-                const body = await req.json();
-                return new Response(JSON.stringify(updateDriver(id, body)), { headers: { "Content-Type": "application/json" } });
-            }
+        if (req.method === 'PUT' && url.pathname.startsWith('/api/fleet/')) {
+            const id = url.pathname.split('/').pop();
+            const body = await req.json();
+            db.query(`UPDATE fleet SET nome = $nome, cpf = $cpf, tipo_vinculo = $tipo_vinculo, chave_pix = $chave_pix WHERE id = $id`)
+              .run({ $nome: body.nome || '', $cpf: body.cpf || '', $tipo_vinculo: body.tipo_vinculo || '', $chave_pix: body.chave_pix || '', $id: id });
+            return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
         }
         if (req.method === "DELETE" && url.pathname.startsWith("/api/fleet/")) {
             const id = parseInt(url.pathname.split("/").pop() || '0');
