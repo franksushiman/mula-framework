@@ -314,12 +314,51 @@
             if(painelDespacho) painelDespacho.innerHTML = htmlDespacho || '<p style="color:#999; text-align:center;">Nenhum motoboy online no momento.</p>';
         }
 
+        window.gerarPayloadPix = function(chave, nome, valor) {
+            // Se a chave já for um Copia e Cola inteiro, não recalcula
+            if (chave.startsWith('000201')) return chave;
+            
+            let chaveLimpa = chave.trim();
+            // Limpa o nome para o padrão EMV (sem acentos, max 25 chars)
+            let nomeLimpo = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 25).trim().toUpperCase() || 'MOTOBOY';
+            let cidade = 'BRASIL';
+
+            const gui = "0014br.gov.bcb.pix";
+            const chaveStr = `01${chaveLimpa.length.toString().padStart(2, '0')}${chaveLimpa}`;
+            const merchantAccountInfo = `26${(gui.length + chaveStr.length).toString().padStart(2, '0')}${gui}${chaveStr}`;
+            
+            let transactionAmount = "";
+            if (valor > 0) {
+                const valorStr = valor.toFixed(2);
+                transactionAmount = `54${valorStr.length.toString().padStart(2, '0')}${valorStr}`;
+            }
+            
+            const merchantName = `59${nomeLimpo.length.toString().padStart(2, '0')}${nomeLimpo}`;
+            const merchantCity = `60${cidade.length.toString().padStart(2, '0')}${cidade}`;
+            const additionalDataField = `62070503***`;
+            
+            const payloadSemCrc = `000201010212${merchantAccountInfo}520400005303986${transactionAmount}5802BR${merchantName}${merchantCity}${additionalDataField}6304`;
+            
+            // Calcula o CRC16
+            let crc = 0xFFFF;
+            for (let c = 0; c < payloadSemCrc.length; c++) {
+                crc ^= payloadSemCrc.charCodeAt(c) << 8;
+                for (let i = 0; i < 8; i++) {
+                    if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+                    else crc = crc << 1;
+                }
+            }
+            const crcHex = (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+            return payloadSemCrc + crcHex;
+        };
+
         window.abrirPagamento = function(nome, chavePix, saldo) {
             // Atualiza o título
             document.getElementById('pix-motoboy-nome').innerHTML = `Pagar ${nome}`;
 
             // Formata o valor real recebido para BRL
-            const valorFormatado = parseFloat(saldo || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const valorFloat = parseFloat(saldo || 0);
+            const valorFormatado = valorFloat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
             // Atualiza o elemento de valor
             const valorElement = document.getElementById('pix-valor-texto'); 
@@ -328,14 +367,16 @@
                 valorElement.style.color = 'var(--success)';
             }
 
-            // Insere a chave real no input
-            document.getElementById('pix-copia-cola').value = chavePix || '';
+            const payload = window.gerarPayloadPix(chavePix || '', nome, valorFloat);
+
+            // Insere o payload gerado no input
+            document.getElementById('pix-copia-cola').value = payload;
 
             const qrImg = document.getElementById('qr-pix-img');
             if (qrImg) {
                 if (chavePix && chavePix !== 'Nenhuma chave cadastrada' && chavePix.trim() !== '') {
                     // Gera o QR code real dinamicamente
-                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(chavePix)}`;
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
                     qrImg.style.display = 'block';
                 } else {
                     // Esconde se não tiver chave
@@ -356,28 +397,6 @@
             setTimeout(() => { btn.innerText = 'Copiar'; btn.style.background = '#0f172a'; }, 2000);
         }
 
-        function gerarPayloadPixPuro(chaveOriginal, nomeOriginal, cidadeOriginal, valorStr) {
-            const chave = chaveOriginal.trim();
-            const limpar = (txt, max) => txt.normalize("NFD").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, max).trim().toUpperCase();
-            const nome = limpar(nomeOriginal, 25) || "MOTOBOY";
-            const cidade = limpar(cidadeOriginal, 15) || "CIDADE";
-            let valorFormatado = '';
-            if (valorStr && parseFloat(valorStr) > 0) valorFormatado = parseFloat(valorStr).toFixed(2);
-            
-            const emv = (id, val) => id + String(val.length).padStart(2, '0') + val;
-
-            const payloadBase = "000201" + emv("26", emv("00", "br.gov.bcb.pix") + emv("01", chave)) + "52040000" + "5303986" + (valorFormatado ? emv("54", valorFormatado) : "") + "5802BR" + emv("59", nome) + emv("60", cidade) + emv("62", emv("05", "CEIA")) + "6304";
-            
-            let crc = 0xFFFF;
-            for (let i = 0; i < payloadBase.length; i++) {
-                crc ^= payloadBase.charCodeAt(i) << 8;
-                for (let j = 0; j < 8; j++) {
-                    if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
-                    else crc = crc << 1;
-                }
-            }
-            return payloadBase + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-        }
 
         async function dispararConvite() {
             const inputZap = document.getElementById('moto-zap');
