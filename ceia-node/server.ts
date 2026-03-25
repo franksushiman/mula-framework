@@ -335,8 +335,15 @@ startWhatsApp();
 
 // --- Varredor de Radar ---
 setInterval(() => {
-    const wereDriversUpdated = sweepInactiveDrivers();
-    if (wereDriversUpdated) {
-        console.log("🧹 Varredor de Radar: Motoboys inativos movidos para OFFLINE.");
+    try {
+        const limiteTempo = Date.now() - 30000; // 30 segundos de tolerância
+        const stmt = db.query("UPDATE fleet SET status = 'OFFLINE' WHERE status = 'ONLINE' AND (last_location_time < $tempo OR last_location_time IS NULL)");
+        const result = stmt.run({ $tempo: limiteTempo });
+        
+        if (result.changes > 0) {
+            console.log(`🧹 [VARREDOR DE RADAR] Derrubou ${result.changes} motoboy(s) para OFFLINE por inatividade de GPS.`);
+        }
+    } catch (e) {
+        console.error("Erro no Varredor de Radar:", e);
     }
-}, 60000);
+}, 10000);
