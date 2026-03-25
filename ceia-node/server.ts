@@ -809,7 +809,7 @@ serve({
                     ]]
                 };
                 
-                await sendVenue(profile.telegram_bot_token, motoboy.chat_id, lat_destino, lng_destino, title, endereco, { reply_markup: JSON.stringify(keyboard) });
+                await sendVenue(profile.telegram_bot_token, parseInt(motoboy.chat_id), lat_destino, lng_destino, title, endereco, { reply_markup: JSON.stringify(keyboard) });
                 return new Response(JSON.stringify({ success: true, taxa: valor }), { headers: { 'Content-Type': 'application/json' }});
             }
             return new Response(JSON.stringify({ error: 'Motoboy não encontrado' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
