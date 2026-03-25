@@ -255,12 +255,25 @@ serve({
             
             // O Link Carimbado
             const linkTelegram = `https://t.me/FrotaCeiaBot?start=${storeId}_${motoZap}`;
-            
-            // MOCK: Aqui é onde o motor do WhatsApp (Baileys/Evolution) vai plugar no futuro.
-            // Por enquanto, o Nó avisa no terminal que a ordem de disparo foi dada.
+            const mensagem = `Você foi convidado para a frota ${profile?.nome || 'do restaurante'}. Conclua seu cadastro clicando aqui: ${linkTelegram}`;
+
             console.log(`\n📦 [NÓ SOBERANO] Ordem de disparo recebida!`);
             console.log(`📱 Destino: ${motoZap}`);
-            console.log(`💬 Mensagem: "Você foi convidado para a frota ${profile?.nome || 'do restaurante'}. Conclua seu cadastro clicando aqui: ${linkTelegram}"\n`);
+            console.log(`💬 Mensagem: "${mensagem}"\n`);
+
+            try {
+                if (waClient && waStatus === 'CONNECTED') {
+                    const numeroFormatado = motoZap.replace(/\D/g, '');
+                    const numeroFinal = numeroFormatado.startsWith('55') ? `${numeroFormatado}@c.us` : `55${numeroFormatado}@c.us`;
+                    
+                    await waClient.sendMessage(numeroFinal, mensagem);
+                    console.log('✅ Convite real disparado com sucesso via WhatsApp!');
+                } else {
+                    console.log('⚠️ WhatsApp Não Oficial desconectado. O envio real falhou.');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao enviar mensagem no WhatsApp:', error);
+            }
             
             return new Response(JSON.stringify({ success: true, link: linkTelegram }), { headers: { "Content-Type": "application/json" } });
         }
