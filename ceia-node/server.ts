@@ -479,9 +479,9 @@ async function startTelegramPolling() {
                             const driver = getDriverByTelegramId(telegramId) as any;
                             const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status = 'EM_ROTA'").get(driver.id) as any;
                             if (remainingDeliveries.count === 0) {
-                                const allDeliveriesDone = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('ACEITO', 'EM_ROTA')").get(driver.id) as any;
-                                if(allDeliveriesDone.count === 0 && cb.message) {
-                                    await sendMessage(token, cb.message.chat.id, "🏁 Última entrega da rota finalizada. Você ficará ONLINE assim que todos os clientes confirmarem o recebimento.");
+                                updateDriverStatus(telegramId, 'ONLINE');
+                                if (cb.message) {
+                                    await sendMessage(token, cb.message.chat.id, "🏁 Última entrega da rota finalizada. Você está ONLINE novamente e já pode coletar novos pedidos na base.");
                                 }
                             }
 
