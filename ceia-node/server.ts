@@ -263,11 +263,18 @@ serve({
 
             try {
                 if (waClient && waStatus === 'CONNECTED') {
-                    const numeroFormatado = motoZap.replace(/\D/g, '');
-                    const numeroFinal = numeroFormatado.startsWith('55') ? `${numeroFormatado}@c.us` : `55${numeroFormatado}@c.us`;
+                    const numeroLimpo = motoZap.replace(/\D/g, '');
+                    const numeroComDDI = numeroLimpo.startsWith('55') ? numeroLimpo : `55${numeroLimpo}`;
                     
-                    await waClient.sendMessage(numeroFinal, mensagem);
-                    console.log('✅ Convite real disparado com sucesso via WhatsApp!');
+                    console.log(`🔍 Buscando ID real no WhatsApp para: ${numeroComDDI}...`);
+                    const contato = await waClient.getNumberId(numeroComDDI);
+                    
+                    if (contato) {
+                        await waClient.sendMessage(contato._serialized, mensagem);
+                        console.log('✅ Convite real disparado com sucesso para:', contato._serialized);
+                    } else {
+                        console.log(`❌ Erro: O número ${numeroComDDI} não está registrado no WhatsApp.`);
+                    }
                 } else {
                     console.log('⚠️ WhatsApp Não Oficial desconectado. O envio real falhou.');
                 }
