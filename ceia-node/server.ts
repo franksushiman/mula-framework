@@ -1,7 +1,28 @@
 import { serve } from "bun";
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import qrcode from 'qrcode';
 import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers } from "./core/database";
 
 inicializarBanco();
+
+let waClient: any = null;
+let currentQR: string = '';
+let waStatus: string = 'DISCONNECTED';
+
+function startWhatsApp() {
+    if (waClient) return;
+    waClient = new Client({ authStrategy: new LocalAuth({ dataPath: './wa_session' }) });
+    waClient.on('qr', async (qr: string) => {
+        currentQR = await qrcode.toDataURL(qr);
+        waStatus = 'WAITING_QR';
+    });
+    waClient.on('ready', () => {
+        currentQR = '';
+        waStatus = 'CONNECTED';
+        console.log('✅ WhatsApp Conectado e Pronto!');
+    });
+    waClient.initialize();
+}
 
 // State for registration process
 const chatStates: { [key:string]: { step: string, data: any } } = {};
@@ -159,6 +180,14 @@ serve({
         const url = new URL(req.url);
         
         if (req.method === "GET" && url.pathname === "/") return new Response(Bun.file("./public/index.html"), { headers: { "Content-Type": "text/html" } });
+        
+        if (req.method === 'GET' && url.pathname === '/api/whatsapp/start') {
+            startWhatsApp();
+            return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
+        }
+        if (req.method === 'GET' && url.pathname === '/api/whatsapp/status') {
+            return new Response(JSON.stringify({ status: waStatus, qr: currentQR }), { headers: { 'Content-Type': 'application/json' } });
+        }
         
         if (req.method === 'GET' && url.pathname === '/api/profile') {
             try {

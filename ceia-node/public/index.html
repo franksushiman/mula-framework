@@ -391,8 +391,29 @@
         window.confirmarApiNaoOficial = function() {
             fecharAlertaBanimento();
             document.getElementById('modal-qr-whatsapp').style.display = 'flex';
+            document.getElementById('qr-code-img').src = ''; // Limpa a imagem antiga
+            
+            // Inicia o motor no backend
+            fetch('/api/whatsapp/start');
+            
+            // Fica perguntando pro backend a cada 2 segundos se o QR code já chegou
+            window.qrInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/whatsapp/status');
+                    const data = await res.json();
+                    if (data.qr) {
+                        document.getElementById('qr-code-img').src = data.qr;
+                    }
+                    if (data.status === 'CONNECTED') {
+                        clearInterval(window.qrInterval);
+                        document.getElementById('modal-qr-whatsapp').style.display = 'none';
+                        alert('✅ WhatsApp Conectado com Sucesso!');
+                    }
+                } catch (e) {}
+            }, 2000);
         };
         window.fecharModalQR = function() {
+            if (window.qrInterval) clearInterval(window.qrInterval);
             document.getElementById('modal-qr-whatsapp').style.display = 'none';
         };
 
