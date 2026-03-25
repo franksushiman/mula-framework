@@ -44,16 +44,17 @@ export function getDriverById(id: number) {
 
 export function upsertDriver(data: any) {
     db.run(
-        `INSERT INTO fleet (telegram_id, chat_id, nome, tipo_vinculo, chave_pix, status)
-        VALUES (?, ?, ?, ?, ?, 'ONLINE')
+        `INSERT INTO fleet (telegram_id, chat_id, nome, cpf, tipo_vinculo, chave_pix, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'ONLINE')
         ON CONFLICT(telegram_id) DO UPDATE SET
             chat_id = excluded.chat_id,
             nome = excluded.nome,
+            cpf = excluded.cpf,
             tipo_vinculo = excluded.tipo_vinculo,
             chave_pix = excluded.chave_pix,
             status = 'ONLINE',
             ultima_atualizacao = CURRENT_TIMESTAMP`,
-        [data.telegram_id, data.chat_id, data.nome, data.tipo_vinculo, data.chave_pix]
+        [data.telegram_id, data.chat_id, data.nome, data.cpf, data.tipo_vinculo, data.chave_pix]
     );
     return getDriverByTelegramId(data.telegram_id);
 }

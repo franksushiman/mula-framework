@@ -118,8 +118,13 @@ async function startTelegramPolling() {
                         switch (currentState.step) {
                             case 'awaiting_nome':
                                 currentState.data.nome = text;
+                                currentState.step = 'awaiting_cpf';
+                                await sendMessage(token, chatId, "Ótimo! Agora, por favor, digite seu CPF:");
+                                break;
+                            case 'awaiting_cpf':
+                                currentState.data.cpf = text;
                                 currentState.step = 'awaiting_vinculo';
-                                await sendMessage(token, chatId, "Ótimo! Qual seu Vínculo com o restaurante (Responda 'FIXO' ou 'FREELANCER'):");
+                                await sendMessage(token, chatId, "Entendido. Qual seu Vínculo com o restaurante (Responda 'FIXO' ou 'FREELANCER'):");
                                 break;
                             case 'awaiting_vinculo':
                                 currentState.data.tipo_vinculo = text.toUpperCase() === 'FIXO' ? 'FIXO' : 'FREELANCER';
