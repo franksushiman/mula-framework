@@ -196,6 +196,23 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="modal-despacho">
+        <div class="modal-card" style="width: 400px; text-align: left;">
+            <h3 style="margin-top:0;" id="despacho-titulo">Despachar para...</h3>
+            <input type="hidden" id="despacho-motoboy-id">
+            <div class="form-group">
+                <label>Endereço de Entrega Completo</label>
+                <input type="text" id="despacho-endereco" class="form-control" placeholder="Rua, Número, Bairro, Cidade">
+            </div>
+            <div class="form-group">
+                <label>WhatsApp do Cliente (para avisos)</label>
+                <input type="text" id="despacho-cliente-telefone" class="form-control" placeholder="Ex: 47912345678">
+            </div>
+            <button class="btn" onclick="confirmarDespacho()">Confirmar Despacho</button>
+            <button class="btn btn-cancel" onclick="document.getElementById('modal-despacho').style.display = 'none';">Cancelar</button>
+        </div>
+    </div>
+
     <div id="modal-mapa-radar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
        <div style="position: relative; background:var(--card-bg); padding:20px; border-radius:12px; width:90%; max-width:700px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
          <button onclick="fecharRadar()" style="position: absolute; top: 10px; right: 10px; z-index: 10001; background: #ff4757; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">×</button>
@@ -604,18 +621,58 @@
             });
         }
 
-        window.despacharCorrida = async function(id, nome) {
-            const endereco = prompt(`Endereço de destino para ${nome}:`);
-            if (!endereco) return;
-            const valor = prompt(`Taxa da corrida (R$):`);
-            if (!valor) return;
-            
-            const btn = document.getElementById(`btn-despacho-${id}`);
-            if(btn) btn.innerHTML = 'Enviando...';
-            await fetch('/api/dispatch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ motoboy_id: id, valor: parseFloat(valor.replace(',','.')), endereco: endereco }) });
-            if(btn) btn.innerHTML = '✅ Despachado';
-            setTimeout(() => carregarFrota(), 2000); // Força atualização do saldo
+        window.despacharCorrida = function(id, nome) {
+            document.getElementById('despacho-motoboy-id').value = id;
+            document.getElementById('despacho-titulo').innerText = `Despachar para ${nome}`;
+            document.getElementById('despacho-endereco').value = '';
+            document.getElementById('despacho-cliente-telefone').value = '';
+            document.getElementById('modal-despacho').style.display = 'flex';
+            document.getElementById('despacho-endereco').focus();
         };
+
+        async function confirmarDespacho() {
+            const motoboyId = document.getElementById('despacho-motoboy-id').value;
+            const endereco = document.getElementById('despacho-endereco').value;
+            const clienteTelefone = document.getElementById('despacho-cliente-telefone').value;
+
+            if (!endereco || !clienteTelefone) {
+                alert('Por favor, preencha o endereço e o telefone do cliente.');
+                return;
+            }
+
+            const btn = document.getElementById(`btn-despacho-${motoboyId}`);
+            if(btn) btn.innerHTML = 'Enviando...';
+            
+            document.getElementById('modal-despacho').style.display = 'none';
+
+            const res = await fetch('/api/dispatch', { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify({ 
+                    motoboy_id: motoboyId, 
+                    endereco: endereco,
+                    cliente_telefone: clienteTelefone.replace(/\D/g, '')
+                }) 
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`);
+                if (btn) btn.innerHTML = 'Despachar';
+                return;
+            }
+
+            if(btn) {
+                btn.innerHTML = '✅ Despachado';
+                btn.disabled = true;
+                btn.style.background = '#10b981';
+            }
+            
+            setTimeout(() => {
+                carregarFrotaDespacho(); 
+                carregarFrota();
+            }, 1500);
+        }
         // --- MAPA E PERFIL ---
         async function initMap() {
             const res = await fetch('/api/profile'); const p = await res.json();

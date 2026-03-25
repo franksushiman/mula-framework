@@ -22,6 +22,43 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * c;
 }
 
+function calcularTaxa(latDestino: number, lngDestino: number): number {
+    const zones = getZones() as any[];
+    if (!zones || zones.length === 0) return 0;
+
+    const ponto = { lat: latDestino, lng: lngDestino };
+
+    for (const zona of zones) {
+        try {
+            const coords = JSON.parse(zona.coordenadas);
+            
+            if (zona.tipo === 'circle') {
+                const distanciaKm = haversineDistance(ponto.lat, ponto.lng, coords.center.lat, coords.center.lng);
+                if (distanciaKm * 1000 <= coords.radius) {
+                    return zona.valor;
+                }
+            } else if (zona.tipo === 'polygon') {
+                let dentro = false;
+                for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+                    const xi = coords[i].lng, yi = coords[i].lat;
+                    const xj = coords[j].lng, yj = coords[j].lat;
+
+                    const intersect = ((yi > ponto.lat) !== (yj > ponto.lat))
+                        && (ponto.lng < (xj - xi) * (ponto.lat - yi) / (yj - yi) + xi);
+                    if (intersect) dentro = !dentro;
+                }
+                if (dentro) {
+                    return zona.valor;
+                }
+            }
+        } catch(e) {
+            console.error(`Erro ao processar zona ${zona.id}:`, e);
+            continue;
+        }
+    }
+    return 0; // Fallback se não encontrar zona
+}
+
 function startWhatsApp() {
     if (waClient) return;
     waClient = new Client({ authStrategy: new LocalAuth({ dataPath: './wa_session' }) });
@@ -425,12 +462,11 @@ serve({
 
         // ROTA DE DESPACHO
         if (req.method === 'POST' && url.pathname === '/api/dispatch') {
-            const { motoboy_id, valor, endereco, cliente_telefone } = await req.json();
+            const { motoboy_id, endereco, cliente_telefone } = await req.json();
             const motoboy = db.query("SELECT * FROM fleet WHERE id = $id").get({ $id: motoboy_id }) as any;
             const profile = getProfile() as any;
             
             if (motoboy && motoboy.chat_id && profile?.telegram_bot_token) {
-                // Geocode destination
                 let lat_destino, lng_destino;
                 if (profile.google_maps_key && endereco) {
                     try {
@@ -445,7 +481,15 @@ serve({
                     } catch (e) { console.error("Erro de geocoding:", e); }
                 }
 
-                // Insert into active_dispatches
+                if (!lat_destino || !lng_destino) {
+                    return new Response(JSON.stringify({ error: 'Endereço não encontrado no mapa. Verifique e tente novamente.' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
+                }
+                
+                const valor = calcularTaxa(lat_destino, lng_destino);
+                if (valor === 0) {
+                     return new Response(JSON.stringify({ error: 'Endereço fora da área de entrega mapeada. A taxa não pôde ser calculada.' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
+                }
+
                 db.query(`INSERT INTO active_dispatches (motoboy_id, cliente_telefone, endereco, lat_destino, lng_destino) VALUES ($motoboy_id, $cliente_telefone, $endereco, $lat, $lng)`)
                   .run({
                       $motoboy_id: motoboy_id,
@@ -460,7 +504,7 @@ serve({
                 }
                 const msg = `📦 *NOVA CORRIDA!*\n\n📍 Destino: ${endereco}\n💰 Taxa: R$ ${valor.toFixed(2)}`;
                 await sendMessage(profile.telegram_bot_token, motoboy.chat_id, msg, { parse_mode: 'Markdown' });
-                return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' }});
+                return new Response(JSON.stringify({ success: true, taxa: valor }), { headers: { 'Content-Type': 'application/json' }});
             }
             return new Response(JSON.stringify({ error: 'Motoboy não encontrado' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
         }
