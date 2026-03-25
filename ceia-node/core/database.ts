@@ -12,7 +12,19 @@ export function inicializarBanco() {
 export function getProfile() { return db.query("SELECT * FROM node_profile WHERE id = 1").get(); }
 export function updateProfile(data: any) {
     db.run(
-        "UPDATE node_profile SET nome=?, endereco=?, whatsapp=?, lat=?, lng=?, link_cardapio=?, openai_key=?, google_maps_key=?, meta_api_token=?, telegram_bot_token=? WHERE id=1",
+        `INSERT INTO node_profile (id, nome, endereco, whatsapp, lat, lng, link_cardapio, openai_key, google_maps_key, meta_api_token, telegram_bot_token)
+        VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            nome=excluded.nome,
+            endereco=excluded.endereco,
+            whatsapp=excluded.whatsapp,
+            lat=excluded.lat,
+            lng=excluded.lng,
+            link_cardapio=excluded.link_cardapio,
+            openai_key=excluded.openai_key,
+            google_maps_key=excluded.google_maps_key,
+            meta_api_token=excluded.meta_api_token,
+            telegram_bot_token=excluded.telegram_bot_token`,
         [data.nome, data.endereco, data.whatsapp, data.lat, data.lng, data.link_cardapio, data.openai_key, data.google_maps_key, data.meta_api_token, data.telegram_bot_token]
     );
     return getProfile();
