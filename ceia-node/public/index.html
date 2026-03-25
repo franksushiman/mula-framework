@@ -301,7 +301,7 @@
                         <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id}, this)">🗑️ Excluir</button>
                         ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
                         ${alertBtn}
-                        <button onclick="window.abrirPagamento('${m.nome.replace(/'/g, "\\'")}', '${m.chave_pix || ''}', ${m.saldo || 0})" style="background: #ff4757; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Pagar com Pix</button>
+                        <button class="btn-action btn-pay" onclick="window.abrirPagamento('${m.nome.replace(/'/g, "\\'")}', '${m.chave_pix || ''}', ${m.saldo || 0})">Pagar via Pix</button>
                     </div>
                 </div>`
             }).join('');
@@ -310,7 +310,7 @@
             if(painelDespacho) painelDespacho.innerHTML = htmlDespacho || '<p style="color:#999; text-align:center;">Nenhum motoboy online no momento.</p>';
         }
 
-        function abrirPagamento(nome, chavePix, saldo) {
+        window.abrirPagamento = function(nome, chavePix, saldo) {
             // Atualiza o título
             document.getElementById('pix-motoboy-nome').innerHTML = `Pagar ${nome}`;
 
@@ -324,13 +324,12 @@
                 valorElement.style.color = 'var(--success)';
             }
 
-            // Esconde o QR Code e insere a chave real no input
-            document.getElementById('qr-img').style.display = 'none';
+            // Insere a chave real no input
             document.getElementById('pix-copia-cola').value = chavePix || '';
 
             // Abre o modal
             document.getElementById('pixModal').style.display = 'flex';
-        }
+        };
 
         function fecharModalPix() { document.getElementById('pixModal').style.display = 'none'; }
         function copiarPix() {
