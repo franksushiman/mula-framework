@@ -145,6 +145,10 @@
                     <input type="password" id="prof-meta-api-token" class="form-control">
                     <small class="instruction-link">Configure seu App e Token em: <a href="https://developers.facebook.com" target="_blank">https://developers.facebook.com</a></small>
                 </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ccc;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: var(--text-main);">Alternativa: WhatsApp Não Oficial</label>
+                    <button type="button" onclick="abrirAlertaBanimento()" style="background: #25D366; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">Conectar API Gratuita</button>
+                </div>
                 <div class="form-group">
                     <label>Telegram Bot Token</label>
                     <input type="password" id="prof-telegram-token" class="form-control">
@@ -204,6 +208,28 @@
            <h3 id="titulo-mapa-radar" style="margin:0; color:var(--text-main);">Radar</h3>
          </div>
          <div id="canvas-mapa-radar" style="width:100%; height:450px; background:#e0e0e0; border-radius:8px;"></div>
+       </div>
+     </div>
+
+    <div id="modal-alerta-ban" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+       <div style="background: white; padding: 25px; border-radius: 6px; width: 90%; max-width: 400px; text-align: center;">
+         <h3 style="color: #d32f2f; margin-top: 0; font-size: 20px;">⚠️ Risco de Banimento</h3>
+         <p style="color: #333; margin-bottom: 20px; font-size: 15px; line-height: 1.5;">A Meta costuma banir contas que utilizam APIs não oficiais. É altamente recomendável usar um número de chip secundário exclusivo para o bot.<br><br>Use por sua conta e risco.</p>
+         <div style="display: flex; gap: 10px; justify-content: center;">
+           <button type="button" onclick="fecharAlertaBanimento()" style="background: #eee; color: #333; border: 1px solid #ccc; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 50%;">Cancelar</button>
+           <button type="button" onclick="confirmarApiNaoOficial()" style="background: #d32f2f; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 50%;">Estou Ciente</button>
+         </div>
+       </div>
+     </div>
+
+     <div id="modal-qr-whatsapp" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+       <div style="background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+         <h3 style="color: #333; margin-top: 0; margin-bottom: 10px;">Conectar WhatsApp</h3>
+         <p style="color: #666; font-size: 14px; margin-bottom: 20px; line-height: 1.4;">Abra o WhatsApp no aparelho, vá em <b>Aparelhos Conectados</b> e aponte a câmera para o código abaixo:</p>
+         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc; margin-bottom: 20px; min-height: 230px; display: flex; justify-content: center; align-items: center;">
+            <img id="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MULA_Aguardando_Sessao" alt="QR Code" style="max-width: 100%;">
+         </div>
+         <button type="button" onclick="fecharModalQR()" style="background: #e0e0e0; color: #333; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Cancelar / Fechar</button>
        </div>
      </div>
 
@@ -356,6 +382,20 @@
 
         function fecharModalEdicao() { document.getElementById('modal-edicao').style.display = 'none'; }
         
+        window.abrirAlertaBanimento = function() {
+            document.getElementById('modal-alerta-ban').style.display = 'flex';
+        };
+        window.fecharAlertaBanimento = function() {
+            document.getElementById('modal-alerta-ban').style.display = 'none';
+        };
+        window.confirmarApiNaoOficial = function() {
+            fecharAlertaBanimento();
+            document.getElementById('modal-qr-whatsapp').style.display = 'flex';
+        };
+        window.fecharModalQR = function() {
+            document.getElementById('modal-qr-whatsapp').style.display = 'none';
+        };
+
         window.fecharRadar = function() {
             const modal = document.getElementById('modal-mapa-radar');
             if (modal) modal.style.display = 'none';
