@@ -8,7 +8,7 @@ export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS node_profile (id INTEGER PRIMARY KEY CHECK (id = 1), nome TEXT, endereco TEXT, whatsapp TEXT, lat REAL, lng REAL, link_cardapio TEXT, openai_key TEXT, google_maps_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT)`);
     db.run(`INSERT OR IGNORE INTO node_profile (id) VALUES (1)`);
     db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, taxa REAL NOT NULL, tipo TEXT NOT NULL, geometria TEXT NOT NULL)`);
-    db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER)`);
+    db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT)`);
 }
 
 export function getProfile() { return db.query("SELECT * FROM node_profile WHERE id = 1").get(); }
@@ -59,17 +59,19 @@ export function deleteDriver(id: number) {
 
 export function upsertDriver(data: any) {
     db.run(
-        `INSERT INTO fleet (telegram_id, chat_id, nome, cpf, tipo_vinculo, chave_pix, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'ONLINE')
+        `INSERT INTO fleet (telegram_id, chat_id, nome, cpf, tipo_vinculo, chave_pix, veiculo_tipo, veiculo_id, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OFFLINE')
         ON CONFLICT(telegram_id) DO UPDATE SET
             chat_id = excluded.chat_id,
             nome = excluded.nome,
             cpf = excluded.cpf,
             tipo_vinculo = excluded.tipo_vinculo,
             chave_pix = excluded.chave_pix,
-            status = 'ONLINE',
+            veiculo_tipo = excluded.veiculo_tipo,
+            veiculo_id = excluded.veiculo_id,
+            status = 'OFFLINE',
             ultima_atualizacao = CURRENT_TIMESTAMP`,
-        [data.telegram_id, data.chat_id, data.nome, data.cpf, data.tipo_vinculo, data.chave_pix]
+        [data.telegram_id, data.chat_id, data.nome, data.cpf, data.tipo_vinculo, data.chave_pix, data.veiculo_tipo, data.veiculo_id]
     );
     return getDriverByTelegramId(data.telegram_id);
 }

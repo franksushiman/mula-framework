@@ -117,18 +117,22 @@ async function startTelegramPolling() {
                         continue;
                     }
 
-                    const message = update.message;
+                    const message = update.message || update.edited_message;
                     if (!message) continue;
-
-                    const chatId = message.chat.id;
-                    const telegramId = message.from.id.toString();
                     
+                    const telegramId = message.from.id.toString();
+                    const chatId = message.chat.id;
+
                     if (message.location) {
-                        const { latitude, longitude } = message.location;
-                        updateDriverLocation(telegramId, latitude, longitude);
+                        db.query("UPDATE fleet SET lat = $lat, lng = $lng, status = 'ONLINE', last_location_time = $time WHERE telegram_id = $telegramId").run({ 
+                            $lat: message.location.latitude, 
+                            $lng: message.location.longitude, 
+                            $time: Date.now(), 
+                            $telegramId: telegramId 
+                        });
                         continue;
                     }
-
+                    
                     if (!message.text) continue;
                     const text: string = message.text;
 
@@ -163,10 +167,20 @@ async function startTelegramPolling() {
                             case 'awaiting_cpf':
                                 currentState.data.cpf = text;
                                 currentState.step = 'awaiting_vinculo';
-                                await sendMessage(token, chatId, "Entendido. Qual seu Vínculo com o restaurante (Responda 'FIXO' ou 'FREELANCER'):");
+                                await sendMessage(token, chatId, "Qual o seu vínculo com o restaurante?", { reply_markup: JSON.stringify({ keyboard: [[{text: "FREELANCER"}, {text: "FIXO"}]], resize_keyboard: true, one_time_keyboard: true }) });
                                 break;
                             case 'awaiting_vinculo':
-                                currentState.data.tipo_vinculo = text.toUpperCase() === 'FIXO' ? 'FIXO' : 'FREELANCER';
+                                currentState.data.tipo_vinculo = text;
+                                currentState.step = 'awaiting_veiculo';
+                                await sendMessage(token, chatId, "Qual o seu veículo?", { reply_markup: JSON.stringify({ keyboard: [[{text: "MOTO"}, {text: "CARRO"}], [{text: "BIKE / PATINETE"}]], resize_keyboard: true, one_time_keyboard: true }) });
+                                break;
+                            case 'awaiting_veiculo':
+                                currentState.data.veiculo_tipo = text;
+                                currentState.step = 'awaiting_veiculo_id';
+                                await sendMessage(token, chatId, "Digite a PLACA (se moto/carro) ou uma DESCRIÇÃO (se bike/patinete):", { reply_markup: JSON.stringify({ remove_keyboard: true }) });
+                                break;
+                            case 'awaiting_veiculo_id':
+                                currentState.data.veiculo_id = text;
                                 currentState.step = 'awaiting_pix';
                                 await sendMessage(token, chatId, "Ok. Para finalizar, qual sua Chave Pix?");
                                 break;
@@ -174,7 +188,8 @@ async function startTelegramPolling() {
                                 currentState.data.chave_pix = text;
                                 upsertDriver(currentState.data);
                                 delete chatStates[telegramId];
-                                await sendMessage(token, chatId, "Cadastro concluído! Você está online. Compartilhe sua localização em tempo real aqui.");
+                                const finalMsg = "✅ Cadastro concluído!\n\n🔴 *Você está OFFLINE*.\n\nPara ficar ONLINE e receber corridas, toque no clipe (📎) e envie sua **Localização em Tempo Real**.";
+                                await sendMessage(token, chatId, finalMsg, { parse_mode: 'Markdown' });
                                 break;
                         }
                     }
