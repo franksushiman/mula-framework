@@ -7,8 +7,7 @@ db.exec("PRAGMA busy_timeout = 5000;");
 export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS node_profile (id INTEGER PRIMARY KEY CHECK (id = 1), nome TEXT, endereco TEXT, whatsapp TEXT, lat REAL, lng REAL, link_cardapio TEXT, openai_key TEXT, google_maps_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT)`);
     db.run(`INSERT OR IGNORE INTO node_profile (id) VALUES (1)`);
-    db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, taxa REAL NOT NULL, tipo TEXT NOT NULL, geometria TEXT NOT NULL)`);
-    db.run(`CREATE TABLE IF NOT EXISTS delivery_rates (id INTEGER PRIMARY KEY AUTOINCREMENT, km_ate REAL, valor REAL)`);
+    db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, tipo TEXT, coordenadas TEXT, valor REAL)`);
     db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT, saldo REAL DEFAULT 0)`);
 }
 
@@ -33,7 +32,14 @@ export function updateProfile(data: any) {
     return getProfile();
 }
 export function getZones() { return db.query("SELECT * FROM delivery_zones").all(); }
-export function upsertZone(data: any) { if (data.id) { db.run("UPDATE delivery_zones SET nome=?, taxa=? WHERE id=?", [data.nome, data.taxa, data.id]); } else { db.run("INSERT INTO delivery_zones (nome, taxa, tipo, geometria) VALUES (?, ?, ?, ?)", [data.nome, data.taxa, data.tipo, data.geometria]); } return getZones(); }
+export function upsertZone(data: any) { 
+    if (data.id) { 
+        db.run("UPDATE delivery_zones SET nome=?, valor=? WHERE id=?", [data.nome, data.valor, data.id]); 
+    } else { 
+        db.run("INSERT INTO delivery_zones (nome, tipo, coordenadas, valor) VALUES (?, ?, ?, ?)", [data.nome, data.tipo, data.coordenadas, data.valor]); 
+    } 
+    return getZones(); 
+}
 export function deleteZone(id: number) { db.run("DELETE FROM delivery_zones WHERE id = ?", [id]); return getZones(); }
 export function getFleet() { return db.query("SELECT * FROM fleet ORDER BY status DESC").all(); }
 

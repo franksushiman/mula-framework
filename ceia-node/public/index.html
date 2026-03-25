@@ -105,14 +105,17 @@
 
         <div id="tab-mapa" class="tab-content">
             <h1 class="header-title">Mapa de Taxas de Entrega</h1>
-            <div style="background: white; padding: 20px; border-radius: 8px;">
-                <h3 style="margin-top:0;">Cadastrar Taxa</h3>
-                <input type="number" id="taxa-km" placeholder="Até KM (ex: 3)" style="padding: 10px; width: 120px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <input type="number" step="0.01" id="taxa-valor" placeholder="Valor R$ (ex: 7.50)" style="padding: 10px; width: 120px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px;">
-                <button onclick="salvarTaxa()" style="background: var(--accent); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Salvar Taxa</button>
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                <h3>Tabela Vigente</h3>
-                <div id="lista-taxas" style="font-size: 14px; color: #555;"></div>
+            <div class="map-section">
+                <div class="zones-list-panel">
+                    <div class="zones-header">Regiões Mapeadas</div>
+                    <div class="zones-body" id="zones-list-content"></div>
+                </div>
+                <div id="map"></div>
+                <div id="controles-mapa" style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 10;">
+                    <button onclick="ativarDesenhoPoligono()" style="width: 50px; height: 50px; background: white; border: 2px solid #ccc; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">POLÍG</button>
+                    <button onclick="ativarDesenhoCirculo()" style="width: 50px; height: 50px; background: white; border: 2px solid #ccc; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">RAIO</button>
+                    <button onclick="pararDesenho()" style="width: 50px; height: 50px; background: #eee; border: 2px solid #999; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">MÃO</button>
+                </div>
             </div>
         </div>
 
@@ -567,21 +570,6 @@
             });
         }
 
-        window.salvarTaxa = async function() {
-            const km = document.getElementById('taxa-km').value;
-            const val = document.getElementById('taxa-valor').value;
-            if (!km || !val) return alert('Preencha os dois campos');
-            await fetch('/api/rates', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ km_ate: parseFloat(km), valor: parseFloat(val.replace(',','.')) }) });
-            carregarTaxas();
-            document.getElementById('taxa-km').value = '';
-            document.getElementById('taxa-valor').value = '';
-        };
-        window.carregarTaxas = async function() {
-            const res = await fetch('/api/rates');
-            const taxas = await res.json();
-            const lista = document.getElementById('lista-taxas');
-            if(lista) lista.innerHTML = taxas.map(t => `<div style="padding: 10px; border-bottom: 1px solid #eee;">Até <b>${t.km_ate} km</b>: R$ ${parseFloat(t.valor).toFixed(2)}</div>`).join('');
-        };
         window.despacharCorrida = async function(id, nome) {
             const endereco = prompt(`Endereço de destino para ${nome}:`);
             if (!endereco) return;
@@ -594,9 +582,6 @@
             if(btn) btn.innerHTML = '✅ Despachado';
             setTimeout(() => carregarFrota(), 2000); // Força atualização do saldo
         };
-        // Carrega as taxas assim que a tela abre
-        setTimeout(carregarTaxas, 1000);
-
         // --- MAPA E PERFIL ---
         async function initMap() {
             const res = await fetch('/api/profile'); const p = await res.json();
@@ -605,11 +590,39 @@
             drawingManager = new google.maps.drawing.DrawingManager({ drawingControl: false, drawingControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT, drawingModes: ['polygon', 'circle'] }, polygonOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' }, circleOptions: { fillColor: '#00d0b7', fillOpacity: 0.2, strokeWeight: 2, strokeColor: '#00d0b7' } });
             drawingManager.setMap(map);
 
-            google.maps.event.addListener(drawingManager, 'overlaycomplete', e => {
-                formaTemp = e.overlay; drawingManager.setDrawingMode(null);
-                document.getElementById('edit-id').value = ''; document.getElementById('zone-nome').value = ''; document.getElementById('zone-taxa').value = '';
-                zonaEdicao.tipo = e.type; zonaEdicao.geo = e.type === 'polygon' ? e.overlay.getPath().getArray().map(p => ({lat:p.lat(), lng:p.lng()})) : {center: {lat:e.overlay.getCenter().lat(), lng:e.overlay.getCenter().lng()}, radius: e.overlay.getRadius()};
-                document.getElementById('zoneModal').style.display = 'flex'; document.getElementById('zone-nome').focus();
+            google.maps.event.addListener(drawingManager, 'overlaycomplete', async function(event) {
+                const overlay = event.overlay;
+                const tipo = event.type;
+                drawingManager.setDrawingMode(null);
+                
+                const nomeRegiao = prompt("Qual o nome desta região? (Ex: Centro)");
+                if (!nomeRegiao) { overlay.setMap(null); return; }
+                
+                const valorTaxa = prompt(`Qual o valor da entrega para a região '${nomeRegiao}'? (Ex: 7.50)`);
+                if (!valorTaxa) { overlay.setMap(null); return; }
+
+                let coordenadas;
+                if (tipo === 'polygon') {
+                    const path = overlay.getPath();
+                    coordenadas = [];
+                    for (let i = 0; i < path.getLength(); i++) {
+                        coordenadas.push({ lat: path.getAt(i).lat(), lng: path.getAt(i).lng() });
+                    }
+                } else if (tipo === 'circle') {
+                    coordenadas = {
+                        center: {lat: overlay.getCenter().lat(), lng: overlay.getCenter().lng()}, 
+                        radius: overlay.getRadius()
+                    };
+                }
+
+                await fetch('/api/zones', { 
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ nome: nomeRegiao, tipo: tipo, coordenadas: JSON.stringify(coordenadas), valor: parseFloat(valorTaxa.replace(',', '.')) }) 
+                });
+                
+                alert(`✅ Região ${nomeRegiao} salva com taxa de R$ ${valorTaxa}!`);
+                carregarZonas(); // Recarrega para mostrar a nova zona na lista
             });
             carregarZonas();
         }
@@ -618,24 +631,23 @@
             const res = await fetch('/api/zones'); const zonas = await res.json();
             const list = document.getElementById('zones-list-content'); list.innerHTML = '';
             Object.values(formasMapa).forEach(f => f.setMap(null)); formasMapa = {};
-            if(zonas.length === 0) { list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-light); font-size: 0.9rem;">Desenhe no mapa.</div>'; return; }
+            if(!zonas || zonas.length === 0) { list.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-light); font-size: 0.9rem;">Desenhe no mapa.</div>'; return; }
             zonas.forEach(z => {
-                const geo = JSON.parse(z.geometria);
-                const shape = z.tipo === 'polygon' ? new google.maps.Polygon({paths:geo, map:map, fillOpacity:0.15, fillColor:'#00d0b7', strokeColor:'#00b39e', strokeWeight:2}) : new google.maps.Circle({center:geo.center, radius:geo.radius, map:map, fillOpacity:0.15, fillColor:'#00d0b7', strokeColor:'#00b39e', strokeWeight:2});
+                const coords = JSON.parse(z.coordenadas);
+                const shape = z.tipo === 'polygon' ? new google.maps.Polygon({paths:coords, map:map, fillOpacity:0.15, fillColor:'#00d0b7', strokeColor:'#00b39e', strokeWeight:2}) : new google.maps.Circle({center:coords.center, radius:coords.radius, map:map, fillOpacity:0.15, fillColor:'#00d0b7', strokeColor:'#00b39e', strokeWeight:2});
                 formasMapa[z.id] = shape;
-                // EXCLUSÃO IMEDIATA, SEM POPUP NATIVO
-                list.innerHTML += `<div class="zone-item" onmouseenter="realcar(${z.id})" onmouseleave="voltar(${z.id})"><span class="zone-title">${z.nome}</span><span class="zone-taxa">Valor: R$ ${z.taxa.toFixed(2)}</span><div class="zone-actions"><button class="btn-action btn-edit" onclick="abrirEdit(${z.id},'${z.nome}',${z.taxa})">Editar</button><button class="btn-action btn-del" onclick="delZona(${z.id})">Excluir</button></div></div>`;
+                list.innerHTML += `<div class="zone-item" onmouseenter="realcar(${z.id})" onmouseleave="voltar(${z.id})"><span class="zone-title">${z.nome}</span><span class="zone-taxa">Valor: R$ ${parseFloat(z.valor).toFixed(2)}</span><div class="zone-actions"><button class="btn-action btn-edit" onclick="abrirEdit(${z.id},'${z.nome}',${z.valor})">Editar</button><button class="btn-action btn-del" onclick="delZona(${z.id})">Excluir</button></div></div>`;
             });
         }
 
         function realcar(id) { formasMapa[id].setOptions({fillOpacity: 0.4}); }
         function voltar(id) { formasMapa[id].setOptions({fillOpacity: 0.15}); }
-        async function salvarZona() { const id = document.getElementById('edit-id').value; await fetch('/api/zones', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: id || null, nome: document.getElementById('zone-nome').value, taxa: document.getElementById('zone-taxa').value, tipo: id ? null : zonaEdicao.tipo, geometria: id ? null : JSON.stringify(zonaEdicao.geo) }) }); document.getElementById('zoneModal').style.display = 'none'; if(formaTemp) formaTemp.setMap(null); carregarZonas(); }
+        async function salvarZona() { const id = document.getElementById('edit-id').value; await fetch('/api/zones', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: id, nome: document.getElementById('zone-nome').value, valor: document.getElementById('zone-taxa').value }) }); document.getElementById('zoneModal').style.display = 'none'; if(formaTemp) formaTemp.setMap(null); carregarZonas(); }
         
         // FUNÇÃO DE EXCLUSÃO LIMPA E DIRETA
         async function delZona(id) { await fetch(`/api/zones/${id}`, { method: 'DELETE' }); carregarZonas(); }
         
-        function abrirEdit(id, n, t) { document.getElementById('edit-id').value = id; document.getElementById('zone-nome').value = n; document.getElementById('zone-taxa').value = t; document.getElementById('zoneModal').style.display = 'flex'; }
+        function abrirEdit(id, n, v) { document.getElementById('edit-id').value = id; document.getElementById('zone-nome').value = n; document.getElementById('zone-taxa').value = v; document.getElementById('zoneModal').style.display = 'flex'; }
         function cancelarEdicao() { if(formaTemp) formaTemp.setMap(null); document.getElementById('zoneModal').style.display = 'none'; }
         
         function loadGoogleMaps(apiKey) {
