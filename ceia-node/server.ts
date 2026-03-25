@@ -200,6 +200,48 @@ async function editMessageText(token: string, chatId: number, messageId: number,
     }
 }
 
+async function sendVenue(token: string, chatId: number, latitude: number, longitude: number, title: string, address: string, extraParams: any = {}) {
+    if (!token) return;
+    const url = `https://api.telegram.org/bot${token}/sendVenue`;
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, latitude, longitude, title, address, ...extraParams })
+        });
+    } catch(e) {
+        console.error("Erro ao enviar venue para o Telegram:", e);
+    }
+}
+
+async function editMessageReplyMarkup(token: string, chatId: number, messageId: number, replyMarkup: any) {
+    if (!token) return;
+    const url = `https://api.telegram.org/bot${token}/editMessageReplyMarkup`;
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: replyMarkup ? JSON.stringify(replyMarkup) : '' })
+        });
+    } catch(e) {
+        console.error("Erro ao editar reply markup:", e);
+    }
+}
+
+async function answerCallbackQuery(token: string, callbackQueryId: string) {
+    if (!token) return;
+    const url = `https://api.telegram.org/bot${token}/answerCallbackQuery`;
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ callback_query_id: callbackQueryId })
+        });
+    } catch(e) {
+        console.error("Erro ao responder callback query:", e);
+    }
+}
+
 // --- Telegram Long Polling Bot ---
 let lastUpdateId = 0;
 
@@ -252,11 +294,39 @@ async function startTelegramPolling() {
                     if (update.callback_query) {
                         const cb = update.callback_query;
                         const telegramId = cb.from.id.toString();
+                        const parts = cb.data.split('_');
                         
-                        if (cb.data === 'accept_ride_123') {
-                            updateDriverStatus(telegramId, 'OCUPADO');
-                            await editMessageText(token, cb.message.chat.id, cb.message.message_id, "✅ Corrida Aceita! Dirija-se à base.");
+                        if (parts.length === 3 && parts[1] === 'ride') {
+                            const action = parts[0];
+                            const dispatchId = parseInt(parts[2]);
+
+                            if (action === 'accept' && !isNaN(dispatchId)) {
+                                updateDriverStatus(telegramId, 'OCUPADO');
+                                db.query("UPDATE active_dispatches SET status = 'EM_ROTA' WHERE id = ?").run(dispatchId);
+                                
+                                await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
+                                await sendMessage(token, cb.message.chat.id, "✅ Corrida Aceita! Dirija-se ao destino.");
+
+                            } else if (action === 'decline' && !isNaN(dispatchId)) {
+                                db.query("UPDATE active_dispatches SET status = 'RECUSADA' WHERE id = ?").run(dispatchId);
+                                
+                                const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
+                                if (dispatch) {
+                                    const driver = getDriverById(dispatch.motoboy_id) as any;
+                                    if (driver && driver.tipo_vinculo === 'FREELANCER') {
+                                        const valor = calcularTaxa(dispatch.lat_destino, dispatch.lng_destino);
+                                        if (valor > 0) {
+                                            db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) - ? WHERE id = ?").run(valor, driver.id);
+                                        }
+                                    }
+                                }
+                                
+                                await editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, null);
+                                await sendMessage(token, cb.message.chat.id, "❌ Corrida Recusada.");
+                            }
                         }
+                        
+                        await answerCallbackQuery(token, cb.id);
                         continue;
                     }
 
@@ -490,7 +560,7 @@ serve({
                      return new Response(JSON.stringify({ error: 'Endereço fora da área de entrega mapeada. A taxa não pôde ser calculada.' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
                 }
 
-                db.query(`INSERT INTO active_dispatches (motoboy_id, cliente_telefone, endereco, lat_destino, lng_destino) VALUES ($motoboy_id, $cliente_telefone, $endereco, $lat, $lng)`)
+                const insertResult = db.query(`INSERT INTO active_dispatches (motoboy_id, cliente_telefone, endereco, lat_destino, lng_destino) VALUES ($motoboy_id, $cliente_telefone, $endereco, $lat, $lng)`)
                   .run({
                       $motoboy_id: motoboy_id,
                       $cliente_telefone: cliente_telefone,
@@ -498,12 +568,21 @@ serve({
                       $lat: lat_destino,
                       $lng: lng_destino
                   });
+                const dispatchId = insertResult.lastInsertRowid;
                 
                 if (motoboy.tipo_vinculo === 'FREELANCER') {
                     db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + $valor WHERE id = $id").run({ $valor: valor, $id: motoboy_id });
                 }
-                const msg = `📦 *NOVA CORRIDA!*\n\n📍 Destino: ${endereco}\n💰 Taxa: R$ ${valor.toFixed(2)}`;
-                await sendMessage(profile.telegram_bot_token, motoboy.chat_id, msg, { parse_mode: 'Markdown' });
+
+                const title = `Nova Corrida: R$ ${valor.toFixed(2)}`;
+                const keyboard = {
+                    inline_keyboard: [[
+                        { text: "✅ Aceitar", callback_data: `accept_ride_${dispatchId}` },
+                        { text: "❌ Recusar", callback_data: `decline_ride_${dispatchId}` }
+                    ]]
+                };
+                
+                await sendVenue(profile.telegram_bot_token, motoboy.chat_id, lat_destino, lng_destino, title, endereco, { reply_markup: JSON.stringify(keyboard) });
                 return new Response(JSON.stringify({ success: true, taxa: valor }), { headers: { 'Content-Type': 'application/json' }});
             }
             return new Response(JSON.stringify({ error: 'Motoboy não encontrado' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
