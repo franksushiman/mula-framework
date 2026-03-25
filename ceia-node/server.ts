@@ -160,7 +160,15 @@ serve({
         
         if (req.method === "GET" && url.pathname === "/") return new Response(Bun.file("./public/index.html"), { headers: { "Content-Type": "text/html" } });
         
-        if (req.method === "GET" && url.pathname === "/api/profile") return new Response(JSON.stringify(getProfile()), { headers: { "Content-Type": "application/json" } });
+        if (req.method === 'GET' && url.pathname === '/api/profile') {
+            try {
+                const profile = db.query("SELECT * FROM node_profile WHERE id = 1").get();
+                return new Response(JSON.stringify(profile || {}), { headers: { 'Content-Type': 'application/json' } });
+            } catch (err) {
+                console.error("Erro ao ler perfil:", err);
+                return new Response(JSON.stringify({}), { status: 500, headers: { 'Content-Type': 'application/json' } });
+            }
+        }
         if (req.method === "POST" && url.pathname === "/api/profile") { const body = await req.json(); return new Response(JSON.stringify(updateProfile(body)), { headers: { "Content-Type": "application/json" } }); }
         
         if (req.method === "GET" && url.pathname === "/api/zones") return new Response(JSON.stringify(getZones()), { headers: { "Content-Type": "application/json" } });
