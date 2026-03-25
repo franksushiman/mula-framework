@@ -42,6 +42,19 @@ export function getDriverById(id: number) {
     return db.query("SELECT * FROM fleet WHERE id = ?").get(id);
 }
 
+export function updateDriver(id: number, data: any) {
+    db.run(
+        "UPDATE fleet SET nome=?, cpf=?, tipo_vinculo=?, chave_pix=? WHERE id=?",
+        [data.nome, data.cpf, data.tipo_vinculo, data.chave_pix, id]
+    );
+    return getDriverById(id);
+}
+
+export function deleteDriver(id: number) {
+    db.run("DELETE FROM fleet WHERE id = ?", [id]);
+    return { success: true };
+}
+
 export function upsertDriver(data: any) {
     db.run(
         `INSERT INTO fleet (telegram_id, chat_id, nome, cpf, tipo_vinculo, chave_pix, status)
