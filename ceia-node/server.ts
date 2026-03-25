@@ -228,6 +228,16 @@ serve({
         }
         if (req.method === "POST" && url.pathname === "/api/profile") { const body = await req.json(); return new Response(JSON.stringify(updateProfile(body)), { headers: { "Content-Type": "application/json" } }); }
         
+        if (req.method === 'POST' && url.pathname === '/api/rates') {
+            const body = await req.json();
+            db.query("INSERT INTO delivery_rates (km_ate, valor) VALUES ($km, $valor)").run({ $km: body.km_ate, $valor: body.valor });
+            return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' }});
+        }
+        if (req.method === 'GET' && url.pathname === '/api/rates') {
+            const rates = db.query("SELECT * FROM delivery_rates ORDER BY km_ate ASC").all();
+            return new Response(JSON.stringify(rates), { headers: { 'Content-Type': 'application/json' }});
+        }
+
         if (req.method === "GET" && url.pathname === "/api/zones") return new Response(JSON.stringify(getZones()), { headers: { "Content-Type": "application/json" } });
         if (req.method === "POST" && url.pathname === "/api/zones") { const body = await req.json(); return new Response(JSON.stringify(upsertZone(body)), { headers: { "Content-Type": "application/json" } }); }
         if (req.method === "DELETE" && url.pathname.startsWith("/api/zones/")) { const id = parseInt(url.pathname.split("/").pop()); return new Response(JSON.stringify(deleteZone(id)), { headers: { "Content-Type": "application/json" } }); }
@@ -260,28 +270,20 @@ serve({
         }
 
         // ROTA DE DESPACHO
-        if (req.method === "POST" && url.pathname === "/api/dispatch") {
-            const body = await req.json();
+        if (req.method === 'POST' && url.pathname === '/api/dispatch') {
+            const { motoboy_id, valor, endereco } = await req.json();
+            const motoboy = db.query("SELECT * FROM fleet WHERE id = $id").get({ $id: motoboy_id }) as any;
             const profile = getProfile() as any;
-            const driver = getDriverById(body.motoboy_id) as any;
-
-            if (!driver || !driver.chat_id || !profile?.telegram_bot_token) {
-                return new Response(JSON.stringify({ success: false, message: "Motoboy ou token não encontrado." }), { status: 404, headers: { "Content-Type": "application/json" } });
+            
+            if (motoboy && motoboy.chat_id && profile?.telegram_bot_token) {
+                if (motoboy.tipo_vinculo === 'FREELANCER') {
+                    db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + $valor WHERE id = $id").run({ $valor: valor, $id: motoboy_id });
+                }
+                const msg = `📦 *NOVA CORRIDA!*\n\n📍 Destino: ${endereco}\n💰 Taxa: R$ ${valor.toFixed(2)}`;
+                await sendMessage(profile.telegram_bot_token, motoboy.chat_id, msg, { parse_mode: 'Markdown' });
+                return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' }});
             }
-            
-            const messageText = `🚨 *NOVA CORRIDA* 🚨\n📍 Destino: ${body.destino}\n💰 Taxa: R$ ${body.valor_taxa}`;
-            const keyboard = {
-                inline_keyboard: [[
-                    { text: "✅ Aceitar Corrida", callback_data: "accept_ride_123" }
-                ]]
-            };
-            
-            await sendMessage(profile.telegram_bot_token, driver.chat_id, messageText, {
-                parse_mode: 'Markdown',
-                reply_markup: keyboard
-            });
-            
-            return new Response(JSON.stringify({ success: true, message: "Sinal enviado." }), { headers: { "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ error: 'Motoboy não encontrado' }), { status: 400, headers: { 'Content-Type': 'application/json' }});
         }
 
         // A ROTA TÁTICA DO CONVITE

@@ -85,10 +85,10 @@
     <div class="main-content">
         <div id="tab-operacional" class="tab-content">
             <h1 class="header-title">Despacho de Corridas</h1>
-            <div class="card">
-                <h3 style="margin-top:0;">Acionar Frota</h3>
-                <div class="form-group"><label>Destino (Endereço do Cliente)</label><input type="text" class="form-control" placeholder="Rua, Número, Bairro"></div>
-                <button class="btn">Localizar Motoboy Disponível</button>
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <h3 style="margin-top:0;">Despachar Pedido</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Selecione um motoboy ONLINE para enviar a corrida:</p>
+                <div id="lista-despacho" style="display: grid; gap: 10px;"></div>
             </div>
         </div>
 
@@ -105,17 +105,14 @@
 
         <div id="tab-mapa" class="tab-content">
             <h1 class="header-title">Mapa de Taxas de Entrega</h1>
-            <div class="map-section">
-                <div class="zones-list-panel">
-                    <div class="zones-header">Regiões Mapeadas</div>
-                    <div class="zones-body" id="zones-list-content"></div>
-                </div>
-                <div id="map"></div>
-                <div id="controles-mapa" style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 10;">
-                    <button onclick="ativarDesenhoPoligono()" style="width: 50px; height: 50px; background: white; border: 2px solid #ccc; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">POLÍG</button>
-                    <button onclick="ativarDesenhoCirculo()" style="width: 50px; height: 50px; background: white; border: 2px solid #ccc; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">RAIO</button>
-                    <button onclick="pararDesenho()" style="width: 50px; height: 50px; background: #eee; border: 2px solid #999; cursor: pointer; font-weight: bold; font-size: 10px; border-radius: 4px;">MÃO</button>
-                </div>
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <h3 style="margin-top:0;">Cadastrar Taxa</h3>
+                <input type="number" id="taxa-km" placeholder="Até KM (ex: 3)" style="padding: 10px; width: 120px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="number" step="0.01" id="taxa-valor" placeholder="Valor R$ (ex: 7.50)" style="padding: 10px; width: 120px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <button onclick="salvarTaxa()" style="background: var(--accent); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Salvar Taxa</button>
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                <h3>Tabela Vigente</h3>
+                <div id="lista-taxas" style="font-size: 14px; color: #555;"></div>
             </div>
         </div>
 
@@ -252,8 +249,19 @@
             const res = await fetch('/api/fleet');
             const frota = await res.json();
             const container = document.getElementById('fleet-container');
+            let htmlDespacho = '';
             
             container.innerHTML = frota.map(m => {
+                if (m.status === 'ONLINE') {
+                    htmlDespacho += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
+                        <div>
+                            <strong>${m.nome}</strong> 
+                            <span style="font-size: 11px; background: ${m.tipo_vinculo === 'FIXO' ? '#e1f5fe' : '#fff3e0'}; color: ${m.tipo_vinculo === 'FIXO' ? '#3b82f6' : '#f59e0b'}; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold;">${m.tipo_vinculo || 'FREELANCER'}</span>
+                        </div>
+                        <button id="btn-despacho-${m.id}" onclick="despacharCorrida(${m.id}, '${m.nome}')" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Despachar</button>
+                    </div>`;
+                }
                 const saldoFreela = m.tipo_vinculo === 'FREELANCER' ? (Math.random() * 80 + 20).toFixed(2) : '0.00';
                 const alertBtn = m.status === 'OFFLINE' ? `<button onclick="alertarMotoboy(${m.id}, this)" style="background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">🔔 Chamar</button>` : '';
                 const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
@@ -303,6 +311,9 @@
                     </div>
                 </div>`
             }).join('');
+
+            const painelDespacho = document.getElementById('lista-despacho');
+            if(painelDespacho) painelDespacho.innerHTML = htmlDespacho || '<p style="color:#999; text-align:center;">Nenhum motoboy online no momento.</p>';
         }
 
         function abrirPagamento(nome, chavePix, saldo) {
@@ -555,6 +566,36 @@
                 title: nome
             });
         }
+
+        window.salvarTaxa = async function() {
+            const km = document.getElementById('taxa-km').value;
+            const val = document.getElementById('taxa-valor').value;
+            if (!km || !val) return alert('Preencha os dois campos');
+            await fetch('/api/rates', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ km_ate: parseFloat(km), valor: parseFloat(val.replace(',','.')) }) });
+            carregarTaxas();
+            document.getElementById('taxa-km').value = '';
+            document.getElementById('taxa-valor').value = '';
+        };
+        window.carregarTaxas = async function() {
+            const res = await fetch('/api/rates');
+            const taxas = await res.json();
+            const lista = document.getElementById('lista-taxas');
+            if(lista) lista.innerHTML = taxas.map(t => `<div style="padding: 10px; border-bottom: 1px solid #eee;">Até <b>${t.km_ate} km</b>: R$ ${parseFloat(t.valor).toFixed(2)}</div>`).join('');
+        };
+        window.despacharCorrida = async function(id, nome) {
+            const endereco = prompt(`Endereço de destino para ${nome}:`);
+            if (!endereco) return;
+            const valor = prompt(`Taxa da corrida (R$):`);
+            if (!valor) return;
+            
+            const btn = document.getElementById(`btn-despacho-${id}`);
+            if(btn) btn.innerHTML = 'Enviando...';
+            await fetch('/api/dispatch', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ motoboy_id: id, valor: parseFloat(valor.replace(',','.')), endereco: endereco }) });
+            if(btn) btn.innerHTML = '✅ Despachado';
+            setTimeout(() => carregarFrota(), 2000); // Força atualização do saldo
+        };
+        // Carrega as taxas assim que a tela abre
+        setTimeout(carregarTaxas, 1000);
 
         // --- MAPA E PERFIL ---
         async function initMap() {
