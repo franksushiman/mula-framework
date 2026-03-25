@@ -8,6 +8,7 @@ inicializarBanco();
 let waClient: any = null;
 let currentQR: string = '';
 let waStatus: string = 'DISCONNECTED';
+let realBotUsername = '';
 
 function startWhatsApp() {
     if (waClient) return;
@@ -73,6 +74,18 @@ async function startTelegramPolling() {
         console.log("⚠️ Token do Telegram não configurado. Polling não será iniciado. Por favor, configure-o no QG Logístico.");
         return;
     }
+
+    try {
+        const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+        const meData = await meRes.json();
+        if (meData.ok) {
+            realBotUsername = meData.result.username;
+            console.log(`🤖 Nome real do Bot do Telegram descoberto: @${realBotUsername}`);
+        }
+    } catch(e) {
+        console.error("Erro ao buscar o nome do bot:", e);
+    }
+
     console.log("✅ Token do Telegram encontrado. Iniciando bot...");
 
     while (true) {
@@ -270,6 +283,7 @@ serve({
                     const contato = await waClient.getNumberId(numeroComDDI);
                     
                     if (contato) {
+                        mensagem = mensagem.replace('FrotaCeiaBot', realBotUsername || 'SeuBot');
                         await waClient.sendMessage(contato._serialized, mensagem);
                         console.log('✅ Convite real disparado com sucesso para:', contato._serialized);
                     } else {
