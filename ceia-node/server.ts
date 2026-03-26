@@ -716,27 +716,51 @@ serve({
 
         if (req.method === 'POST' && url.pathname === '/api/dispatch/undo') {
             try {
-                const { rota_id } = await req.json();
-                const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
+                const { rota_id, dispatch_id } = await req.json();
 
-                if (deliveries.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
+                if (!rota_id && !dispatch_id) {
+                    return new Response(JSON.stringify({ error: 'ID da Rota ou do Pedido é obrigatório.' }), { status: 400 });
+                }
 
-                const motoboy_id = deliveries[0].motoboy_id;
-                db.query("UPDATE active_dispatches SET status = 'RECUSADA' WHERE rota_id = ?").run(rota_id);
+                let deliveriesToUndo: any[];
+                let motoboy_id: number | null = null;
+                const profile = getProfile() as any;
+                let notificationMessage = '';
+
+                if (dispatch_id) { // Desfaz um único pedido
+                    const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatch_id) as any;
+                    if (!delivery) return new Response(JSON.stringify({ error: 'Pedido não encontrado.' }), { status: 404 });
+                    
+                    deliveriesToUndo = [delivery];
+                    motoboy_id = delivery.motoboy_id;
+                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(dispatch_id);
+                    notificationMessage = `❌ O pedido para "${delivery.endereco}" foi retirado da sua rota pelo restaurante.`;
+
+                } else { // Desfaz a rota inteira
+                    deliveriesToUndo = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
+                    if (deliveriesToUndo.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
+
+                    motoboy_id = deliveriesToUndo[0].motoboy_id;
+                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
+                    notificationMessage = "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.";
+                }
 
                 if (motoboy_id) {
                     const driver = getDriverById(motoboy_id) as any;
-                    const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(motoboy_id) as any;
                     if (driver) {
-                        const profile = getProfile() as any;
                         if (profile.telegram_bot_token && driver.chat_id) {
-                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.");
+                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), notificationMessage);
                         }
-                        if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
+                        const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(motoboy_id) as any;
+                        if (remainingDeliveries.count === 0) {
+                            updateDriverStatus(driver.telegram_id, 'ONLINE');
+                        }
                     }
                 }
-                const undoneBag = deliveries.map(d => ({ address: d.endereco, phone: d.cliente_telefone, valor: d.valor_corrida, coords: { lat: d.lat_destino, lng: d.lng_destino } }));
+
+                const undoneBag = deliveriesToUndo.map(d => ({ address: d.endereco, phone: d.cliente_telefone, valor: d.valor_corrida, coords: { lat: d.lat_destino, lng: d.lng_destino } }));
                 return new Response(JSON.stringify({ success: true, undoneBag: undoneBag }), { headers: { "Content-Type": "application/json" } });
+
             } catch (e) {
                 console.error("Erro em /api/dispatch/undo:", e);
                 return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });

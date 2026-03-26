@@ -779,6 +779,7 @@
                     bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
                     
                     showToast('Rota retornou para preparação!');
+                    salvarRascunhoBag();
                     renderColumnPreparacao();
                     recarregarPainelOperacional();
                 } else {
@@ -788,6 +789,36 @@
             } catch (e) {
                 showToast('Erro de conexão.', 'error');
                 if(btn) { btn.innerHTML = '✖ Retirar Rota'; btn.disabled = false; }
+            }
+        }
+
+        async function retirarPedido(dispatchId, btn) {
+            const confirmed = await customConfirm('Retirar Pedido', 'Tem certeza que deseja retirar este pedido do motoboy? Ele voltará para a preparação.');
+            if (!confirmed) return;
+
+            if(btn) { btn.innerHTML = '...'; btn.disabled = true; }
+            try {
+                const res = await fetch('/api/dispatch/undo', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ dispatch_id: dispatchId })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const newBagId = `bag_${Date.now()}`;
+                    bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
+                    
+                    showToast('Pedido retornado à preparação!');
+                    salvarRascunhoBag();
+                    renderColumnPreparacao();
+                    recarregarPainelOperacional();
+                } else {
+                    showToast('Não foi possível retirar o pedido.', 'error');
+                    if(btn) { btn.innerHTML = '✖'; btn.disabled = false; }
+                }
+            } catch (e) {
+                showToast('Erro de conexão.', 'error');
+                if(btn) { btn.innerHTML = '✖'; btn.disabled = false; }
             }
         }
 
@@ -943,13 +974,14 @@
                                 headers: {'Content-Type':'application/json'},
                                 body: JSON.stringify({ lat, lng })
                             }).then(res => res.json()).then(data => {
-                                if (data.valor !== undefined && data.valor > 0) {
+                                if (data.valor !== undefined) {
                                     const card = inputElement.closest('.pedido-card');
                                     if (card) {
                                         const valorInput = card.querySelector('input[type="number"]');
                                         if (valorInput) {
-                                            valorInput.value = data.valor.toFixed(2);
-                                            updateBagItem(bagId, itemId, 'valor', data.valor.toFixed(2));
+                                            const valorFinal = data.valor > 0 ? data.valor.toFixed(2) : '';
+                                            valorInput.value = valorFinal;
+                                            updateBagItem(bagId, itemId, 'valor', valorFinal);
                                         }
                                     }
                                 }
@@ -1198,7 +1230,10 @@
             
             const deliveriesHtml = grupo.deliveries.map(d => `
                 <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px;">
-                    <p style="font-weight: 500; margin: 0 0 8px;">${d.endereco}</p>
+                    <p style="font-weight: 500; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: start;">
+                        <span style="padding-right:10px;">${d.endereco}</span>
+                        <button onclick="retirarPedido(${d.id}, this)" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
+                    </p>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         ${renderStatusBadge(d)}
                         <b style="font-family:var(--font-mono);">PIN: ${d.pin_entrega}</b>
