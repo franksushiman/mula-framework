@@ -674,6 +674,35 @@ serve({
             return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/undo') {
+            try {
+                const { rota_id } = await req.json();
+                const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
+
+                if (deliveries.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
+
+                const motoboy_id = deliveries[0].motoboy_id;
+                db.query("DELETE FROM active_dispatches WHERE rota_id = ?").run(rota_id);
+
+                if (motoboy_id) {
+                    const driver = getDriverById(motoboy_id) as any;
+                    const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(motoboy_id) as any;
+                    if (driver) {
+                        const profile = getProfile() as any;
+                        if (profile.telegram_bot_token && driver.chat_id) {
+                            await sendMessage(profile.telegram_bot_token, driver.chat_id, "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.");
+                        }
+                        if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
+                    }
+                }
+                const undoneBag = deliveries.map(d => ({ address: d.endereco, phone: d.cliente_telefone, valor: d.valor_corrida, coords: { lat: d.lat_destino, lng: d.lng_destino } }));
+                return new Response(JSON.stringify({ success: true, undoneBag: undoneBag }), { headers: { "Content-Type": "application/json" } });
+            } catch (e) {
+                console.error("Erro em /api/dispatch/undo:", e);
+                return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
+            }
+        }
+
         if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/manual-complete$/)) {
             const id = parseInt(url.pathname.split('/')[3]);
             const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
@@ -689,36 +718,6 @@ serve({
             return new Response(JSON.stringify({ error: 'Entrega não encontrada' }), { status: 404, headers: { "Content-Type": "application/json" }});
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/dispatch/remove') {
-            try {
-                const { dispatch_id } = await req.json();
-                const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatch_id) as any;
-
-                if (!dispatch || !dispatch.motoboy_id) {
-                    return new Response(JSON.stringify({ error: 'Entrega não encontrada ou já sem motoboy.' }), { status: 404 });
-                }
-                
-                db.query("DELETE FROM active_dispatches WHERE id = ?").run(dispatch_id);
-
-                const driver = getDriverById(dispatch.motoboy_id) as any;
-                const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(dispatch.motoboy_id) as any;
-
-                if (driver) {
-                    const profile = getProfile() as any;
-                    if (profile.telegram_bot_token && driver.chat_id) {
-                        await sendMessage(profile.telegram_bot_token, driver.chat_id, "❌ A corrida foi cancelada/retirada pelo restaurante.");
-                    }
-                    if (remainingDeliveries.count === 0) {
-                        updateDriverStatus(driver.telegram_id, 'ONLINE');
-                    }
-                }
-                
-                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
-            } catch (e) {
-                console.error("Erro em /api/dispatch/remove:", e);
-                return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
-            }
-        }
 
         if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/force-complete$/)) {
             const id = parseInt(url.pathname.split('/')[3]);

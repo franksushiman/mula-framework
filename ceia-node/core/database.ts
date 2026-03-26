@@ -129,11 +129,11 @@ export function getDriverHistory(driverId: number) {
 
 export function getActiveRoutes() {
     return db.query(`
-        SELECT ad.*, f.nome as motoboy_nome 
+        SELECT ad.*, f.nome as motoboy_nome, f.lat as motoboy_lat, f.lng as motoboy_lng
         FROM active_dispatches ad 
         LEFT JOIN fleet f ON ad.motoboy_id = f.id 
-        WHERE ad.status NOT IN ('CONCLUIDO', 'FINALIZADO', 'RECUSADA', 'CANCELADO')
-        ORDER BY ad.rota_id, ad.id
+        WHERE ad.status NOT IN ('CONCLUIDO', 'FINALIZADO', 'RECUSADA', 'CANCELADO', 'PENDENTE_PARCEIRO')
+        ORDER BY ad.motoboy_id, ad.rota_id, ad.id
     `).all();
 }
 

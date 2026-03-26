@@ -53,6 +53,13 @@
         .btn-del { background-color: #fef2f2; color: #ef4444; border-color: #fee2e2; }
         .btn-pay { background-color: #ecfdf5; color: #10b981; border-color: #a7f3d0; }
 
+        .dispatch-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; height: calc(100vh - 150px); }
+        .dispatch-column { background: #f1f5f9; border-radius: 12px; padding: 15px; height: 100%; display: flex; flex-direction: column; }
+        .column-header { font-size: 1.1rem; font-weight: 600; padding: 0 5px 15px; border-bottom: 2px solid #e2e8f0; margin-bottom: 15px; color: var(--text-dark); }
+        .column-body { flex: 1; overflow-y: auto; padding: 5px; }
+        .column-body::-webkit-scrollbar { width: 6px; }
+        .column-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
         /* Modals */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s ease; }
         .modal-overlay.show { display: flex; opacity: 1; }
@@ -103,31 +110,20 @@
 
     <div class="main-content">
         <div id="tab-operacional" class="tab-content">
-            <h1 class="header-title">Montagem de Rota (Bag)</h1>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start;">
-                <div>
-                    <div class="card" style="max-width: none;">
-                        <h3 style="margin-top:0;">1. Adicionar Pedidos à Bag</h3>
-                        <div id="bag-items-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
-                            <!-- Pedidos serão adicionados aqui -->
-                        </div>
-                        <button class="btn" onclick="addPedidoToBag()" style="background: #f1f5f9; color: #475569; width: auto; padding: 10px 20px;">+ Adicionar Pedido</button>
-                    </div>
-                    <div id="route-alert-banner" style="display: none; background: #fecaca; color: #991b1b; padding: 15px; border-radius: 8px; font-weight: 500; margin-top: 20px;"></div>
+            <h1 class="header-title">Fluxo de Entregas</h1>
+            <div class="dispatch-board">
+                <div class="dispatch-column">
+                    <div class="column-header">1. PREPARAÇÃO</div>
+                    <div id="coluna-preparacao" class="column-body"></div>
+                    <button class="btn" onclick="addNewBag()" style="background: #e2e8f0; color: #1e293b; margin-top: 10px;">+ Nova Bag</button>
                 </div>
-                <div>
-                    <div class="card" style="max-width: none;">
-                        <h3 style="margin-top:0;">2. Selecionar Motoboy</h3>
-                        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Selecione um motoboy disponível para a rota montada:</p>
-                        <div id="lista-despacho" style="display: grid; gap: 10px;"></div>
-                    </div>
+                <div class="dispatch-column">
+                    <div class="column-header">2. AGUARDANDO COLETA</div>
+                    <div id="coluna-aguardando-coleta" class="column-body"></div>
                 </div>
-            </div>
-            <hr style="border: none; border-top: 1px solid var(--border); margin: 40px 0;">
-            <div>
-                <h2 class="header-title" style="font-size: 1.5rem; margin-bottom: 20px;">🛵 Rotas em Andamento (Na Rua)</h2>
-                <div id="painel-rotas-ativas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
-                    <!-- Cards de rotas ativas serão injetados aqui -->
+                <div class="dispatch-column">
+                    <div class="column-header">3. EM ROTA</div>
+                    <div id="coluna-em-rota" class="column-body"></div>
                 </div>
             </div>
         </div>
@@ -313,110 +309,6 @@
         }
 
         // --- FROTA & PIX ---
-        async function carregarFrotaDespacho() {
-            try {
-                const res = await fetch('/api/dispatch/fleet');
-                const frota = await res.json();
-                const container = document.getElementById('lista-despacho');
-                
-                if (!container) return;
-
-                if (frota.length === 0) {
-                    container.innerHTML = `
-                    <div style="text-align: center; padding: 30px; border: 2px dashed #ccc; border-radius: 8px;">
-                         <h3 style="color: #666;">Nenhum motoboy da casa disponível</h3>
-                         <button onclick="buscarEntregaParceira()" style="background: var(--primary, #2c3e50); color: white; padding: 15px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">🚀 Buscar Entrega Parceira (Rede MULA)</button>
-                     </div>`;
-                    return;
-                }
-                
-                container.innerHTML = frota.map(m => {
-                    const distanciaKm = m.distance.toFixed(1);
-                    const bagStatusHtml = m.entregas_ativas > 0
-                        ? `<span style="background: #fffbeb; color: #b45309; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">📦 ${m.entregas_ativas} na Bag</span>`
-                        : `<span style="background: #f0fdf4; color: #15803d; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 8px;">🎒 Bag Vazia</span>`;
-
-                    const deliveriesHtml = (m.deliveries && m.deliveries.length > 0) ? `
-                        <div style="margin-top: 12px; border-top: 1px solid #f1f5f9; padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                            ${m.deliveries.map(d => `
-                                <div style="font-size: 0.8rem; background: #f8fafc; padding: 8px; border-radius: 4px;">
-                                    <div style="font-weight: 500; margin-bottom: 5px; color: var(--text-dark);">${d.endereco}</div>
-                                    <div style="display: flex; gap: 5px;">
-                                        <button onclick="baixaManual(${d.id}, this)" style="background: #dbeafe; color: #1e40af; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; flex: 1;">Baixa Manual</button>
-                                        <button onclick="retirarPedido(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; flex: 1;">✖ Retirar</button>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '';
-
-                    return `
-                    <div style="padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <div>
-                                <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                                    <strong style="font-size: 1.05rem;">${m.nome}</strong> 
-                                    ${bagStatusHtml}
-                                </div>
-                                <div style="color: var(--text-light); font-size: 13px;">📍 a ${distanciaKm} km</div>
-                            </div>
-                            <button id="btn-despacho-${m.id}" onclick="despacharRota(${m.id})" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">Despachar Rota</button>
-                        </div>
-                        ${deliveriesHtml}
-                    </div>`;
-                }).join('');
-            } catch (error) {
-                console.error("Erro ao carregar frota para despacho:", error);
-                const container = document.getElementById('lista-despacho');
-                if (container) container.innerHTML = '<p style="color:#ef4444; text-align:center;">Erro ao carregar frota.</p>';
-            }
-        }
-
-        async function carregarRotasAtivas() {
-            try {
-                const res = await fetch('/api/rotas-ativas');
-                const rotasAgrupadas = await res.json();
-                const container = document.getElementById('painel-rotas-ativas');
-                
-                if (!container) return;
-
-                if (rotasAgrupadas.length === 0) {
-                    container.innerHTML = '<p style="color: var(--text-light); text-align:center; grid-column: 1 / -1;">Nenhuma rota em andamento no momento.</p>';
-                    return;
-                }
-
-                container.innerHTML = rotasAgrupadas.map(grupo => {
-                    const motoboyNome = grupo.motoboy_nome;
-                    const deliveriesHtml = grupo.deliveries.map(d => `
-                        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.85rem; border-left: 3px solid #6366f1;">
-                            <div style="font-weight: 500; margin-bottom: 8px;">${d.endereco}</div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                ${renderStatusBadge(d)}
-                                <div style="font-family: var(--font-mono); font-size: 0.9rem;">PIN: <b style="color:var(--text-dark); letter-spacing: 2px;">${d.pin_entrega || '----'}</b></div>
-                            </div>
-                            <div style="display: flex; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-                                <button onclick="baixaManual(${d.id}, this)" style="background: #dbeafe; color: #1e40af; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">Baixa Manual</button>
-                                <button onclick="retirarPedido(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">✖ Retirar</button>
-                            </div>
-                        </div>
-                    `).join('');
-
-                    return `
-                    <div class="card" style="max-width: none; padding: 20px; align-self: start;">
-                        <h3 style="margin-top:0; font-size: 1.1rem; color: var(--text-dark);">${motoboyNome}</h3>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            ${deliveriesHtml}
-                        </div>
-                    </div>
-                    `;
-                }).join('');
-
-            } catch (error) {
-                console.error("Erro ao carregar rotas ativas:", error);
-                const container = document.getElementById('painel-rotas-ativas');
-                if (container) container.innerHTML = '<p style="color:#ef4444; text-align:center; grid-column: 1 / -1;">Erro ao carregar rotas.</p>';
-            }
-        }
 
         async function buscarEntregaParceira() {
             const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
@@ -857,28 +749,32 @@
             }
         }
 
-        async function retirarPedido(dispatchId, btn) {
-            const confirmed = await customConfirm('Retirar Pedido', 'Tem certeza que deseja retirar este pedido do motoboy? A corrida será cancelada e ele será notificado.');
+        async function retirarRota(rota_id, btn) {
+            const confirmed = await customConfirm('Retirar Rota', 'Tem certeza que deseja retirar esta rota do motoboy? Os pedidos voltarão para preparação.');
             if (!confirmed) return;
             
-            btn.innerHTML = '...'; btn.disabled = true;
+            if(btn) { btn.innerHTML = '...'; btn.disabled = true; }
             try {
-                const res = await fetch('/api/dispatch/remove', {
+                const res = await fetch('/api/dispatch/undo', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ dispatch_id: dispatchId })
+                    body: JSON.stringify({ rota_id: rota_id })
                 });
                 if (res.ok) {
-                    showToast('Pedido retirado com sucesso!');
-                    carregarFrota();
-                    carregarRotasAtivas();
+                    const data = await res.json();
+                    const newBagId = `bag_${Date.now()}`;
+                    bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
+                    
+                    showToast('Rota retornou para preparação!');
+                    renderColumnPreparacao();
+                    recarregarPainelOperacional();
                 } else {
-                    showToast('Não foi possível retirar o pedido.', 'error');
-                    btn.innerHTML = '✖ Retirar'; btn.disabled = false;
+                    showToast('Não foi possível retirar a rota.', 'error');
+                    if(btn) { btn.innerHTML = '✖ Retirar Rota'; btn.disabled = false; }
                 }
             } catch (e) {
                 showToast('Erro de conexão.', 'error');
-                btn.innerHTML = '✖ Retirar'; btn.disabled = false;
+                if(btn) { btn.innerHTML = '✖ Retirar Rota'; btn.disabled = false; }
             }
         }
 
@@ -969,7 +865,6 @@
             }, 4000);
         }
 
-        let bag = [];
         let geocodeTimeout;
 
         window.inicializarAutocomplete = function(inputElement) {
@@ -1027,71 +922,51 @@
             });
         }
 
-        function addPedidoToBag() {
-            const id = Date.now();
-            bag.push({ id, address: '', phone: '', valor: '', coords: null });
-            renderBag();
+        let bags = {}; // Objeto para múltiplas bags
+        let availableDrivers = [];
+        let operacaoTimeout;
+
+        function addNewBag() {
+            const bagId = `bag_${Date.now()}`;
+            bags[bagId] = [{ id: Date.now(), address: '', phone: '', valor: '', coords: null }];
+            renderColumnPreparacao();
         }
 
-        function updateBagItem(id, field, value) {
-            const item = bag.find(i => i.id === id);
+        function addPedidoToBag(bagId) {
+            bags[bagId].push({ id: Date.now(), address: '', phone: '', valor: '', coords: null });
+            renderColumnPreparacao();
+        }
+
+        function updateBagItem(bagId, itemId, field, value) {
+            const bag = bags[bagId];
+            if (!bag) return;
+            const item = bag.find(i => i.id === itemId);
             if (item) {
                 item[field] = value;
                 if (field === 'address') {
-                    item.coords = null; // Invalida as coordenadas para forçar nova busca
+                    item.coords = null; 
                     clearTimeout(geocodeTimeout);
-                    geocodeTimeout = setTimeout(() => checkRoute(), 1000);
+                    geocodeTimeout = setTimeout(() => checkRoute(bagId), 1000);
                 }
             }
         }
 
-        window.removerPedidoDaBag = function(botaoElemento) {
-            const cardElemento = botaoElemento.closest('.pedido-card');
-            if (cardElemento) {
-                const id = parseInt(cardElemento.dataset.id);
-                bag = bag.filter(i => i.id !== id);
-                renderBag();
-                checkRoute();
+        function removerPedidoDaBag(bagId, itemId) {
+            bags[bagId] = bags[bagId].filter(i => i.id !== itemId);
+            if (bags[bagId].length === 0) {
+                delete bags[bagId];
             }
+            renderColumnPreparacao();
+            checkRoute(bagId);
         }
 
-        function renderBag() {
-            const container = document.getElementById('bag-items-container');
-            if (bag.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-light); text-align:center;">A bag está vazia. Adicione um pedido.</p>';
-                return;
-            }
-            container.innerHTML = bag.map((item, index) => `
-                <div class="pedido-card" data-id="${item.id}" style="border: 1px solid var(--border); padding: 15px; border-radius: 8px; background: #f8fafc;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <strong style="color: var(--text-dark);">Pedido ${index + 1}</strong>
-                        <button onclick="removerPedidoDaBag(this)" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Remover</button>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label>Endereço do Pedido</label>
-                        <input type="text" class="form-control bag-address-input" value="${item.address}" data-bag-id="${item.id}" oninput="updateBagItem(${item.id}, 'address', this.value)" placeholder="Digite o endereço ou ponto de referência">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>WhatsApp do Cliente</label>
-                        <input type="text" class="form-control" value="${item.phone}" oninput="updateBagItem(${item.id}, 'phone', this.value)" placeholder="Ex: 47912345678">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0; margin-top: 10px;">
-                        <label>Taxa de Entrega (R$)</label>
-                        <input type="number" class="form-control" value="${item.valor}" oninput="updateBagItem(${item.id}, 'valor', this.value)" placeholder="10.00" step="0.50">
-                    </div>
-                </div>
-            `).join('');
+        async function checkRoute(bagId) {
+            const bag = bags[bagId];
+            if (!bag) return;
+            
+            const banner = document.getElementById(`route-alert-${bagId}`);
+            if (!banner) return;
 
-            document.querySelectorAll('.bag-address-input').forEach(input => {
-                if (!input.dataset.autocompleteInitialized) {
-                    window.inicializarAutocomplete(input);
-                    input.dataset.autocompleteInitialized = 'true';
-                }
-            });
-        }
-
-        async function checkRoute() {
-            const banner = document.getElementById('route-alert-banner');
             const validItems = bag.filter(i => i.address.trim() !== '');
             if (validItems.length < 2) {
                 banner.style.display = 'none';
@@ -1103,11 +978,10 @@
                     try {
                         const res = await fetch('/api/geocode', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ endereco: item.address }) });
                         if (res.ok) item.coords = await res.json();
-                    } catch(e) { console.error("Geocoding failed for", item.address); }
+                    } catch(e) {}
                 }
                 return item;
             });
-
             await Promise.all(geocodePromises);
             
             const coordinates = bag.filter(i => i.coords && !i.coords.error).map(i => i.coords);
@@ -1123,16 +997,60 @@
                 banner.style.display = 'none';
             }
         }
-        
-        async function despacharRota(motoboyId) {
-            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error);
-            if (validItems.length === 0 || validItems.length !== bag.length) {
-                showToast('Verifique se todos os pedidos na bag possuem endereço, telefone e coordenadas válidas.', 'error');
+
+        function renderColumnPreparacao() {
+            const container = document.getElementById('coluna-preparacao');
+            if (Object.keys(bags).length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); text-align:center; padding-top: 20px;">Crie uma nova bag para começar.</p>';
                 return;
             }
-
-            const btn = document.getElementById(`btn-despacho-${motoboyId}`);
-            if(btn) { btn.innerHTML = 'Enviando...'; btn.disabled = true; }
+            container.innerHTML = Object.keys(bags).map(bagId => {
+                const bag = bags[bagId];
+                const driversOptions = availableDrivers.length > 0 ? availableDrivers.map(d => `<option value="${d.id}">${d.nome} (a ${d.distance.toFixed(1)} km)</option>`).join('') : '<option disabled>Nenhum motoboy disponível</option>';
+                const pedidosHtml = bag.map((item, index) => `
+                    <div class="pedido-card" data-id="${item.id}" style="border: 1px solid var(--border); padding: 15px; border-radius: 8px; background: #fff; margin-bottom:10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <strong style="color: var(--text-dark);">Pedido ${index + 1}</strong>
+                            <button onclick="removerPedidoDaBag('${bagId}', ${item.id})" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Remover</button>
+                        </div>
+                        <input type="text" class="form-control bag-address-input" value="${item.address}" data-bag-id="${bagId}" data-item-id="${item.id}" oninput="updateBagItem('${bagId}', ${item.id}, 'address', this.value)" placeholder="Endereço do Pedido" style="margin-bottom:8px;">
+                        <input type="text" class="form-control" value="${item.phone}" oninput="updateBagItem('${bagId}', ${item.id}, 'phone', this.value)" placeholder="WhatsApp do Cliente" style="margin-bottom:8px;">
+                        <input type="number" class="form-control" value="${item.valor}" oninput="updateBagItem('${bagId}', ${item.id}, 'valor', this.value)" placeholder="Taxa (R$)" step="0.50">
+                    </div>`).join('');
+                
+                return `
+                    <div class="card" style="max-width: none; background: #f8fafc;">
+                        <div style="margin-bottom: 15px;">${pedidosHtml}</div>
+                        <button class="btn" onclick="addPedidoToBag('${bagId}')" style="background: #e2e8f0; color: #334155; width: auto; font-size: 0.8rem; padding: 8px 15px; margin-bottom: 15px;">+ Pedido</button>
+                        <div id="route-alert-${bagId}" style="display: none; background: #fecaca; color: #991b1b; padding: 10px; border-radius: 6px; font-weight: 500; margin-bottom: 15px; font-size: 0.8rem;"></div>
+                        <div style="border-top: 1px solid var(--border); padding-top: 15px; display:flex; gap: 10px;">
+                            <select id="driver-select-${bagId}" class="form-control" style="flex:1;">${driversOptions}</select>
+                            <button class="btn" onclick="despacharRota('${bagId}')" style="flex: 0 0 120px;">Despachar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.querySelectorAll('.bag-address-input').forEach(input => {
+                if (!input.dataset.autocompleteInitialized) {
+                    window.inicializarAutocomplete(input);
+                    input.dataset.autocompleteInitialized = 'true';
+                }
+            });
+        }
+        
+        async function despacharRota(bagId) {
+            const motoboyId = document.getElementById(`driver-select-${bagId}`).value;
+            if (!motoboyId) {
+                showToast("Selecione um motoboy disponível.", 'error');
+                return;
+            }
+            
+            const bag = bags[bagId];
+            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
+            if (validItems.length === 0 || validItems.length !== bag.length) {
+                showToast('Verifique se todos os pedidos na bag possuem endereço, telefone, taxa e coordenadas válidas.', 'error');
+                return;
+            }
 
             const res = await fetch('/api/dispatch', { 
                 method: 'POST', 
@@ -1140,22 +1058,73 @@
                 body: JSON.stringify({ motoboy_id: motoboyId, bag: validItems }) 
             });
 
-            if (!res.ok) {
+            if (res.ok) {
+                showToast('Rota despachada com sucesso!');
+                delete bags[bagId];
+                renderColumnPreparacao();
+                recarregarPainelOperacional();
+            } else {
                 const err = await res.json();
                 showToast(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`, 'error');
-                if (btn) { btn.innerHTML = 'Despachar Rota'; btn.disabled = false; }
-                return;
             }
+        }
+        
+        async function recarregarPainelOperacional() {
+            try {
+                // Carrega motoboys disponíveis
+                const fleetRes = await fetch('/api/dispatch/fleet');
+                availableDrivers = await fleetRes.json();
+                renderColumnPreparacao(); // Re-renderiza para atualizar a lista de motoboys
 
-            showToast('Rota despachada com sucesso!');
-            bag = [];
-            renderBag();
-            document.getElementById('route-alert-banner').style.display = 'none';
+                // Carrega rotas ativas para Colunas 2 e 3
+                const routesRes = await fetch('/api/rotas-ativas');
+                const rotasAgrupadas = await routesRes.json();
+                
+                const col2 = document.getElementById('coluna-aguardando-coleta');
+                const col3 = document.getElementById('coluna-em-rota');
+                col2.innerHTML = '';
+                col3.innerHTML = '';
+
+                const aguardandoColeta = rotasAgrupadas.filter(g => g.deliveries.some(d => d.status === 'AGUARDANDO_COLETA'));
+                const emRota = rotasAgrupadas.filter(g => g.deliveries.some(d => d.status === 'EM_ROTA'));
+
+                if (aguardandoColeta.length === 0) col2.innerHTML = '<p style="color:var(--text-light); text-align:center; padding-top:20px;">Nenhuma rota aguardando coleta.</p>';
+                if (emRota.length === 0) col3.innerHTML = '<p style="color:var(--text-light); text-align:center; padding-top:20px;">Nenhuma rota em trânsito.</p>';
+
+                aguardandoColeta.forEach(grupo => col2.innerHTML += renderRouteCard(grupo));
+                emRota.forEach(grupo => col3.innerHTML += renderRouteCard(grupo));
+
+            } catch (e) {
+                console.error("Erro ao recarregar painel operacional:", e);
+            }
+        }
+
+        function renderRouteCard(grupo) {
+            const concluidos = grupo.deliveries.filter(d => d.status === 'CONCLUIDO').length;
+            const total = grupo.deliveries.length;
+            const progresso = total > 0 ? `(${concluidos}/${total})` : '';
             
-            setTimeout(() => {
-                carregarFrotaDespacho(); 
-                carregarFrota();
-            }, 1500);
+            const deliveriesHtml = grupo.deliveries.map(d => `
+                <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px;">
+                    <p style="font-weight: 500; margin: 0 0 8px;">${d.endereco}</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        ${renderStatusBadge(d)}
+                        <b style="font-family:var(--font-mono);">PIN: ${d.pin_entrega}</b>
+                    </div>
+                </div>
+            `).join('');
+
+            const motoboyNameHtml = grupo.motoboy_lat ? `<a href="#" onclick="abrirRadarMotoboy(${grupo.motoboy_lat}, ${grupo.motoboy_lng}, '${grupo.motoboy_nome}'); return false;">${grupo.motoboy_nome}</a>` : grupo.motoboy_nome;
+
+            return `
+                <div class="card" style="max-width: none;">
+                    <h4 style="margin:0 0 15px; display:flex; justify-content:space-between;">
+                        <span>${motoboyNameHtml} ${progresso}</span>
+                        <button onclick="retirarRota('${grupo.rota_id}', this)" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar Rota</button>
+                    </h4>
+                    ${deliveriesHtml}
+                </div>
+            `;
         }
         // --- MAPA E PERFIL ---
         async function initMap() {
@@ -1333,10 +1302,9 @@
         }
 
         window.onload = async () => {
-            renderBag();
+            renderColumnPreparacao();
             carregarFrota();
-            carregarFrotaDespacho();
-            carregarRotasAtivas();
+            recarregarPainelOperacional();
             setInterval(checkSupportAlerts, 5000); // Checa por alertas de suporte
             const res = await fetch('/api/profile'); const d = await res.json();
             console.log("Perfil carregado:", d);
@@ -1361,8 +1329,7 @@
                 carregarFrota();
             }
             if (despachoTab && despachoTab.classList.contains('active')) {
-                carregarFrotaDespacho();
-                carregarRotasAtivas();
+                recarregarPainelOperacional();
             }
         }, 10000);
     </script>
