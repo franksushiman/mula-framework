@@ -722,7 +722,7 @@ serve({
                 if (deliveries.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
 
                 const motoboy_id = deliveries[0].motoboy_id;
-                db.query("DELETE FROM active_dispatches WHERE rota_id = ?").run(rota_id);
+                db.query("UPDATE active_dispatches SET status = 'RECUSADA' WHERE rota_id = ?").run(rota_id);
 
                 if (motoboy_id) {
                     const driver = getDriverById(motoboy_id) as any;
@@ -730,7 +730,7 @@ serve({
                     if (driver) {
                         const profile = getProfile() as any;
                         if (profile.telegram_bot_token && driver.chat_id) {
-                            await sendMessage(profile.telegram_bot_token, driver.chat_id, "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.");
+                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.");
                         }
                         if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
                     }

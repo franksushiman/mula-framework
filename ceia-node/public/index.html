@@ -906,30 +906,34 @@
                     inputElement.dataset.lat = lat;
                     inputElement.dataset.lng = lng;
 
-                    const bagId = parseInt(inputElement.dataset.bagId);
-                    const item = bag.find(i => i.id === bagId);
-                    if (item) {
-                        item.address = inputElement.value;
-                        item.coords = { lat, lng };
-                        checkRoute();
-                        
-                        // Auto-preencher taxa
-                        fetch('/api/calcular-taxa', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ lat, lng })
-                        }).then(res => res.json()).then(data => {
-                            if (data.valor > 0) {
-                                const card = inputElement.closest('.pedido-card');
-                                if (card) {
-                                    const valorInput = card.querySelector('input[type="number"]');
-                                    if (valorInput) {
-                                        valorInput.value = data.valor.toFixed(2);
-                                        updateBagItem(bagId, 'valor', data.valor.toFixed(2));
+                    const bagId = inputElement.dataset.bagId;
+                    const itemId = parseInt(inputElement.dataset.itemId);
+                    
+                    if (bags[bagId]) {
+                        const item = bags[bagId].find(i => i.id === itemId);
+                        if (item) {
+                            item.address = inputElement.value;
+                            item.coords = { lat, lng };
+                            checkRoute(bagId);
+                            
+                            // Auto-preencher taxa
+                            fetch('/api/calcular-taxa', {
+                                method: 'POST',
+                                headers: {'Content-Type':'application/json'},
+                                body: JSON.stringify({ lat, lng })
+                            }).then(res => res.json()).then(data => {
+                                if (data.valor !== undefined && data.valor > 0) {
+                                    const card = inputElement.closest('.pedido-card');
+                                    if (card) {
+                                        const valorInput = card.querySelector('input[type="number"]');
+                                        if (valorInput) {
+                                            valorInput.value = data.valor.toFixed(2);
+                                            updateBagItem(bagId, itemId, 'valor', data.valor.toFixed(2));
+                                        }
                                     }
                                 }
-                            }
-                        }).catch(err => console.error("Erro ao calcular taxa:", err));
+                            }).catch(err => console.error("Erro ao calcular taxa:", err));
+                        }
                     }
                 }
             });
