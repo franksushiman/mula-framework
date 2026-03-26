@@ -671,6 +671,37 @@ serve({
             return new Response(JSON.stringify({ error: 'Entrega não encontrada' }), { status: 404, headers: { "Content-Type": "application/json" }});
         }
 
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/remove') {
+            try {
+                const { dispatch_id } = await req.json();
+                const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatch_id) as any;
+
+                if (!dispatch || !dispatch.motoboy_id) {
+                    return new Response(JSON.stringify({ error: 'Entrega não encontrada ou já sem motoboy.' }), { status: 404 });
+                }
+                
+                db.query("DELETE FROM active_dispatches WHERE id = ?").run(dispatch_id);
+
+                const driver = getDriverById(dispatch.motoboy_id) as any;
+                const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(dispatch.motoboy_id) as any;
+
+                if (driver) {
+                    const profile = getProfile() as any;
+                    if (profile.telegram_bot_token && driver.chat_id) {
+                        await sendMessage(profile.telegram_bot_token, driver.chat_id, "❌ A corrida foi cancelada/retirada pelo restaurante.");
+                    }
+                    if (remainingDeliveries.count === 0) {
+                        updateDriverStatus(driver.telegram_id, 'ONLINE');
+                    }
+                }
+                
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            } catch (e) {
+                console.error("Erro em /api/dispatch/remove:", e);
+                return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
+            }
+        }
+
         if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/force-complete$/)) {
             const id = parseInt(url.pathname.split('/')[3]);
             const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
@@ -741,6 +772,20 @@ serve({
             return new Response(JSON.stringify({}), { headers: { "Content-Type": "application/json" } });
         }
 
+        if (req.method === 'POST' && url.pathname === '/api/calcular-taxa') {
+            try {
+                const { lat, lng } = await req.json();
+                if (typeof lat !== 'number' || typeof lng !== 'number') {
+                    return new Response(JSON.stringify({ error: 'Coordenadas inválidas.' }), { status: 400 });
+                }
+                const valor = calcularTaxa(lat, lng);
+                return new Response(JSON.stringify({ valor }), { headers: { "Content-Type": "application/json" } });
+            } catch (e) {
+                console.error("Erro em /api/calcular-taxa:", e);
+                return new Response(JSON.stringify({ error: "Erro ao calcular taxa." }), { status: 500 });
+            }
+        }
+        
         // ROTA PARA FROTA DE DESPACHO (RADAR)
         if (req.method === 'GET' && url.pathname === '/api/dispatch/fleet') {
             const profile = getProfile() as any;

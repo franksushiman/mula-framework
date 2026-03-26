@@ -422,7 +422,7 @@
                                    </div>
                                    <div style="display: flex; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
                                        <button onclick="baixaManual(${d.id}, this)" style="background: #dbeafe; color: #1e40af; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">Baixa Manual</button>
-                                       <button onclick="forcarBaixa(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">Excluir</button>
+                                       <button onclick="retirarPedido(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">✖ Retirar</button>
                                    </div>
                                </div>
                            `).join('')}
@@ -793,23 +793,27 @@
             }
         }
 
-        async function forcarBaixa(dispatchId, btn) {
-            if (!confirm('Tem certeza que deseja DELETAR esta entrega travada? \n\nEsta ação não pode ser desfeita e NENHUM pagamento será feito ao motoboy.')) {
+        async function retirarPedido(dispatchId, btn) {
+            if (!confirm('Tem certeza que deseja retirar este pedido do motoboy? A corrida será cancelada e ele será notificado.')) {
                 return;
             }
             btn.innerHTML = '...'; btn.disabled = true;
             try {
-                const res = await fetch(`/api/dispatches/${dispatchId}/force-complete`, { method: 'POST' });
+                const res = await fetch('/api/dispatch/remove', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ dispatch_id: dispatchId })
+                });
                 if (res.ok) {
+                    showNotification('Pedido retirado com sucesso!', 'success');
                     carregarFrota();
                 } else {
-                    const err = await res.json();
-                    alert(`Erro: ${err.error || 'Não foi possível forçar a baixa.'}`);
-                    btn.innerHTML = 'Forçar Baixa'; btn.disabled = false;
+                    showNotification('Não foi possível retirar o pedido.');
+                    btn.innerHTML = '✖ Retirar'; btn.disabled = false;
                 }
             } catch (e) {
-                alert('Erro de conexão ao forçar a baixa.');
-                btn.innerHTML = 'Forçar Baixa'; btn.disabled = false;
+                showNotification('Erro de conexão.');
+                btn.innerHTML = '✖ Retirar'; btn.disabled = false;
             }
         }
 
@@ -912,6 +916,24 @@
                         item.address = inputElement.value;
                         item.coords = { lat, lng };
                         checkRoute();
+                        
+                        // Auto-preencher taxa
+                        fetch('/api/calcular-taxa', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ lat, lng })
+                        }).then(res => res.json()).then(data => {
+                            if (data.valor > 0) {
+                                const card = inputElement.closest('.pedido-card');
+                                if (card) {
+                                    const valorInput = card.querySelector('input[type="number"]');
+                                    if (valorInput) {
+                                        valorInput.value = data.valor.toFixed(2);
+                                        updateBagItem(bagId, 'valor', data.valor.toFixed(2));
+                                    }
+                                }
+                            }
+                        }).catch(err => console.error("Erro ao calcular taxa:", err));
                     }
                 }
             });
