@@ -305,7 +305,7 @@
                 google.maps.event.trigger(map, "resize");
             }
             if(id === 'tab-frota') carregarFrota();
-            if(id === 'tab-operacional') carregarFrotaDespacho();
+            if(id === 'tab-operacional') recarregarPainelOperacional();
         }
 
         // --- FROTA & PIX ---
@@ -548,6 +548,8 @@
         }
 
         function fecharModalEdicao() { document.getElementById('modal-edicao').style.display = 'none'; }
+        
+        window.abrirAlertaBanimento = function() {
             document.getElementById('modal-alerta-ban').style.display = 'flex';
         };
         window.fecharAlertaBanimento = function() {
