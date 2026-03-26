@@ -2,7 +2,7 @@ import { serve } from "bun";
 import OpenAI from "openai";
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
-import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers, getDriverHistory } from "./core/database";
+import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers, getDriverHistory, getActiveRoutes } from "./core/database";
 
 inicializarBanco();
 
@@ -654,6 +654,26 @@ serve({
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
             }
             return new Response(JSON.stringify(lastSupportAlert), { headers: { "Content-Type": "application/json" } });
+        }
+
+        if (req.method === 'GET' && url.pathname === '/api/rotas-ativas') {
+            const routes = getActiveRoutes() as any[];
+            
+            const groupedByRota = routes.reduce((acc, route) => {
+                const rotaId = route.rota_id || `avulsa_${route.id}`;
+                if (!acc[rotaId]) {
+                    acc[rotaId] = {
+                        motoboy_nome: route.motoboy_nome || (route.status === 'PENDENTE_PARCEIRO' ? 'Buscando na Rede MULA...' : 'Motoboy Indefinido'),
+                        motoboy_id: route.motoboy_id,
+                        rota_id: rotaId,
+                        deliveries: []
+                    };
+                }
+                acc[rotaId].deliveries.push(route);
+                return acc;
+            }, {});
+
+            return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
         if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/manual-complete$/)) {

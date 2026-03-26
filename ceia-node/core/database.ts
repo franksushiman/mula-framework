@@ -116,6 +116,16 @@ export function getDriverHistory(driverId: number) {
     return db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'FINALIZADO' ORDER BY finalizado_em DESC").all(driverId);
 }
 
+export function getActiveRoutes() {
+    return db.query(`
+        SELECT ad.*, f.nome as motoboy_nome 
+        FROM active_dispatches ad 
+        LEFT JOIN fleet f ON ad.motoboy_id = f.id 
+        WHERE ad.status NOT IN ('CONCLUIDO', 'FINALIZADO', 'RECUSADA', 'CANCELADO')
+        ORDER BY ad.rota_id, ad.id
+    `).all();
+}
+
 export function upsertDriver(data: any) {
     db.run(
         `INSERT INTO fleet (telegram_id, chat_id, nome, cpf, tipo_vinculo, chave_pix, veiculo_tipo, veiculo_id, status)

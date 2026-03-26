@@ -106,6 +106,13 @@
                     </div>
                 </div>
             </div>
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 40px 0;">
+            <div>
+                <h2 class="header-title" style="font-size: 1.5rem; margin-bottom: 20px;">🛵 Rotas em Andamento (Na Rua)</h2>
+                <div id="painel-rotas-ativas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+                    <!-- Cards de rotas ativas serão injetados aqui -->
+                </div>
+            </div>
         </div>
 
         <div id="tab-frota" class="tab-content active">
@@ -345,6 +352,52 @@
                 console.error("Erro ao carregar frota para despacho:", error);
                 const container = document.getElementById('lista-despacho');
                 if (container) container.innerHTML = '<p style="color:#ef4444; text-align:center;">Erro ao carregar frota.</p>';
+            }
+        }
+
+        async function carregarRotasAtivas() {
+            try {
+                const res = await fetch('/api/rotas-ativas');
+                const rotasAgrupadas = await res.json();
+                const container = document.getElementById('painel-rotas-ativas');
+                
+                if (!container) return;
+
+                if (rotasAgrupadas.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-light); text-align:center; grid-column: 1 / -1;">Nenhuma rota em andamento no momento.</p>';
+                    return;
+                }
+
+                container.innerHTML = rotasAgrupadas.map(grupo => {
+                    const motoboyNome = grupo.motoboy_nome;
+                    const deliveriesHtml = grupo.deliveries.map(d => `
+                        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.85rem; border-left: 3px solid #6366f1;">
+                            <div style="font-weight: 500; margin-bottom: 8px;">${d.endereco}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                ${renderStatusBadge(d)}
+                                <div style="font-family: var(--font-mono); font-size: 0.9rem;">PIN: <b style="color:var(--text-dark); letter-spacing: 2px;">${d.pin_entrega || '----'}</b></div>
+                            </div>
+                            <div style="display: flex; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                                <button onclick="baixaManual(${d.id}, this)" style="background: #dbeafe; color: #1e40af; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">Baixa Manual</button>
+                                <button onclick="retirarPedido(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">✖ Retirar</button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    return `
+                    <div class="card" style="max-width: none; padding: 20px; align-self: start;">
+                        <h3 style="margin-top:0; font-size: 1.1rem; color: var(--text-dark);">${motoboyNome}</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            ${deliveriesHtml}
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error("Erro ao carregar rotas ativas:", error);
+                const container = document.getElementById('painel-rotas-ativas');
+                if (container) container.innerHTML = '<p style="color:#ef4444; text-align:center; grid-column: 1 / -1;">Erro ao carregar rotas.</p>';
             }
         }
 
@@ -1216,6 +1269,7 @@
             renderBag();
             carregarFrota();
             carregarFrotaDespacho();
+            carregarRotasAtivas();
             setInterval(checkSupportAlerts, 5000); // Checa por alertas de suporte
             const res = await fetch('/api/profile'); const d = await res.json();
             console.log("Perfil carregado:", d);
@@ -1241,6 +1295,7 @@
             }
             if (despachoTab && despachoTab.classList.contains('active')) {
                 carregarFrotaDespacho();
+                carregarRotasAtivas();
             }
         }, 10000);
     </script>
