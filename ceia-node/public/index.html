@@ -880,6 +880,27 @@
 
         let geocodeTimeout;
 
+        function salvarRascunhoBag() {
+            try {
+                localStorage.setItem('ceia_bag_draft', JSON.stringify(bags));
+            } catch (e) {
+                console.error("Erro ao salvar rascunho da bag:", e);
+            }
+        }
+
+        function restaurarRascunhoBag() {
+            try {
+                const draft = localStorage.getItem('ceia_bag_draft');
+                if (draft) {
+                    bags = JSON.parse(draft);
+                }
+            } catch (e) {
+                console.error("Erro ao restaurar rascunho da bag:", e);
+                bags = {}; // Reseta em caso de erro de parsing
+            }
+            renderColumnPreparacao();
+        }
+
         window.inicializarAutocomplete = function(inputElement) {
             if (!google || !google.maps || !google.maps.places) {
                 console.warn("Google Maps Places library not loaded yet.");
@@ -947,11 +968,13 @@
             const bagId = `bag_${Date.now()}`;
             bags[bagId] = [{ id: Date.now(), address: '', phone: '', valor: '', coords: null }];
             renderColumnPreparacao();
+            salvarRascunhoBag();
         }
 
         function addPedidoToBag(bagId) {
             bags[bagId].push({ id: Date.now(), address: '', phone: '', valor: '', coords: null });
             renderColumnPreparacao();
+            salvarRascunhoBag();
         }
 
         function updateBagItem(bagId, itemId, field, value) {
@@ -965,6 +988,7 @@
                     clearTimeout(geocodeTimeout);
                     geocodeTimeout = setTimeout(() => checkRoute(bagId), 1000);
                 }
+                salvarRascunhoBag();
             }
         }
 
@@ -1024,6 +1048,7 @@
             }
             renderColumnPreparacao();
             checkRoute(bagId);
+            salvarRascunhoBag();
         }
 
         async function checkRoute(bagId) {
@@ -1127,6 +1152,7 @@
             if (res.ok) {
                 showToast('Rota despachada com sucesso!');
                 delete bags[bagId];
+                salvarRascunhoBag();
                 renderColumnPreparacao();
                 recarregarPainelOperacional();
             } else {
@@ -1374,7 +1400,7 @@
         }
 
         window.onload = async () => {
-            renderColumnPreparacao();
+            restaurarRascunhoBag();
             carregarFrota();
             recarregarPainelOperacional();
             setInterval(checkSupportAlerts, 5000); // Checa por alertas de suporte
