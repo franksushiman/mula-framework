@@ -800,7 +800,16 @@ serve({
                 WHERE f.status = 'ONLINE' AND f.lat IS NOT NULL AND f.lng IS NOT NULL
             `).all() as any[];
 
-            const fleetWithDistance = availableFleet.map(driver => {
+            const activeDispatches = db.query("SELECT * FROM active_dispatches WHERE status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").all() as any[];
+
+            const fleetWithDeliveries = availableFleet.map(driver => {
+                return {
+                    ...driver,
+                    deliveries: activeDispatches.filter(d => d.motoboy_id === driver.id)
+                };
+            });
+
+            const fleetWithDistance = fleetWithDeliveries.map(driver => {
                 const distance = haversineDistance(restaurantLat, restaurantLng, driver.lat, driver.lng);
                 return { ...driver, distance: distance };
             });
