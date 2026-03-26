@@ -879,6 +879,43 @@
         let bag = [];
         let geocodeTimeout;
 
+        window.inicializarAutocomplete = function(inputElement) {
+            if (!google || !google.maps || !google.maps.places) {
+                console.warn("Google Maps Places library not loaded yet.");
+                return;
+            }
+            
+            const qgLocation = { lat: -26.244, lng: -48.625 };
+            const circle = new google.maps.Circle({ center: qgLocation, radius: 15000 }); // 15km
+
+            const options = {
+                bounds: circle.getBounds(),
+                componentRestrictions: { country: 'br' },
+                fields: ['geometry.location']
+            };
+
+            const autocomplete = new google.maps.places.Autocomplete(inputElement, options);
+            
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry && place.geometry.location) {
+                    const lat = place.geometry.location.lat();
+                    const lng = place.geometry.location.lng();
+                    
+                    inputElement.dataset.lat = lat;
+                    inputElement.dataset.lng = lng;
+
+                    const bagId = parseInt(inputElement.dataset.bagId);
+                    const item = bag.find(i => i.id === bagId);
+                    if (item) {
+                        item.address = inputElement.value;
+                        item.coords = { lat, lng };
+                        checkRoute();
+                    }
+                }
+            });
+        }
+
         function addPedidoToBag() {
             const id = Date.now();
             bag.push({ id, address: '', phone: '', coords: null });
@@ -917,7 +954,7 @@
                     </div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label>Endereço do Pedido</label>
-                        <input type="text" class="form-control" value="${item.address}" oninput="updateBagItem(${item.id}, 'address', this.value)" placeholder="Digite o endereço ou ponto de referência">
+                        <input type="text" class="form-control bag-address-input" value="${item.address}" data-bag-id="${item.id}" oninput="updateBagItem(${item.id}, 'address', this.value)" placeholder="Digite o endereço ou ponto de referência">
                     </div>
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>WhatsApp do Cliente</label>
@@ -925,6 +962,13 @@
                     </div>
                 </div>
             `).join('');
+
+            document.querySelectorAll('.bag-address-input').forEach(input => {
+                if (!input.dataset.autocompleteInitialized) {
+                    window.inicializarAutocomplete(input);
+                    input.dataset.autocompleteInitialized = 'true';
+                }
+            });
         }
 
         async function checkRoute() {
@@ -1109,7 +1153,7 @@
             if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
             
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing&callback=initMap`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,places&callback=initMap`;
             script.async = true;
             script.defer = true;
             document.head.appendChild(script);
