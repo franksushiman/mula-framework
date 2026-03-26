@@ -332,13 +332,13 @@
         }
 
         async function buscarEntregaParceira() {
-            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error);
-            if (validItems.length === 0) {
+            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
+            if (bag.length === 0) {
                 showNotification('Adicione pedidos na bag antes de chamar a Rede MULA.');
                 return;
             }
             if (validItems.length !== bag.length) {
-                showNotification('Verifique se todos os pedidos na bag possuem endereço e telefone preenchidos e válidos.');
+                showNotification('Verifique se todos os pedidos na bag possuem endereço, telefone e taxa de entrega preenchidos e válidos.');
                 return;
             }
 
@@ -356,9 +356,10 @@
                     document.getElementById('route-alert-banner').style.display = 'none';
                 } else {
                     const err = await res.json();
-                    showNotification(`Erro ao enviar: ${err.error || 'Erro desconhecido'}`);
+                    showNotification(`Erro ao enviar para a rede: ${err.error || 'Verifique o console do servidor.'}`);
                 }
             } catch (e) {
+                console.error("Erro no fetch para /api/mula-broadcast:", e);
                 showNotification('Erro de conexão ao enviar para a rede.');
             }
         }
@@ -918,7 +919,7 @@
 
         function addPedidoToBag() {
             const id = Date.now();
-            bag.push({ id, address: '', phone: '', coords: null });
+            bag.push({ id, address: '', phone: '', valor: '', coords: null });
             renderBag();
         }
 
@@ -959,6 +960,10 @@
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>WhatsApp do Cliente</label>
                         <input type="text" class="form-control" value="${item.phone}" oninput="updateBagItem(${item.id}, 'phone', this.value)" placeholder="Ex: 47912345678">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; margin-top: 10px;">
+                        <label>Taxa de Entrega (R$)</label>
+                        <input type="number" class="form-control" value="${item.valor}" oninput="updateBagItem(${item.id}, 'valor', this.value)" placeholder="10.00" step="0.50">
                     </div>
                 </div>
             `).join('');

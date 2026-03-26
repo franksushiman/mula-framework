@@ -795,36 +795,42 @@ serve({
 
         // ROTA BROADCAST MULA
         if (req.method === 'POST' && url.pathname === '/api/mula-broadcast') {
-            const { bag } = await req.json();
-            const profile = getProfile() as any;
-            const rota_id = Date.now().toString();
-            let valorTotal = 0;
-            let paradasTexto = '';
+            try {
+                const { bag } = await req.json();
+                const profile = getProfile() as any;
+                const rota_id = Date.now().toString();
+                let valorTotal = 0;
+                let paradasTexto = '';
 
-            const transaction = db.transaction(() => {
-                for (const [index, item] of bag.entries()) {
-                    const valor = calcularTaxa(item.coords.lat, item.coords.lng);
-                    const pin = Math.floor(1000 + Math.random() * 9000).toString();
-                    valorTotal += valor;
-                    paradasTexto += `${index + 1}. ${item.address}\n`;
+                const transaction = db.transaction(() => {
+                    for (const [index, item] of bag.entries()) {
+                        const valor = parseFloat(item.valor) || 0;
+                        if (valor <= 0) throw new Error("Valor inválido para o item da bag.");
+                        const pin = Math.floor(1000 + Math.random() * 9000).toString();
+                        valorTotal += valor;
+                        paradasTexto += `${index + 1}. ${item.address}\n`;
 
-                    db.query(`
-                        INSERT INTO active_dispatches (rota_id, cliente_telefone, endereco, lat_destino, lng_destino, status, pin_entrega, valor_corrida) 
-                        VALUES (?, ?, ?, ?, ?, 'PENDENTE_PARCEIRO', ?, ?)
-                    `).run(rota_id, item.phone, item.address, item.coords.lat, item.coords.lng, pin, valor);
+                        db.query(`
+                            INSERT INTO active_dispatches (rota_id, cliente_telefone, endereco, lat_destino, lng_destino, status, pin_entrega, valor_corrida) 
+                            VALUES (?, ?, ?, ?, ?, 'PENDENTE_PARCEIRO', ?, ?)
+                        `).run(rota_id, item.phone, item.address, item.coords.lat, item.coords.lng, pin, valor);
+                    }
+                });
+                transaction();
+
+                const onlineFleet = db.query("SELECT * FROM fleet WHERE status = 'ONLINE' AND chat_id IS NOT NULL").all() as any[];
+                const texto = `🚨 *ROTA MULA DISPONÍVEL* 🚨\n\n📍 Retirada: ${profile.nome || 'Restaurante'}\n\n*Paradas:*\n${paradasTexto}\n💰 Valor Total da Rota: R$ ${valorTotal.toFixed(2)}`;
+                const keyboard = { inline_keyboard: [[{ text: `Aceitar Rota R$ ${valorTotal.toFixed(2)}`, callback_data: `aceitar_mula_${rota_id}` }]] };
+                
+                for (const f of onlineFleet) {
+                    await sendMessage(profile.telegram_bot_token, f.chat_id, texto, { parse_mode: 'Markdown', reply_markup: JSON.stringify(keyboard) });
                 }
-            });
-            transaction();
-
-            const onlineFleet = db.query("SELECT * FROM fleet WHERE status = 'ONLINE' AND chat_id IS NOT NULL").all() as any[];
-            const texto = `🚨 *ROTA MULA DISPONÍVEL* 🚨\n\n📍 Retirada: ${profile.nome || 'Restaurante'}\n\n*Paradas:*\n${paradasTexto}\n💰 Valor Total da Rota: R$ ${valorTotal.toFixed(2)}`;
-            const keyboard = { inline_keyboard: [[{ text: `Aceitar Rota R$ ${valorTotal.toFixed(2)}`, callback_data: `aceitar_mula_${rota_id}` }]] };
-            
-            for (const f of onlineFleet) {
-                await sendMessage(profile.telegram_bot_token, f.chat_id, texto, { parse_mode: 'Markdown', reply_markup: JSON.stringify(keyboard) });
+                
+                return new Response(JSON.stringify({ success: true, rota_id: rota_id }), { headers: { "Content-Type": "application/json" } });
+            } catch (e) {
+                console.error("Erro em /api/mula-broadcast:", e);
+                return new Response(JSON.stringify({ error: "Erro interno no servidor ao processar o broadcast." }), { status: 500, headers: { "Content-Type": "application/json" } });
             }
-            
-            return new Response(JSON.stringify({ success: true, rota_id: rota_id }), { headers: { "Content-Type": "application/json" } });
         }
 
         // A ROTA TÁTICA DO CONVITE
