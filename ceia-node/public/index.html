@@ -71,6 +71,8 @@
         .status-em_entrega { background: #eff6ff; color: #3b82f6; }
         
         .invite-panel { display: flex; gap: 10px; align-items: center; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        @keyframes flash-red { 0%, 100% { background-color: var(--sidebar-bg); } 50% { background-color: #c81e1e; } }
+        .flashing-alert { animation: flash-red 1.2s infinite; }
     </style>
 </head>
 <body>
@@ -376,12 +378,14 @@
                        <div style="display: flex; flex-direction: column; gap: 8px;">
                            ${m.deliveries.map(d => `
                                <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.85rem;">
-                                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                       <div style="font-weight: 500;">${d.endereco}</div>
-                                       <button onclick="forcarBaixa(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Forçar Baixa</button>
-                                   </div>
-                                   <div>
+                                   <div style="font-weight: 500; margin-bottom: 8px;">${d.endereco}</div>
+                                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                        ${renderStatusBadge(d)}
+                                       <div style="font-family: var(--font-mono); font-size: 0.9rem;">PIN: <b style="color:var(--text-dark); letter-spacing: 2px;">${d.pin_entrega}</b></div>
+                                   </div>
+                                   <div style="display: flex; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                                       <button onclick="baixaManual(${d.id}, this)" style="background: #dbeafe; color: #1e40af; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">Baixa Manual</button>
+                                       <button onclick="forcarBaixa(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; flex: 1;">Excluir</button>
                                    </div>
                                </div>
                            `).join('')}
@@ -733,6 +737,25 @@
             return html;
         }
 
+        async function baixaManual(dispatchId, btn) {
+            if (!confirm('Tem certeza que deseja dar baixa manual nesta entrega? O status será alterado para CONCLUÍDO.')) {
+                return;
+            }
+            btn.innerHTML = '...'; btn.disabled = true;
+            try {
+                const res = await fetch(`/api/dispatches/${dispatchId}/manual-complete`, { method: 'POST' });
+                if (res.ok) {
+                    carregarFrota();
+                } else {
+                    showNotification('Não foi possível dar baixa manual.');
+                    btn.innerHTML = 'Baixa Manual'; btn.disabled = false;
+                }
+            } catch (e) {
+                showNotification('Erro de conexão ao dar baixa.');
+                btn.innerHTML = 'Baixa Manual'; btn.disabled = false;
+            }
+        }
+
         async function forcarBaixa(dispatchId, btn) {
             if (!confirm('Tem certeza que deseja DELETAR esta entrega travada? \n\nEsta ação não pode ser desfeita e NENHUM pagamento será feito ao motoboy.')) {
                 return;
@@ -751,6 +774,47 @@
                 alert('Erro de conexão ao forçar a baixa.');
                 btn.innerHTML = 'Forçar Baixa'; btn.disabled = false;
             }
+        }
+
+        let lastAlertTimestamp = 0;
+        const alertSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3b624c965.mp3');
+
+        async function checkSupportAlerts() {
+            try {
+                const res = await fetch('/api/support-alert');
+                const alertData = await res.json();
+                
+                if (alertData && alertData.timestamp > lastAlertTimestamp) {
+                    lastAlertTimestamp = alertData.timestamp;
+                    alertSound.play();
+                    
+                    const header = document.querySelector('.logo-container');
+                    header.classList.add('flashing-alert');
+
+                    const container = document.getElementById('notification-container');
+                    const notification = document.createElement('div');
+                    notification.style.cssText = `background-color:#fecaca; color:#991b1b; padding:16px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); font-weight:500; opacity:0; transform:translateX(100%); transition:all 0.3s ease; width: 320px;`;
+                    notification.innerHTML = `
+                        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">⚠️ ALERTA DE SUPORTE</div>
+                        <div style="margin-bottom: 12px;"><b>${alertData.motoboyName}:</b> "${alertData.message}"</div>
+                        <button onclick="dismissSupportAlert(this.parentElement)" style="background: #991b1b; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%;">CIENTE</button>
+                    `;
+                    container.appendChild(notification);
+                    setTimeout(() => {
+                        notification.style.opacity = '1';
+                        notification.style.transform = 'translateX(0)';
+                    }, 10);
+                }
+            } catch(e) { /* ignore */ }
+        }
+        
+        async function dismissSupportAlert(notificationElement) {
+            const header = document.querySelector('.logo-container');
+            header.classList.remove('flashing-alert');
+            await fetch('/api/support-alert?clear=true');
+            notificationElement.style.opacity = '0';
+            notificationElement.style.transform = 'translateX(100%)';
+            setTimeout(() => notificationElement.remove(), 300);
         }
 
         function showNotification(message, type = 'error') {
@@ -1044,6 +1108,7 @@
             renderBag();
             carregarFrota();
             carregarFrotaDespacho();
+            setInterval(checkSupportAlerts, 5000); // Checa por alertas de suporte
             const res = await fetch('/api/profile'); const d = await res.json();
             console.log("Perfil carregado:", d);
             document.getElementById('prof-nome').value = d.nome || '';

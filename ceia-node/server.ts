@@ -10,6 +10,7 @@ let waClient: any = null;
 let currentQR: string = '';
 let waStatus: string = 'DISCONNECTED';
 let realBotUsername = '';
+let lastSupportAlert: any = null;
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
     const R = 6371; // Raio da Terra em km
@@ -313,6 +314,10 @@ async function sendRouteDashboard(token: string, motoboy_id: number, chatId: num
         keyboard.push([{ text: `Concluir: ${delivery.endereco.substring(0, 25)}...`, callback_data: `complete_ride_${delivery.id}` }]);
     }
 
+    if (rotaCompleta.some(d => d.status !== 'CONCLUIDO')) {
+        keyboard.push([{ text: "🆘 SUPORTE / PROBLEMA NA ROTA", callback_data: `support_route_${rota_id}` }]);
+    }
+
     await sendMessage(token, chatId, text, {
         parse_mode: 'Markdown',
         reply_markup: JSON.stringify({ inline_keyboard: keyboard })
@@ -394,6 +399,9 @@ async function startTelegramPolling() {
                         } else if (action === 'complete' && type === 'ride' && !isNaN(dispatchId)) {
                             chatStates[telegramId] = { step: 'awaiting_pin', data: { dispatch_id: dispatchId } };
                             await sendMessage(token, cb.message.chat.id, "Digite o PIN de 4 dígitos informado pelo cliente:");
+                        } else if (action === 'support' && type === 'route') {
+                            chatStates[telegramId] = { step: 'awaiting_support_message', data: {} };
+                            await sendMessage(token, cb.message.chat.id, "Descreva o problema agora (ex: Pneu furado, cliente não atende). Sua mensagem será enviada para a base.");
                         } else if (action === 'message' && type === 'customer' && !isNaN(dispatchId)) {
                             chatStates[telegramId] = { step: 'awaiting_customer_message', data: { dispatch_id: dispatchId } };
                             await sendMessage(token, cb.message.chat.id, "Digite a mensagem para o cliente:");
@@ -490,6 +498,19 @@ async function startTelegramPolling() {
                                     }
                                 } else {
                                     await sendMessage(token, chatId, "❌ PIN incorreto. Tente novamente.");
+                                }
+                                delete chatStates[telegramId];
+                                break;
+                            case 'awaiting_support_message':
+                                const supportDriver = getDriverByTelegramId(telegramId) as any;
+                                if (supportDriver) {
+                                    lastSupportAlert = {
+                                        motoboyName: supportDriver.nome,
+                                        message: text,
+                                        timestamp: Date.now()
+                                    };
+                                    console.log(`⚠️ ALERTA DO MOTOBOY [${supportDriver.nome}]: ${text}`);
+                                    await sendMessage(token, chatId, "✅ Sua mensagem de suporte foi enviada para a base.");
                                 }
                                 delete chatStates[telegramId];
                                 break;
@@ -613,6 +634,30 @@ serve({
         if (req.method === 'GET' && url.pathname.match(/^\/api\/fleet\/(\d+)\/history$/)) {
             const id = parseInt(url.pathname.split('/')[3]);
             return new Response(JSON.stringify(getDriverHistory(id)), { headers: { "Content-Type": "application/json" } });
+        }
+
+        if (req.method === 'GET' && url.pathname === '/api/support-alert') {
+            const clear = url.searchParams.get('clear');
+            if (clear === 'true') {
+                lastSupportAlert = null;
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            }
+            return new Response(JSON.stringify(lastSupportAlert), { headers: { "Content-Type": "application/json" } });
+        }
+
+        if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/manual-complete$/)) {
+            const id = parseInt(url.pathname.split('/')[3]);
+            const dispatch = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
+            if (dispatch) {
+                db.query("UPDATE active_dispatches SET status = 'CONCLUIDO', finalizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(id);
+                const driver = getDriverById(dispatch.motoboy_id) as any;
+                const remaining = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE rota_id = ? AND status != 'CONCLUIDO'").get(dispatch.rota_id) as any;
+                if (remaining.count === 0) {
+                    updateDriverStatus(driver.telegram_id, 'ONLINE');
+                }
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            }
+            return new Response(JSON.stringify({ error: 'Entrega não encontrada' }), { status: 404, headers: { "Content-Type": "application/json" }});
         }
 
         if (req.method === 'POST' && url.pathname.match(/^\/api\/dispatches\/(\d+)\/force-complete$/)) {
