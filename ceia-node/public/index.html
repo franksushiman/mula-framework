@@ -76,6 +76,16 @@
     </style>
 </head>
 <body>
+    <div class="modal-overlay" id="custom-confirm-modal">
+        <div class="modal-card" style="width: 400px; text-align: center;">
+            <h3 style="margin-top:0;" id="custom-confirm-title">Confirmar Ação</h3>
+            <p style="color: var(--text-light); margin-bottom: 25px;" id="custom-confirm-message">Você tem certeza que deseja continuar?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-cancel" id="custom-confirm-cancel" style="width: 130px; margin: 0;">Cancelar</button>
+                <button class="btn" id="custom-confirm-ok" style="width: 130px; margin: 0;">Confirmar</button>
+            </div>
+        </div>
+    </div>
     <div class="sidebar">
         <div class="logo-container">frota<span class="logo-dot">.</span>ceia</div>
         <div class="nav-item" onclick="switchTab('tab-operacional', this)">⚡ Despacho</div>
@@ -281,7 +291,7 @@
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script>
-        let map, drawingManager, formaTemp, zonaEdicao = {}, formasMapa = {}, deleteTimer;
+        let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer;
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -404,11 +414,11 @@
         async function buscarEntregaParceira() {
             const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
             if (bag.length === 0) {
-                showNotification('Adicione pedidos na bag antes de chamar a Rede MULA.');
+                showToast('Adicione pedidos na bag antes de chamar a Rede MULA.', 'error');
                 return;
             }
             if (validItems.length !== bag.length) {
-                showNotification('Verifique se todos os pedidos na bag possuem endereço, telefone e taxa de entrega preenchidos e válidos.');
+                showToast('Verifique se todos os pedidos na bag possuem endereço, telefone e taxa de entrega preenchidos e válidos.', 'error');
                 return;
             }
 
@@ -420,17 +430,17 @@
                 });
 
                 if (res.ok) {
-                    showNotification('🚀 Rota enviada para a Rede MULA! Procurando parceiros...', 'success');
+                    showToast('🚀 Rota enviada para a Rede MULA! Procurando parceiros...');
                     bag = [];
                     renderBag();
                     document.getElementById('route-alert-banner').style.display = 'none';
                 } else {
                     const err = await res.json();
-                    showNotification(`Erro ao enviar para a rede: ${err.error || 'Verifique o console do servidor.'}`);
+                    showToast(`Erro ao enviar para a rede: ${err.error || 'Verifique o console do servidor.'}`, 'error');
                 }
             } catch (e) {
                 console.error("Erro no fetch para /api/mula-broadcast:", e);
-                showNotification('Erro de conexão ao enviar para a rede.');
+                showToast('Erro de conexão ao enviar para a rede.', 'error');
             }
         }
 
@@ -811,28 +821,30 @@
         }
 
         async function baixaManual(dispatchId, btn) {
-            if (!confirm('Tem certeza que deseja dar baixa manual nesta entrega? O status será alterado para CONCLUÍDO.')) {
-                return;
-            }
+            const confirmed = await customConfirm('Baixa Manual', 'Tem certeza que deseja dar baixa manual nesta entrega? O status será alterado para CONCLUÍDO.');
+            if (!confirmed) return;
+
             btn.innerHTML = '...'; btn.disabled = true;
             try {
                 const res = await fetch(`/api/dispatches/${dispatchId}/manual-complete`, { method: 'POST' });
                 if (res.ok) {
+                    showToast('Baixa manual realizada com sucesso.');
                     carregarFrota();
+                    carregarRotasAtivas();
                 } else {
-                    showNotification('Não foi possível dar baixa manual.');
+                    showToast('Não foi possível dar baixa manual.', 'error');
                     btn.innerHTML = 'Baixa Manual'; btn.disabled = false;
                 }
             } catch (e) {
-                showNotification('Erro de conexão ao dar baixa.');
+                showToast('Erro de conexão ao dar baixa.', 'error');
                 btn.innerHTML = 'Baixa Manual'; btn.disabled = false;
             }
         }
 
         async function retirarPedido(dispatchId, btn) {
-            if (!confirm('Tem certeza que deseja retirar este pedido do motoboy? A corrida será cancelada e ele será notificado.')) {
-                return;
-            }
+            const confirmed = await customConfirm('Retirar Pedido', 'Tem certeza que deseja retirar este pedido do motoboy? A corrida será cancelada e ele será notificado.');
+            if (!confirmed) return;
+            
             btn.innerHTML = '...'; btn.disabled = true;
             try {
                 const res = await fetch('/api/dispatch/remove', {
@@ -841,14 +853,15 @@
                     body: JSON.stringify({ dispatch_id: dispatchId })
                 });
                 if (res.ok) {
-                    showNotification('Pedido retirado com sucesso!', 'success');
+                    showToast('Pedido retirado com sucesso!');
                     carregarFrota();
+                    carregarRotasAtivas();
                 } else {
-                    showNotification('Não foi possível retirar o pedido.');
+                    showToast('Não foi possível retirar o pedido.', 'error');
                     btn.innerHTML = '✖ Retirar'; btn.disabled = false;
                 }
             } catch (e) {
-                showNotification('Erro de conexão.');
+                showToast('Erro de conexão.', 'error');
                 btn.innerHTML = '✖ Retirar'; btn.disabled = false;
             }
         }
@@ -894,7 +907,31 @@
             setTimeout(() => notificationElement.remove(), 300);
         }
 
-        function showNotification(message, type = 'error') {
+        function customConfirm(title, message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-confirm-modal');
+                const titleEl = document.getElementById('custom-confirm-title');
+                const messageEl = document.getElementById('custom-confirm-message');
+                const okBtn = document.getElementById('custom-confirm-ok');
+                const cancelBtn = document.getElementById('custom-confirm-cancel');
+
+                titleEl.innerText = title;
+                messageEl.innerText = message;
+                modal.style.display = 'flex';
+
+                const close = (value) => {
+                    modal.style.display = 'none';
+                    okBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    resolve(value);
+                };
+
+                okBtn.onclick = () => close(true);
+                cancelBtn.onclick = () => close(false);
+            });
+        }
+
+        function showToast(message, type = 'success') {
             const container = document.getElementById('notification-container');
             if (!container) return;
             const notification = document.createElement('div');
@@ -1075,7 +1112,7 @@
         async function despacharRota(motoboyId) {
             const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error);
             if (validItems.length === 0 || validItems.length !== bag.length) {
-                showNotification('Verifique se todos os pedidos na bag possuem endereço e telefone preenchidos e válidos.');
+                showToast('Verifique se todos os pedidos na bag possuem endereço, telefone e coordenadas válidas.', 'error');
                 return;
             }
 
@@ -1090,12 +1127,12 @@
 
             if (!res.ok) {
                 const err = await res.json();
-                showNotification(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`);
+                showToast(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`, 'error');
                 if (btn) { btn.innerHTML = 'Despachar Rota'; btn.disabled = false; }
                 return;
             }
 
-            showNotification('Rota despachada com sucesso!', 'success');
+            showToast('Rota despachada com sucesso!');
             bag = [];
             renderBag();
             document.getElementById('route-alert-banner').style.display = 'none';
@@ -1161,33 +1198,17 @@
             // Inicia com o botão Mover ativo
             setActive(btnMover);
 
-            google.maps.event.addListener(drawingManager, 'overlaycomplete', async function(event) {
-                const overlay = event.overlay;
-                const nomeRegiao = prompt("Qual o nome desta região? (Ex: Centro)");
-                if (!nomeRegiao) { overlay.setMap(null); return; }
+            google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
+                if (formaTemp) formaTemp.setMap(null);
+                formaTemp = event.overlay;
+                formaTempTipo = event.type;
                 
-                const valorTaxa = prompt(`Qual o valor da entrega para '${nomeRegiao}'? (Ex: 7.50)`);
-                if (!valorTaxa) { overlay.setMap(null); return; }
-
-                let coordenadas;
-                if (event.type === 'polygon') {
-                    const path = overlay.getPath();
-                    coordenadas = [];
-                    for (let i = 0; i < path.getLength(); i++) { coordenadas.push({ lat: path.getAt(i).lat(), lng: path.getAt(i).lng() }); }
-                } else if (event.type === 'circle') {
-                    coordenadas = {
-                        center: {lat: overlay.getCenter().lat(), lng: overlay.getCenter().lng()}, 
-                        radius: overlay.getRadius()
-                    };
-                }
-
-                await fetch('/api/zones', { 
-                    method: 'POST', 
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ nome: nomeRegiao, tipo: event.type, coordenadas: JSON.stringify(coordenadas), valor: parseFloat(valorTaxa.replace(',', '.')) }) 
-                });
-                alert(`✅ Região ${nomeRegiao} salva com taxa de R$ ${valorTaxa}!`);
-                carregarZonas();
+                document.getElementById('edit-id').value = '';
+                document.getElementById('zone-nome').value = '';
+                document.getElementById('zone-taxa').value = '';
+                document.getElementById('modal-title').innerText = 'Nova Área de Cobrança';
+                document.getElementById('zoneModal').style.display = 'flex';
+                drawingManager.setDrawingMode(null);
             });
             carregarZonas();
         }
@@ -1207,13 +1228,58 @@
 
         function realcar(id) { formasMapa[id].setOptions({fillOpacity: 0.4}); }
         function voltar(id) { formasMapa[id].setOptions({fillOpacity: 0.15}); }
-        async function salvarZona() { const id = document.getElementById('edit-id').value; await fetch('/api/zones', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: id, nome: document.getElementById('zone-nome').value, valor: document.getElementById('zone-taxa').value }) }); document.getElementById('zoneModal').style.display = 'none'; if(formaTemp) formaTemp.setMap(null); carregarZonas(); }
+        async function salvarZona() { 
+            const id = document.getElementById('edit-id').value;
+            const nome = document.getElementById('zone-nome').value;
+            const valor = document.getElementById('zone-taxa').value;
+            let body = { id, nome, valor };
+
+            if (!id && formaTemp) { // Criando uma nova zona
+                let coordenadas;
+                if (formaTempTipo === 'polygon') {
+                    const path = formaTemp.getPath();
+                    coordenadas = [];
+                    for (let i = 0; i < path.getLength(); i++) { coordenadas.push({ lat: path.getAt(i).lat(), lng: path.getAt(i).lng() }); }
+                } else if (formaTempTipo === 'circle') {
+                    coordenadas = {
+                        center: {lat: formaTemp.getCenter().lat(), lng: formaTemp.getCenter().lng()}, 
+                        radius: formaTemp.getRadius()
+                    };
+                }
+                body = { ...body, tipo: formaTempTipo, coordenadas: JSON.stringify(coordenadas) };
+            }
+
+            await fetch('/api/zones', { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify(body) 
+            }); 
+            
+            showToast(`Região '${nome}' salva com sucesso!`);
+            document.getElementById('zoneModal').style.display = 'none'; 
+            
+            // A nova zona não precisa ser removida, pois `carregarZonas` vai redesenhar tudo.
+            // Apenas limpamos a variável temporária.
+            if(formaTemp) {
+                formaTemp = null;
+                formaTempTipo = null;
+            }
+            
+            carregarZonas(); 
+        }
         
         // FUNÇÃO DE EXCLUSÃO LIMPA E DIRETA
         async function delZona(id) { await fetch(`/api/zones/${id}`, { method: 'DELETE' }); carregarZonas(); }
         
         function abrirEdit(id, n, v) { document.getElementById('edit-id').value = id; document.getElementById('zone-nome').value = n; document.getElementById('zone-taxa').value = v; document.getElementById('zoneModal').style.display = 'flex'; }
-        function cancelarEdicao() { if(formaTemp) formaTemp.setMap(null); document.getElementById('zoneModal').style.display = 'none'; }
+        function cancelarEdicao() { 
+            if(formaTemp) {
+                formaTemp.setMap(null);
+                formaTemp = null;
+                formaTempTipo = null;
+            }
+            document.getElementById('zoneModal').style.display = 'none'; 
+        }
         
         function loadGoogleMaps(apiKey) {
             // Evita carregar o script do Google Maps múltiplas vezes
