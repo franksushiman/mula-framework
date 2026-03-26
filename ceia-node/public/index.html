@@ -54,8 +54,12 @@
         .btn-pay { background-color: #ecfdf5; color: #10b981; border-color: #a7f3d0; }
 
         /* Modals */
-        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        .modal-card { background: white; padding: 28px; border-radius: 16px; width: 360px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid var(--border); text-align: center; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s ease; }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .modal-card { position: relative; background: white; padding: 28px; border-radius: 16px; width: 360px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid var(--border); text-align: center; transform: scale(0.95); transition: transform 0.2s ease-in-out; }
+        .modal-overlay.show .modal-card { transform: scale(1); }
+        .modal-close-btn { position: absolute; top: 12px; right: 12px; background: #f1f5f9; color: #64748b; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; line-height: 1; }
+        .modal-close-btn:hover { background: #e2e8f0; color: #1e293b; }
         
         .copy-box { display: flex; align-items: center; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 20px; }
         .copy-input { flex: 1; background: transparent; border: none; font-family: var(--font-mono); font-size: 0.85rem; color: #334155; outline: none; }
@@ -201,8 +205,9 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="pixModal">
+    <div class="modal-overlay" id="pixModal" onclick="if(event.target === this) fecharModalPix()">
         <div class="modal-card">
+            <button class="modal-close-btn" onclick="fecharModalPix()">&times;</button>
             <h3 style="margin-top:0; color:var(--text-dark);" id="pix-motoboy-nome">Pagar Motoboy</h3>
             <p id="pix-valor-texto" style="font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 20px;">R$ 0,00</p>
             
@@ -215,12 +220,12 @@
                 <input type="text" id="pix-copia-cola" class="copy-input" readonly>
                 <button class="btn-copy" onclick="copiarPix()">Copiar</button>
             </div>
-            <button class="btn btn-cancel" onclick="fecharModalPix()">Fechar Pagamento</button>
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-edicao">
+    <div class="modal-overlay" id="modal-edicao" onclick="if(event.target === this) fecharModalEdicao()">
         <div class="modal-card" style="width: 400px; text-align: left;">
+            <button class="modal-close-btn" onclick="fecharModalEdicao()">&times;</button>
             <h3 style="margin-top:0;">Editar Entregador</h3>
             <input type="hidden" id="edit-id">
             <div class="form-group"><label>Nome Completo</label><input type="text" id="edit-nome" class="form-control"></div>
@@ -228,7 +233,6 @@
             <div class="form-group"><label>Vínculo</label><input type="text" id="edit-vinculo" class="form-control" placeholder="FIXO ou FREELANCER"></div>
             <div class="form-group"><label>Chave Pix</label><input type="text" id="edit-pix" class="form-control"></div>
             <button class="btn" onclick="salvarEdicaoMotoboy()">Salvar Alterações</button>
-            <button class="btn btn-cancel" onclick="fecharModalEdicao()">Cancelar</button>
         </div>
     </div>
 
@@ -249,13 +253,13 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-historico">
+    <div class="modal-overlay" id="modal-historico" onclick="if(event.target === this) this.style.display = 'none'">
         <div class="modal-card" style="width: 500px; text-align: left; max-height: 80vh; display: flex; flex-direction: column;">
+            <button class="modal-close-btn" onclick="document.getElementById('modal-historico').style.display = 'none'">&times;</button>
             <h3 style="margin-top:0;" id="historico-titulo">Histórico de Entregas</h3>
             <div id="historico-conteudo" style="flex: 1; overflow-y: auto; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 15px 0;">
                 <!-- O conteúdo será injetado aqui -->
             </div>
-            <button class="btn btn-cancel" onclick="document.getElementById('modal-historico').style.display = 'none';">Fechar</button>
         </div>
     </div>
 
@@ -542,10 +546,7 @@
         };
 
         window.abrirPagamento = function(nome, chavePix, saldo) {
-            // Atualiza o título
             document.getElementById('pix-motoboy-nome').innerHTML = `Pagar ${nome}`;
-
-            // Formata o valor real recebido para BRL
             const valorFloat = parseFloat(saldo || 0);
             const valorFormatado = valorFloat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
@@ -580,36 +581,41 @@
         function fecharModalPix() { document.getElementById('pixModal').style.display = 'none'; }
         function copiarPix() {
             const copyText = document.getElementById('pix-copia-cola');
-            copyText.select(); navigator.clipboard.writeText(copyText.value);
+            copyText.select(); 
+            navigator.clipboard.writeText(copyText.value);
+            showToast('✅ Pix Copia e Cola copiado!');
             const btn = document.querySelector('.btn-copy');
-            btn.innerText = 'Copiado!'; btn.style.background = '#10b981';
-            setTimeout(() => { btn.innerText = 'Copiar'; btn.style.background = '#0f172a'; }, 2000);
+            btn.innerText = 'Copiado!';
+            btn.style.background = '#10b981';
+            setTimeout(() => { 
+                btn.innerText = 'Copiar'; 
+                btn.style.background = '#0f172a'; 
+            }, 2000);
         }
 
 
         async function dispararConvite() {
             const inputZap = document.getElementById('moto-zap');
             const zap = inputZap.value.replace(/\D/g, ''); 
-            const btn = document.getElementById('btn-disparar');
-
             if(!zap || zap.length < 10) { 
-                btn.innerText = "Número Inválido!";
-                btn.style.background = "#ef4444";
-                setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 2000);
+                showToast('Número de WhatsApp inválido.', 'error');
                 return; 
             }
             
-            btn.innerText = "Disparando..."; btn.style.opacity = "0.7";
+            const btn = document.getElementById('btn-disparar');
+            btn.innerText = "Disparando..."; btn.disabled = true;
             try {
                 const res = await fetch('/api/fleet/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ whatsapp_motoboy: zap }) });
                 if(res.ok) {
-                    btn.innerText = "Enviado!"; btn.style.background = "#10b981"; btn.style.opacity = "1";
+                    showToast('Convite enviado com sucesso!');
                     inputZap.value = '';
-                    setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 3000);
+                } else {
+                    showToast('Erro ao disparar convite.', 'error');
                 }
             } catch (err) { 
-                btn.innerText = "Erro!"; btn.style.background = "#ef4444"; btn.style.opacity = "1"; 
-                setTimeout(() => { btn.innerText = "Disparar Convite"; btn.style.background = "var(--accent)"; }, 2000);
+                showToast('Erro de conexão ao disparar convite.', 'error');
+            } finally {
+                btn.innerText = "Disparar Convite"; btn.disabled = false;
             }
         }
         
@@ -650,8 +656,6 @@
         }
 
         function fecharModalEdicao() { document.getElementById('modal-edicao').style.display = 'none'; }
-        
-        window.abrirAlertaBanimento = function() {
             document.getElementById('modal-alerta-ban').style.display = 'flex';
         };
         window.fecharAlertaBanimento = function() {
@@ -723,9 +727,18 @@
                 tipo_vinculo: document.getElementById('edit-vinculo').value,
                 chave_pix: document.getElementById('edit-pix').value,
             };
-            await fetch(`/api/fleet/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            fecharModalEdicao();
-            carregarFrota();
+            try {
+                const res = await fetch(`/api/fleet/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                if (res.ok) {
+                    showToast('Dados do motoboy salvos com sucesso!');
+                    fecharModalEdicao();
+                    carregarFrota();
+                } else {
+                    showToast('Erro ao salvar alterações.', 'error');
+                }
+            } catch (e) {
+                showToast('Erro de conexão.', 'error');
+            }
         }
 
         async function deletarMotoboy(id, btn) {
@@ -1312,9 +1325,9 @@
             const savedData = await res.json();
             console.log("Resposta do servidor (salvar):", savedData);
             
-            // FEEDBACK VISUAL NO BOTÃO (SEM ALERT NATIVO)
+            showToast('Base e Chaves Salvas com sucesso!');
             const btn = document.getElementById('btn-salvar-perfil');
-            btn.innerText = 'Base e Chaves Salvas!';
+            btn.innerText = 'Salvo!';
             btn.style.background = '#10b981';
             setTimeout(() => { btn.innerText = 'Gravar Base'; btn.style.background = 'var(--accent)'; }, 2000);
         }

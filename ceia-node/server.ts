@@ -90,12 +90,10 @@ function startWhatsApp() {
                 const dispatch = db.query("SELECT * FROM active_dispatches WHERE cliente_telefone LIKE ? AND status = 'AGUARDANDO_CONFIRMACAO' ORDER BY id DESC LIMIT 1").get(`%${clienteTelefone}%`) as any;
 
                 if (dispatch) {
-                    db.query("UPDATE active_dispatches SET status = 'FINALIZADO', finalizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(dispatch.id);
+                    db.query("UPDATE active_dispatches SET status = 'CONCLUIDO', finalizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(dispatch.id);
                     
                     const driver = getDriverById(dispatch.motoboy_id) as any;
-                    if (driver && driver.tipo_vinculo === 'FREELANCER') {
-                        db.query("UPDATE fleet SET saldo = COALESCE(saldo, 0) + ? WHERE id = ?").run(dispatch.valor_corrida, driver.id);
-                    }
+                    // O saldo agora é calculado dinamicamente, não há necessidade de atualizá-lo aqui.
 
                     await msg.reply('Obrigado por confirmar! 👍');
 
@@ -497,7 +495,7 @@ async function startTelegramPolling() {
                                 const driverPin = getDriverById(dispatchPin.motoboy_id) as any;
                                 
                                 if (dispatchPin && text.trim() === dispatchPin.pin_entrega) {
-                                    db.query("UPDATE active_dispatches SET status = 'CONCLUIDO' WHERE id = ?").run(pinDispatchId);
+                                    db.query("UPDATE active_dispatches SET status = 'CONCLUIDO', finalizado_em = CURRENT_TIMESTAMP WHERE id = ?").run(pinDispatchId);
                                     await sendMessage(token, chatId, "✅ PIN correto! Entrega concluída.");
                                     
                                     const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE rota_id = ? AND status != 'CONCLUIDO'").get(dispatchPin.rota_id) as any;

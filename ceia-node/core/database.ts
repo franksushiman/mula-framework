@@ -9,7 +9,7 @@ export function inicializarBanco() {
     db.run(`INSERT OR IGNORE INTO node_profile (id) VALUES (1)`);
     db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, tipo TEXT, coordenadas TEXT, valor REAL)`);
     db.run(`CREATE TABLE IF NOT EXISTS active_dispatches (id INTEGER PRIMARY KEY AUTOINCREMENT, motoboy_id INTEGER, rota_id TEXT, cliente_telefone TEXT, endereco TEXT, lat_destino REAL, lng_destino REAL, status TEXT DEFAULT 'AGUARDANDO_COLETA', status_coleta TEXT DEFAULT 'AGUARDANDO', pin_entrega TEXT, aviso_chegada_enviado INTEGER DEFAULT 0, last_offer_time INTEGER, offered_drivers TEXT, valor_corrida REAL, finalizado_em DATETIME)`);
-    db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT, saldo REAL DEFAULT 0)`);
+    db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT)`);
 
     // Migrações simples para garantir que colunas adicionadas em novas versões existam.
     try {
@@ -82,10 +82,21 @@ export function deleteZone(id: number) { db.run("DELETE FROM delivery_zones WHER
 export function getFleet() { 
     const fleet = db.query("SELECT * FROM fleet ORDER BY status DESC").all() as any[];
     const activeDispatches = db.query("SELECT * FROM active_dispatches WHERE status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").all() as any[];
+    
+    const saldos = db.query(`
+        SELECT motoboy_id, SUM(valor_corrida) as total 
+        FROM active_dispatches 
+        WHERE status = 'CONCLUIDO' 
+        AND motoboy_id IS NOT NULL 
+        GROUP BY motoboy_id
+    `).all() as any[];
+    
+    const saldosMap = new Map(saldos.map(s => [s.motoboy_id, s.total]));
 
     return fleet.map(driver => {
         return {
             ...driver,
+            saldo: saldosMap.get(driver.id) || 0,
             deliveries: activeDispatches.filter(d => d.motoboy_id === driver.id)
         };
     });
@@ -113,7 +124,7 @@ export function deleteDriver(id: number) {
 }
 
 export function getDriverHistory(driverId: number) {
-    return db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'FINALIZADO' ORDER BY finalizado_em DESC").all(driverId);
+    return db.query("SELECT * FROM active_dispatches WHERE motoboy_id = ? AND status = 'CONCLUIDO' ORDER BY finalizado_em DESC").all(driverId);
 }
 
 export function getActiveRoutes() {
