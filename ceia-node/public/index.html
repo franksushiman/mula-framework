@@ -441,7 +441,6 @@
             
             container.innerHTML = frota.map(m => {
                 const saldoFreela = m.tipo_vinculo === 'FREELANCER' ? (Math.random() * 80 + 20).toFixed(2) : '0.00';
-                const alertBtn = m.status === 'OFFLINE' ? `<button onclick="alertarMotoboy(${m.id}, this)" style="background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">🔔 Chamar</button>` : '';
                 const statusLabel = m.status === 'ONLINE' ? 'ONLINE' : (m.status === 'OCUPADO' ? 'EM ROTA' : 'OFFLINE');
                 const statusColor = m.status === 'ONLINE' ? '#2ecc71' : (m.status === 'OCUPADO' ? '#3b82f6' : '#ff4757');
                 const statusBg = m.status === 'ONLINE' ? '#e8f8f5' : (m.status === 'OCUPADO' ? '#eff6ff' : '#ffebee');
@@ -485,7 +484,6 @@
                         <button onclick="abrirRadarMotoboy(${m.lat}, ${m.lng}, '${m.nome}')" style="display: ${m.status === 'ONLINE' && m.lat && m.lng ? 'inline-block' : 'none'}; background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;">📍 Radar</button>
                         <button class="btn-action btn-del" onclick="deletarMotoboy(${m.id}, this)">🗑️ Excluir</button>
                         ${m.status === 'ONLINE' ? `<button class="btn-action btn-del" id="despachar-${m.id}" onclick="despacharTeste(${m.id})">Despachar Teste</button>` : ''}
-                        ${alertBtn}
                         <button class="btn-action btn-pay" onclick="window.abrirPagamento('${m.nome.replace(/'/g, "\\'")}', '${m.chave_pix || ''}', ${m.saldo || 0})">Pagar via Pix</button>
                     </div>
                 </div>`
@@ -716,18 +714,6 @@
             fecharModalEdicao();
             carregarFrota();
         }
-
-        window.alertarMotoboy = async function(id, btn) {
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ Enviando...";
-            try {
-                await fetch(`/api/fleet/${id}/alert`, { method: 'POST' });
-                btn.innerHTML = "✅ Avisado!";
-                setTimeout(() => btn.innerHTML = originalText, 3000);
-            } catch (e) {
-                btn.innerHTML = "❌ Erro";
-            }
-        };
 
         async function deletarMotoboy(id, btn) {
             if (btn.innerText === "🗑️ Tem certeza?") {
