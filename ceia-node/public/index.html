@@ -332,14 +332,13 @@
         }
 
         async function buscarEntregaParceira() {
-            const endereco = prompt("Endereço de destino para a Entrega Parceira:");
-            if (!endereco) return;
-            const valor = prompt("Valor da taxa (R$):");
-            if (!valor) return;
-
-            const valorFloat = parseFloat(valor.replace(',', '.'));
-            if (isNaN(valorFloat) || valorFloat <= 0) {
-                showNotification("Valor da taxa é inválido.");
+            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error);
+            if (validItems.length === 0) {
+                showNotification('Adicione pedidos na bag antes de chamar a Rede MULA.');
+                return;
+            }
+            if (validItems.length !== bag.length) {
+                showNotification('Verifique se todos os pedidos na bag possuem endereço e telefone preenchidos e válidos.');
                 return;
             }
 
@@ -347,10 +346,14 @@
                 const res = await fetch('/api/mula-broadcast', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ endereco, valor: valorFloat })
+                    body: JSON.stringify({ bag: validItems })
                 });
+
                 if (res.ok) {
-                    showNotification('🚀 Corrida enviada para a Rede MULA!', 'success');
+                    showNotification('🚀 Rota enviada para a Rede MULA! Procurando parceiros...', 'success');
+                    bag = [];
+                    renderBag();
+                    document.getElementById('route-alert-banner').style.display = 'none';
                 } else {
                     const err = await res.json();
                     showNotification(`Erro ao enviar: ${err.error || 'Erro desconhecido'}`);
