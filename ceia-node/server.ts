@@ -674,6 +674,46 @@ serve({
             return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/reassign') {
+            try {
+                const { rota_id, novo_motoboy_id } = await req.json();
+                const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
+                if (deliveries.length === 0) {
+                    return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
+                }
+
+                const antigo_motoboy_id = deliveries[0].motoboy_id;
+                
+                db.query("UPDATE active_dispatches SET motoboy_id = ? WHERE rota_id = ?").run(novo_motoboy_id, rota_id);
+
+                const profile = getProfile() as any;
+                const token = profile?.telegram_bot_token;
+
+                if (antigo_motoboy_id && token) {
+                    const antigoDriver = getDriverById(antigo_motoboy_id) as any;
+                    if (antigoDriver && antigoDriver.chat_id) {
+                        await sendMessage(token, parseInt(antigoDriver.chat_id), "❌ Uma de suas rotas foi reatribuída pela base devido a um imprevisto.");
+                    }
+                    const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(antigo_motoboy_id) as any;
+                    if (remainingDeliveries.count === 0 && antigoDriver) {
+                        updateDriverStatus(antigoDriver.telegram_id, 'ONLINE');
+                    }
+                }
+
+                const novoDriver = getDriverById(novo_motoboy_id) as any;
+                if (novoDriver && novoDriver.chat_id && token) {
+                    updateDriverStatus(novoDriver.telegram_id, 'OCUPADO');
+                    await sendMessage(token, parseInt(novoDriver.chat_id), "✅ Uma nova rota foi atribuída a você!");
+                    await sendRouteDashboard(token, parseInt(novo_motoboy_id), parseInt(novoDriver.chat_id));
+                }
+
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+            } catch (e) {
+                console.error("Erro em /api/dispatch/reassign:", e);
+                return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
+            }
+        }
+
         if (req.method === 'POST' && url.pathname === '/api/dispatch/undo') {
             try {
                 const { rota_id } = await req.json();

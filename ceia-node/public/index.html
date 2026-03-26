@@ -90,6 +90,17 @@
     </style>
 </head>
 <body>
+    <div class="modal-overlay" id="reassign-modal" onclick="if(event.target === this) this.classList.remove('show')">
+        <div class="modal-card" style="width: 450px;">
+            <button class="modal-close-btn" onclick="document.getElementById('reassign-modal').classList.remove('show')">&times;</button>
+            <h3 style="margin-top:0;">Trocar Motoboy da Rota</h3>
+            <input type="hidden" id="reassign-rota-id">
+            <p style="color: var(--text-light); margin-bottom: 20px;">Selecione o novo motoboy para assumir esta rota:</p>
+            <div id="reassign-driver-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 0; margin-bottom: 20px;">
+                <!-- Lista de motoboys disponíveis -->
+            </div>
+        </div>
+    </div>
     <div class="modal-overlay" id="custom-confirm-modal">
         <div class="modal-card" style="width: 400px; text-align: center;">
             <h3 style="margin-top:0;" id="custom-confirm-title">Confirmar Ação</h3>
@@ -953,6 +964,55 @@
             }
         }
 
+        function openReassignModal(rota_id, current_motoboy_id) {
+            const modal = document.getElementById('reassign-modal');
+            const rotaIdInput = document.getElementById('reassign-rota-id');
+            const driverListContainer = document.getElementById('reassign-driver-list');
+            
+            rotaIdInput.value = rota_id;
+            driverListContainer.innerHTML = '<p>Carregando motoboys...</p>';
+            modal.classList.add('show');
+
+            const availableDriversForReassign = availableDrivers.filter(d => d.id !== current_motoboy_id);
+
+            if (availableDriversForReassign.length === 0) {
+                driverListContainer.innerHTML = '<p style="color: var(--text-light); text-align: center;">Nenhum outro motoboy disponível para troca.</p>';
+            } else {
+                driverListContainer.innerHTML = availableDriversForReassign.map(d => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff;">
+                        <div>
+                            <strong>${d.nome}</strong>
+                            <div style="color: var(--text-light); font-size: 13px;">📍 a ${d.distance.toFixed(1)} km</div>
+                        </div>
+                        <button class="btn" onclick="confirmReassign(${d.id})" style="width: auto; padding: 8px 15px; margin:0;">Selecionar</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function confirmReassign(novo_motoboy_id) {
+            const rota_id = document.getElementById('reassign-rota-id').value;
+            document.getElementById('reassign-modal').classList.remove('show');
+            
+            try {
+                const res = await fetch('/api/dispatch/reassign', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ rota_id, novo_motoboy_id })
+                });
+
+                if (res.ok) {
+                    showToast('Rota reatribuída com sucesso!');
+                    recarregarPainelOperacional();
+                } else {
+                    const err = await res.json();
+                    showToast(err.error || 'Falha ao reatribuir rota.', 'error');
+                }
+            } catch (e) {
+                showToast('Erro de conexão ao reatribuir rota.', 'error');
+            }
+        }
+
         function removerPedidoDaBag(bagId, itemId) {
             bags[bagId] = bags[bagId].filter(i => i.id !== itemId);
             if (bags[bagId].length === 0) {
@@ -1118,11 +1178,17 @@
 
             const motoboyNameHtml = grupo.motoboy_lat ? `<a href="#" onclick="abrirRadarMotoboy(${grupo.motoboy_lat}, ${grupo.motoboy_lng}, '${grupo.motoboy_nome}'); return false;">${grupo.motoboy_nome}</a>` : grupo.motoboy_nome;
 
+            const buttonsHtml = grupo.motoboy_id ? `
+                <div style="white-space: nowrap;">
+                    <button onclick="openReassignModal('${grupo.rota_id}', ${grupo.motoboy_id})" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
+                    <button onclick="retirarRota('${grupo.rota_id}', this)" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
+                </div>` : '';
+
             return `
                 <div class="card" style="max-width: none;">
-                    <h4 style="margin:0 0 15px; display:flex; justify-content:space-between;">
-                        <span>${motoboyNameHtml} ${progresso}</span>
-                        <button onclick="retirarRota('${grupo.rota_id}', this)" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar Rota</button>
+                    <h4 style="margin:0 0 15px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">${motoboyNameHtml} ${progresso}</span>
+                        ${buttonsHtml}
                     </h4>
                     ${deliveriesHtml}
                 </div>
