@@ -8,7 +8,7 @@ export function inicializarBanco() {
     db.run(`CREATE TABLE IF NOT EXISTS node_profile (id INTEGER PRIMARY KEY CHECK (id = 1), nome TEXT, endereco TEXT, whatsapp TEXT, lat REAL, lng REAL, link_cardapio TEXT, openai_key TEXT, google_maps_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT)`);
     db.run(`INSERT OR IGNORE INTO node_profile (id) VALUES (1)`);
     db.run(`CREATE TABLE IF NOT EXISTS delivery_zones (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, tipo TEXT, coordenadas TEXT, valor REAL)`);
-    db.run(`CREATE TABLE IF NOT EXISTS active_dispatches (id INTEGER PRIMARY KEY AUTOINCREMENT, motoboy_id INTEGER, cliente_telefone TEXT, endereco TEXT, lat_destino REAL, lng_destino REAL, status TEXT DEFAULT 'AGUARDANDO_ACEITE', aviso_chegada_enviado INTEGER DEFAULT 0, last_offer_time INTEGER, offered_drivers TEXT, valor_corrida REAL, finalizado_em DATETIME)`);
+    db.run(`CREATE TABLE IF NOT EXISTS active_dispatches (id INTEGER PRIMARY KEY AUTOINCREMENT, motoboy_id INTEGER, rota_id TEXT, cliente_telefone TEXT, endereco TEXT, lat_destino REAL, lng_destino REAL, status TEXT DEFAULT 'AGUARDANDO_COLETA', status_coleta TEXT DEFAULT 'AGUARDANDO', pin_entrega TEXT, aviso_chegada_enviado INTEGER DEFAULT 0, last_offer_time INTEGER, offered_drivers TEXT, valor_corrida REAL, finalizado_em DATETIME)`);
     db.run(`CREATE TABLE IF NOT EXISTS fleet (id INTEGER PRIMARY KEY AUTOINCREMENT, telegram_id TEXT UNIQUE, chat_id TEXT, nome TEXT NOT NULL, cpf TEXT, chave_pix TEXT, tipo_vinculo TEXT DEFAULT 'FREELANCER', veiculo TEXT, placa TEXT, status TEXT DEFAULT 'OFFLINE', lat REAL, lng REAL, ultima_atualizacao DATETIME DEFAULT CURRENT_TIMESTAMP, last_location_time INTEGER, veiculo_tipo TEXT, veiculo_id TEXT, saldo REAL DEFAULT 0)`);
 
     // Migrações simples para garantir que colunas adicionadas em novas versões existam.
@@ -31,6 +31,18 @@ export function inicializarBanco() {
         if (!columns.includes('finalizado_em')) {
             console.log("🔧 Migrando banco de dados: Adicionando 'finalizado_em'...");
             db.run('ALTER TABLE active_dispatches ADD COLUMN finalizado_em DATETIME');
+        }
+        if (!columns.includes('rota_id')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'rota_id'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN rota_id TEXT');
+        }
+        if (!columns.includes('pin_entrega')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'pin_entrega'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN pin_entrega TEXT');
+        }
+        if (!columns.includes('status_coleta')) {
+            console.log("🔧 Migrando banco de dados: Adicionando 'status_coleta'...");
+            db.run('ALTER TABLE active_dispatches ADD COLUMN status_coleta TEXT DEFAULT "AGUARDANDO"');
         }
     } catch (e) {
         console.error("Erro ao migrar o banco de dados:", e);
@@ -69,7 +81,7 @@ export function upsertZone(data: any) {
 export function deleteZone(id: number) { db.run("DELETE FROM delivery_zones WHERE id = ?", [id]); return getZones(); }
 export function getFleet() { 
     const fleet = db.query("SELECT * FROM fleet ORDER BY status DESC").all() as any[];
-    const activeDispatches = db.query("SELECT * FROM active_dispatches WHERE status IN ('ACEITO', 'EM_ROTA', 'AGUARDANDO_CONFIRMACAO')").all() as any[];
+    const activeDispatches = db.query("SELECT * FROM active_dispatches WHERE status IN ('AGUARDANDO_COLETA', 'EM_ROTA', 'CONCLUIDO')").all() as any[];
 
     return fleet.map(driver => {
         return {

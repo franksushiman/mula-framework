@@ -84,11 +84,25 @@
 
     <div class="main-content">
         <div id="tab-operacional" class="tab-content">
-            <h1 class="header-title">Despacho de Corridas</h1>
-            <div style="background: white; padding: 20px; border-radius: 8px;">
-                <h3 style="margin-top:0;">Despachar Pedido</h3>
-                <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Selecione um motoboy ONLINE para enviar a corrida:</p>
-                <div id="lista-despacho" style="display: grid; gap: 10px;"></div>
+            <h1 class="header-title">Montagem de Rota (Bag)</h1>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start;">
+                <div>
+                    <div class="card" style="max-width: none;">
+                        <h3 style="margin-top:0;">1. Adicionar Pedidos à Bag</h3>
+                        <div id="bag-items-container" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                            <!-- Pedidos serão adicionados aqui -->
+                        </div>
+                        <button class="btn" onclick="addPedidoToBag()" style="background: #f1f5f9; color: #475569; width: auto; padding: 10px 20px;">+ Adicionar Pedido</button>
+                    </div>
+                    <div id="route-alert-banner" style="display: none; background: #fecaca; color: #991b1b; padding: 15px; border-radius: 8px; font-weight: 500; margin-top: 20px;"></div>
+                </div>
+                <div>
+                    <div class="card" style="max-width: none;">
+                        <h3 style="margin-top:0;">2. Selecionar Motoboy</h3>
+                        <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Selecione um motoboy disponível para a rota montada:</p>
+                        <div id="lista-despacho" style="display: grid; gap: 10px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -301,7 +315,7 @@
                             </div>
                             <div style="color: var(--text-light); font-size: 13px;">📍 a ${distanciaKm} km</div>
                         </div>
-                        <button id="btn-despacho-${m.id}" onclick="despacharCorrida(${m.id}, '${m.nome}')" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Despachar</button>
+                        <button id="btn-despacho-${m.id}" onclick="despacharRota(${m.id})" style="background: var(--accent); color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Despachar Rota</button>
                     </div>`;
                 }).join('');
             } catch (error) {
@@ -367,7 +381,7 @@
                                        <button onclick="forcarBaixa(${d.id}, this)" style="background: #fecaca; color: #b91c1c; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">Forçar Baixa</button>
                                    </div>
                                    <div>
-                                       <span style="background: ${d.status === 'ACEITO' ? '#eff6ff' : (d.status === 'EM_ROTA' ? '#e0f2f1' : '#fef9c3')}; color: ${d.status === 'ACEITO' ? '#2563eb' : (d.status === 'EM_ROTA' ? '#047857' : '#854d0e')}; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">${d.status === 'ACEITO' ? 'NA BASE' : (d.status === 'EM_ROTA' ? 'EM ROTA' : 'AGUARDANDO OK')}</span>
+                                       ${renderStatusBadge(d)}
                                    </div>
                                </div>
                            `).join('')}
@@ -704,6 +718,21 @@
             }
         }
 
+        function renderStatusBadge(delivery) {
+            const statuses = {
+                'AGUARDANDO_COLETA': { label: 'NA BASE', bg: '#eff6ff', color: '#2563eb' },
+                'EM_ROTA': { label: 'EM ROTA', bg: '#e0f2f1', color: '#047857' },
+                'CONCLUIDO': { label: 'CONCLUÍDO (PIN OK)', bg: '#dcfce7', color: '#166534' }
+            };
+            const s = statuses[delivery.status] || { label: delivery.status, bg: '#f1f5f9', color: '#64748b' };
+            
+            let html = `<span style="background: ${s.bg}; color: ${s.color}; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600;">${s.label}</span>`;
+            if (delivery.status !== 'CONCLUIDO' && delivery.status_coleta === 'COLETADO') {
+                 html += `<span style="background: #e0f2f1; color: #047857; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-left: 5px;">COLETADO</span>`;
+            }
+            return html;
+        }
+
         async function forcarBaixa(dispatchId, btn) {
             if (!confirm('Tem certeza que deseja DELETAR esta entrega travada? \n\nEsta ação não pode ser desfeita e NENHUM pagamento será feito ao motoboy.')) {
                 return;
@@ -747,43 +776,118 @@
             }, 4000);
         }
 
-        async function confirmarDespacho() {
-            const motoboyId = document.getElementById('despacho-motoboy-id').value;
-            const endereco = document.getElementById('despacho-endereco').value;
-            const clienteTelefone = document.getElementById('despacho-cliente-telefone').value;
+        let bag = [];
+        let geocodeTimeout;
 
-            if (!endereco || !clienteTelefone) {
-                showNotification('Por favor, preencha o endereço e o telefone do cliente.');
+        function addPedidoToBag() {
+            const id = Date.now();
+            bag.push({ id, address: '', phone: '', coords: null });
+            renderBag();
+        }
+
+        function updateBagItem(id, field, value) {
+            const item = bag.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                if (field === 'address') {
+                    item.coords = null; // Invalida as coordenadas para forçar nova busca
+                    clearTimeout(geocodeTimeout);
+                    geocodeTimeout = setTimeout(() => checkRoute(), 1000);
+                }
+            }
+        }
+
+        function removeBagItem(id) {
+            bag = bag.filter(i => i.id !== id);
+            renderBag();
+            checkRoute();
+        }
+
+        function renderBag() {
+            const container = document.getElementById('bag-items-container');
+            if (bag.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-light); text-align:center;">A bag está vazia. Adicione um pedido.</p>';
+                return;
+            }
+            container.innerHTML = bag.map((item, index) => `
+                <div style="border: 1px solid var(--border); padding: 15px; border-radius: 8px; background: #f8fafc;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <strong style="color: var(--text-dark);">Pedido ${index + 1}</strong>
+                        <button onclick="removeBagItem(${item.id})" style="background:none; border:none; color: #ef4444; font-size:1.2rem; cursor:pointer;">&times;</button>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Endereço do Pedido</label>
+                        <input type="text" class="form-control" value="${item.address}" oninput="updateBagItem(${item.id}, 'address', this.value)" placeholder="Digite o endereço ou ponto de referência">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>WhatsApp do Cliente</label>
+                        <input type="text" class="form-control" value="${item.phone}" oninput="updateBagItem(${item.id}, 'phone', this.value)" placeholder="Ex: 47912345678">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function checkRoute() {
+            const banner = document.getElementById('route-alert-banner');
+            const validItems = bag.filter(i => i.address.trim() !== '');
+            if (validItems.length < 2) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            const geocodePromises = validItems.map(async item => {
+                if (item.address && !item.coords) {
+                    try {
+                        const res = await fetch('/api/geocode', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ endereco: item.address }) });
+                        if (res.ok) item.coords = await res.json();
+                    } catch(e) { console.error("Geocoding failed for", item.address); }
+                }
+                return item;
+            });
+
+            await Promise.all(geocodePromises);
+            
+            const coordinates = bag.filter(i => i.coords && !i.coords.error).map(i => i.coords);
+            if (coordinates.length < 2) return;
+
+            const res = await fetch('/api/route-check', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ coordinates }) });
+            const data = await res.json();
+            
+            if (data.alerta) {
+                banner.innerText = data.alerta;
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+        
+        async function despacharRota(motoboyId) {
+            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error);
+            if (validItems.length === 0 || validItems.length !== bag.length) {
+                showNotification('Verifique se todos os pedidos na bag possuem endereço e telefone preenchidos e válidos.');
                 return;
             }
 
             const btn = document.getElementById(`btn-despacho-${motoboyId}`);
-            if(btn) btn.innerHTML = 'Enviando...';
-            
-            document.getElementById('modal-despacho').style.display = 'none';
+            if(btn) { btn.innerHTML = 'Enviando...'; btn.disabled = true; }
 
             const res = await fetch('/api/dispatch', { 
                 method: 'POST', 
                 headers: {'Content-Type':'application/json'}, 
-                body: JSON.stringify({ 
-                    motoboy_id: motoboyId, 
-                    endereco: endereco,
-                    cliente_telefone: clienteTelefone.replace(/\D/g, '')
-                }) 
+                body: JSON.stringify({ motoboy_id: motoboyId, bag: validItems }) 
             });
 
             if (!res.ok) {
                 const err = await res.json();
                 showNotification(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`);
-                if (btn) btn.innerHTML = 'Despachar';
+                if (btn) { btn.innerHTML = 'Despachar Rota'; btn.disabled = false; }
                 return;
             }
 
-            if(btn) {
-                btn.innerHTML = '✅ Despachado';
-                btn.disabled = true;
-                btn.style.background = '#10b981';
-            }
+            showNotification('Rota despachada com sucesso!', 'success');
+            bag = [];
+            renderBag();
+            document.getElementById('route-alert-banner').style.display = 'none';
             
             setTimeout(() => {
                 carregarFrotaDespacho(); 
@@ -937,6 +1041,7 @@
         }
 
         window.onload = async () => {
+            renderBag();
             carregarFrota();
             carregarFrotaDespacho();
             const res = await fetch('/api/profile'); const d = await res.json();
