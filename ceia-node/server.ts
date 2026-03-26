@@ -385,12 +385,24 @@ async function startTelegramPolling() {
                         const dispatchId = parseInt(idStr);
                         const driver = getDriverByTelegramId(telegramId) as any;
 
-                        if (action === 'collect' && type === 'ride' && !isNaN(dispatchId)) {
+                        if (action === 'aceitar' && type === 'mula' && !isNaN(dispatchId)) {
+                            const rota_id = Date.now().toString();
+                            const pin = Math.floor(1000 + Math.random() * 9000).toString();
+                            const stmt = db.query("UPDATE active_dispatches SET motoboy_id = ?, status = 'AGUARDANDO_COLETA', rota_id = ?, pin_entrega = ? WHERE id = ? AND status = 'PENDENTE_PARCEIRO'");
+                            const result = stmt.run(driver.id, rota_id, pin, dispatchId);
+
+                            if (result.changes > 0) {
+                                await editMessageText(token, cb.message.chat.id, cb.message.message_id, "✅ Corrida garantida! Dirija-se ao restaurante para coleta.");
+                                await sendRouteDashboard(token, driver.id, cb.message.chat.id);
+                            } else {
+                                await editMessageText(token, cb.message.chat.id, cb.message.message_id, "❌ Tarde demais, motuba. Outro parceiro já pegou essa corrida.");
+                            }
+                        } else if (action === 'collect' && type === 'ride' && !isNaN(dispatchId)) {
                             db.query("UPDATE active_dispatches SET status_coleta = 'COLETADO' WHERE id = ?").run(dispatchId);
                             const dispatch = db.query("SELECT rota_id, cliente_telefone, pin_entrega FROM active_dispatches WHERE id = ?").get(dispatchId) as any;
                             db.query("UPDATE active_dispatches SET status = 'EM_ROTA' WHERE rota_id = ? AND status = 'AGUARDANDO_COLETA'").run(dispatch.rota_id);
                             
-                            if (waClient && waStatus === 'CONNECTED' && dispatch) {
+                            if (waClient && waStatus === 'CONNECTED' && dispatch && dispatch.cliente_telefone) {
                                 const numeroCliente = `${dispatch.cliente_telefone}@c.us`;
                                 const msgPin = `🛵 Seu pedido saiu para entrega! O motoboy já coletou o pacote.\n\n🔑 *Seu Código de Entrega é: ${dispatch.pin_entrega}*.\n\nInforme este código ao entregador para receber seu pedido.`;
                                 await waClient.sendMessage(numeroCliente, msgPin);
@@ -780,6 +792,44 @@ serve({
             await sendRouteDashboard(profile.telegram_bot_token, motoboy.id, parseInt(motoboy.chat_id));
             
             return new Response(JSON.stringify({ success: true, rota_id: rota_id }), { headers: { 'Content-Type': 'application/json' }});
+        }
+
+        // ROTA BROADCAST MULA
+        if (req.method === 'POST' && url.pathname === '/api/mula-broadcast') {
+            const { endereco, valor } = await req.json();
+            const profile = getProfile() as any;
+
+            let lat_destino, lng_destino;
+            if (profile.google_maps_key && endereco) {
+                try {
+                    const searchRadius = 20000;
+                    const locationBias = (profile.lat && profile.lng) ? `&location=${profile.lat}%2C${profile.lng}&radius=${searchRadius}` : '';
+                    const geoUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(endereco)}&key=${profile.google_maps_key}${locationBias}`;
+                    const geoRes = await fetch(geoUrl);
+                    const geoData = await geoRes.json();
+                    if (geoData.status === 'OK' && geoData.results.length > 0) {
+                        const location = geoData.results[0].geometry.location;
+                        lat_destino = location.lat;
+                        lng_destino = location.lng;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+            if (!lat_destino) {
+                 return new Response(JSON.stringify({ error: 'Endereço não pôde ser encontrado no mapa.' }), { status: 400 });
+            }
+
+            const insertResult = db.query("INSERT INTO active_dispatches (endereco, valor_corrida, status, lat_destino, lng_destino) VALUES (?, ?, 'PENDENTE_PARCEIRO', ?, ?)").run(endereco, valor, lat_destino, lng_destino) as any;
+            const dispatchId = insertResult.lastInsertRowid;
+            
+            const onlineFleet = db.query("SELECT * FROM fleet WHERE status = 'ONLINE' AND chat_id IS NOT NULL").all() as any[];
+            const texto = `🚨 *CORRIDA AVULSA - REDE MULA* 🚨\n\n📍 Retirada: ${profile.nome || 'Restaurante'}\n🚩 Destino: ${endereco}\n💰 Pagamento: R$ ${valor.toFixed(2)}\n\nQuem aceitar primeiro, leva!`;
+            const keyboard = { inline_keyboard: [[{ text: `Aceitar Corrida R$ ${valor.toFixed(2)}`, callback_data: `aceitar_mula_${dispatchId}` }]] };
+            
+            for (const f of onlineFleet) {
+                await sendMessage(profile.telegram_bot_token, f.chat_id, texto, { parse_mode: 'Markdown', reply_markup: JSON.stringify(keyboard) });
+            }
+            
+            return new Response(JSON.stringify({ success: true, dispatchId: dispatchId }), { headers: { "Content-Type": "application/json" } });
         }
 
         // A ROTA TÁTICA DO CONVITE
