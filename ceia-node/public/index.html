@@ -305,7 +305,7 @@
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script>
-        let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer;
+        let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer, timerAutoSave;
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1020,7 +1020,10 @@
                     clearTimeout(geocodeTimeout);
                     geocodeTimeout = setTimeout(() => checkRoute(bagId), 1000);
                 }
-                salvarRascunhoBag();
+                clearTimeout(timerAutoSave);
+                timerAutoSave = setTimeout(() => {
+                    salvarRascunhoBag();
+                }, 500);
             }
         }
 
@@ -1136,9 +1139,9 @@
                             <strong style="color: var(--text-dark);">Pedido ${index + 1}</strong>
                             <button onclick="removerPedidoDaBag('${bagId}', ${item.id})" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Remover</button>
                         </div>
-                        <input type="text" class="form-control bag-address-input" value="${item.address}" data-bag-id="${bagId}" data-item-id="${item.id}" oninput="updateBagItem('${bagId}', ${item.id}, 'address', this.value)" placeholder="Endereço do Pedido" style="margin-bottom:8px;">
-                        <input type="text" class="form-control" value="${item.phone}" oninput="updateBagItem('${bagId}', ${item.id}, 'phone', this.value)" placeholder="WhatsApp do Cliente" style="margin-bottom:8px;">
-                        <input type="number" class="form-control" value="${item.valor}" oninput="updateBagItem('${bagId}', ${item.id}, 'valor', this.value)" placeholder="Taxa (R$)" step="0.50">
+                        <input type="text" class="form-control bag-address-input" value="${item.address}" data-bag-id="${bagId}" data-item-id="${item.id}" data-field="address" placeholder="Endereço do Pedido" style="margin-bottom:8px;">
+                        <input type="text" class="form-control" value="${item.phone}" data-bag-id="${bagId}" data-item-id="${item.id}" data-field="phone" placeholder="WhatsApp do Cliente" style="margin-bottom:8px;">
+                        <input type="number" class="form-control" value="${item.valor}" data-bag-id="${bagId}" data-item-id="${item.id}" data-field="valor" placeholder="Taxa (R$)" step="0.50">
                     </div>`).join('');
                 
                 return `
@@ -1435,6 +1438,18 @@
         }
 
         window.onload = async () => {
+            const colunaPreparacao = document.getElementById('coluna-preparacao');
+            colunaPreparacao.addEventListener('input', (event) => {
+                const target = event.target;
+                if (target.matches('.form-control[data-item-id]')) {
+                    const bagId = target.dataset.bagId;
+                    const itemId = parseInt(target.dataset.itemId);
+                    const field = target.dataset.field;
+                    const value = target.value;
+                    updateBagItem(bagId, itemId, field, value);
+                }
+            });
+
             restaurarRascunhoBag();
             carregarFrota();
             recarregarPainelOperacional();
