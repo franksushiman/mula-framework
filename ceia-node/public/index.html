@@ -1113,6 +1113,16 @@
                 }
             });
         }
+        function updateDriverSelects() {
+            const driverSelects = document.querySelectorAll('select[id^="driver-select-"]');
+            driverSelects.forEach(select => {
+                const currentSelection = select.value;
+                const optionsHtml = availableDrivers.length > 0 
+                    ? availableDrivers.map(d => `<option value="${d.id}" ${d.id == currentSelection ? 'selected' : ''}>${d.nome} (a ${d.distance.toFixed(1)} km)</option>`).join('') 
+                    : '<option disabled>Nenhum motoboy disponível</option>';
+                select.innerHTML = optionsHtml;
+            });
+        }
         
         async function despacharRota(bagId) {
             const motoboyId = document.getElementById(`driver-select-${bagId}`).value;
@@ -1151,7 +1161,7 @@
                 // Carrega motoboys disponíveis
                 const fleetRes = await fetch('/api/dispatch/fleet');
                 availableDrivers = await fleetRes.json();
-                renderColumnPreparacao(); // Re-renderiza para atualizar a lista de motoboys
+                updateDriverSelects(); // Apenas atualiza a lista de motoboys, não a bag inteira
 
                 // Carrega rotas ativas para Colunas 2 e 3
                 const routesRes = await fetch('/api/rotas-ativas');
