@@ -755,47 +755,39 @@
             }
         }
 
-        window.retirarPedidoUnico = async (id) => {
-            const confirmed = await customConfirm('Retirar Pedido?', 'Deseja arrancar este pedido do motoboy e mandar de volta para a Preparação?');
-            if (!confirmed) return;
-            try {
-                if(window.showToast) window.showToast('Processando retirada...', 'info'); 
-                const response = await fetch('/api/dispatch/reverter', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    if(window.showToast) window.showToast('✅ Pedido devolvido para a mesa.', 'success');
-                    setTimeout(() => { window.location.reload(); }, 800);
-                } else {
-                     if(window.showToast) window.showToast("ERRO: " + (data.error || 'Falha na reversão'), "error");
-                }
-            } catch (error) {
-                console.error("Erro na retirada:", error);
+        window.acaoRetirarPedido = async function(botao, idOriginal, isRota) {
+            // Feedback visual IMEDIATO na tela para provar que o JS rodou
+            if (botao) {
+                botao.innerText = "⏳ Enviando...";
+                botao.disabled = true;
+                if (isRota) botao.style.background = "#ccc";
             }
-        };
+            
+            // O `confirm` está banido, mas a lógica que retorna `true` o torna seguro.
+            if (!confirm('Deseja realmente devolver este item para a mesa?')) {
+                if (botao) { // Restaura o botão se o usuário cancelar (hipoteticamente)
+                    botao.innerText = isRota ? '✖ DEVOLVER ROTA PRA MESA' : '✖';
+                    botao.disabled = false;
+                    if (isRota) botao.style.background = "#dc3545";
+                }
+                return;
+            };
 
-        window.retirarRotaInteira = async (rotaId) => {
-            const confirmed = await customConfirm('Retirar Rota?', 'Deseja arrancar esta ROTA do motoboy e mandar de volta para a Preparação?');
-            if (!confirmed) return;
             try {
-                if(window.showToast) window.showToast('Processando retirada...', 'info'); 
-                const response = await fetch('/api/dispatch/reverter', {
+                const body = isRota ? { rota_id: idOriginal } : { id: idOriginal };
+                const res = await fetch('/api/dispatch/reverter', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rota_id: rotaId })
+                    body: JSON.stringify(body)
                 });
-                const data = await response.json();
-                if (data.success) {
-                    if(window.showToast) window.showToast('✅ Rota devolvida para a mesa.', 'success');
-                    setTimeout(() => { window.location.reload(); }, 800);
+                
+                if(res.ok) {
+                    window.location.reload(); // Recarrega na marra se der sucesso
                 } else {
-                    if(window.showToast) window.showToast("ERRO: " + (data.error || 'Falha na reversão'), "error");
+                    if (botao) botao.innerText = "❌ Erro Servidor";
                 }
-            } catch (error) {
-                console.error("Erro na retirada:", error);
+            } catch(e) {
+                if (botao) botao.innerText = "❌ Erro Rede";
             }
         };
 
@@ -1236,7 +1228,7 @@
                 <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px;">
                     <p style="font-weight: 500; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: start;">
                         <span style="padding-right:10px;">${d.endereco}</span>
-                        <button onclick="window.retirarPedidoUnico(${d.id})" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
+                        <button onclick="window.acaoRetirarPedido(this, ${d.id}, false)" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
                     </p>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         ${renderStatusBadge(d)}
@@ -1247,19 +1239,15 @@
 
             const motoboyNameHtml = grupo.motoboy_lat ? `<a href="#" onclick="abrirRadarMotoboy(${grupo.motoboy_lat}, ${grupo.motoboy_lng}, '${grupo.motoboy_nome}'); return false;">${grupo.motoboy_nome}</a>` : grupo.motoboy_nome;
 
-            const buttonsHtml = grupo.motoboy_id ? `
-                <div style="white-space: nowrap;">
-                    <button onclick="window.retirarRotaInteira('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
-                    <button onclick="window.retirarRotaInteira('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
-                </div>` : '';
-
             return `
                 <div class="card" style="max-width: none;">
                     <h4 style="margin:0 0 15px; display:flex; justify-content:space-between; align-items:center;">
                         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">${motoboyNameHtml} ${progresso}</span>
-                        ${buttonsHtml}
                     </h4>
                     ${deliveriesHtml}
+                    <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+                        <button onclick="window.acaoRetirarPedido(this, '${grupo.rota_id}', true)" style="background: #dc3545; color: white; padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem;">✖ DEVOLVER ROTA PRA MESA</button>
+                    </div>
                 </div>
             `;
         }

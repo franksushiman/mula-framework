@@ -690,21 +690,20 @@ serve({
                 
                 let motoboy_id: number | null = null;
                 let notificationMessage = '';
-                let result;
-
+                
                 if (id) {
                     const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
                     if (!delivery) return new Response(JSON.stringify({ success: false, error: 'Pedido não encontrado.' }), { status: 404 });
                     
                     motoboy_id = delivery.motoboy_id;
-                    result = db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(id);
+                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(id);
                     notificationMessage = `❌ O pedido para "${delivery.endereco}" foi retirado da sua rota pelo restaurante.`;
                 } else if (rota_id) {
                     const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
                     if (deliveries.length === 0) return new Response(JSON.stringify({ success: false, error: 'Rota não encontrada.' }), { status: 404 });
                     
                     motoboy_id = deliveries[0].motoboy_id;
-                    result = db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
+                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
                     notificationMessage = "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.";
                 } else {
                     return new Response(JSON.stringify({ success: false, error: 'ID do pedido ou da rota é obrigatório.' }), { status: 400 });
