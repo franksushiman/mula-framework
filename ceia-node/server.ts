@@ -2,7 +2,7 @@ import { serve } from "bun";
 import OpenAI from "openai";
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
-import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers, getDriverHistory, getActiveRoutes } from "./core/database";
+import { db, inicializarBanco, getProfile, updateProfile, getZones, upsertZone, deleteZone, getFleet, getDriverByTelegramId, getDriverById, upsertDriver, updateDriverStatus, updateDriverLocation, updateDriver, deleteDriver, sweepInactiveDrivers, getDriverHistory, getActiveRoutes, getPendingDispatches, clearPendingDispatches } from "./core/database";
 
 inicializarBanco();
 
@@ -654,6 +654,14 @@ serve({
             return new Response(JSON.stringify(lastSupportAlert), { headers: { "Content-Type": "application/json" } });
         }
 
+        if (req.method === 'GET' && url.pathname === '/api/pending-dispatches') {
+            return new Response(JSON.stringify(getPendingDispatches()), { headers: { "Content-Type": "application/json" } });
+        }
+        if (req.method === 'POST' && url.pathname === '/api/clear-pending-dispatches') {
+            const { ids } = await req.json();
+            return new Response(JSON.stringify(clearPendingDispatches(ids)), { headers: { "Content-Type": "application/json" } });
+        }
+
         if (req.method === 'GET' && url.pathname === '/api/rotas-ativas') {
             const routes = getActiveRoutes() as any[];
             
@@ -674,28 +682,13 @@ serve({
             return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/emergency-release') {
+        if (req.method === 'POST' && url.pathname === '/api/mula/force-release') {
             try {
                 const { id } = await req.json();
-                const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
-                if (!delivery) return new Response(JSON.stringify({ error: 'Pedido não encontrado.' }), { status: 404 });
-
                 db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(id);
-
-                if (delivery.motoboy_id) {
-                    const driver = getDriverById(delivery.motoboy_id) as any;
-                    if (driver) {
-                        const profile = getProfile() as any;
-                        if (profile.telegram_bot_token && driver.chat_id) {
-                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), `❌ O pedido para "${delivery.endereco}" foi retirado da sua rota pelo restaurante.`);
-                        }
-                        const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(delivery.motoboy_id) as any;
-                        if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
-                    }
-                }
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
             } catch (e) {
-                console.error("Erro em /api/emergency-release:", e);
+                console.error("Erro em /api/mula/force-release:", e);
                 return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
             }
         }

@@ -132,9 +132,22 @@ export function getActiveRoutes() {
         SELECT ad.*, f.nome as motoboy_nome, f.lat as motoboy_lat, f.lng as motoboy_lng
         FROM active_dispatches ad 
         LEFT JOIN fleet f ON ad.motoboy_id = f.id 
-        WHERE ad.status NOT IN ('CONCLUIDO', 'FINALIZADO', 'RECUSADA', 'CANCELADO', 'PENDENTE_PARCEIRO')
+        WHERE ad.status NOT IN ('CONCLUIDO', 'FINALIZADO', 'RECUSADA', 'CANCELADO', 'PENDENTE_PARCEIRO', 'PENDENTE')
         ORDER BY ad.motoboy_id, ad.rota_id, ad.id
     `).all();
+}
+
+export function getPendingDispatches() {
+    return db.query("SELECT * FROM active_dispatches WHERE status = 'PENDENTE'").all();
+}
+
+export function clearPendingDispatches(ids: number[]) {
+    if (!ids || ids.length === 0) return { success: true };
+    const stmt = db.prepare("DELETE FROM active_dispatches WHERE id = ?");
+    db.transaction(() => {
+        for (const id of ids) stmt.run(id);
+    })();
+    return { success: true };
 }
 
 export function upsertDriver(data: any) {

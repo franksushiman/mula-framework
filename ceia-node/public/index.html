@@ -874,17 +874,50 @@
             }
         }
 
-        function restaurarRascunhoBag() {
+        async function restaurarRascunhoBag() {
             try {
                 const draft = localStorage.getItem('ceia_bag_draft');
                 if (draft) {
                     bags = JSON.parse(draft);
+                }
+
+                // Busca por pedidos pendentes do banco
+                const res = await fetch('/api/pending-dispatches');
+                if (res.ok) {
+                    const pendingItems = await res.json();
+                    if (pendingItems.length > 0) {
+                        const pendingGroupedByRota = pendingItems.reduce((acc, item) => {
+                            const rotaId = item.rota_id || `solto_${item.id}`;
+                            if (!acc[rotaId]) acc[rotaId] = [];
+                            acc[rotaId].push(item);
+                            return acc;
+                        }, {});
+
+                        for (const rotaId in pendingGroupedByRota) {
+                            const newBagId = `bag_restaurada_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+                            bags[newBagId] = pendingGroupedByRota[rotaId].map(item => ({
+                                id: Date.now() + Math.random(),
+                                address: item.endereco,
+                                phone: item.cliente_telefone,
+                                valor: item.valor_corrida,
+                                coords: { lat: item.lat_destino, lng: item.lng_destino }
+                            }));
+                        }
+                        
+                        const idsToClear = pendingItems.map(item => item.id);
+                        await fetch('/api/clear-pending-dispatches', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ ids: idsToClear })
+                        });
+                    }
                 }
             } catch (e) {
                 console.error("Erro ao restaurar rascunho da bag:", e);
                 bags = {}; // Reseta em caso de erro de parsing
             }
             renderColumnPreparacao();
+            salvarRascunhoBag(); // Salva a bag restaurada
         }
 
         window.inicializarAutocomplete = function(inputElement) {
@@ -1194,8 +1227,8 @@
 
             const buttonsHtml = grupo.motoboy_id ? `
                 <div style="white-space: nowrap;">
-                    <button onclick="window.forcarLiberacaoRota('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
-                    <button onclick="window.forcarLiberacaoRota('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
+                    <button onclick="window.liberacaoBruta('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
+                    <button onclick="window.liberacaoBruta('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
                 </div>` : '';
 
             return `
@@ -1209,6 +1242,21 @@
             `;
         }
         // --- MAPA E PERFIL ---
+        window.liberacaoBruta = async (rotaId) => {
+            if(!confirm('Deseja arrancar esta rota do motoboy e mandar de volta para a Preparação?')) return;
+            const r = await fetch('/api/dispatch/reverter', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ rota_id: rotaId }) 
+            });
+            if(r.ok) { 
+                showToast('Rota liberada!'); 
+                location.reload();
+            } else {
+                alert('ERRO: Não foi possível liberar a rota.');
+            }
+        };
+
         async function initMap() {
             const res = await fetch('/api/profile'); const p = await res.json();
             const pos = { lat: p.lat || -26.2163, lng: p.lng || -48.6017 };
