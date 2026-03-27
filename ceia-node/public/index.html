@@ -763,6 +763,7 @@
                         const newBagId = `bag_${Date.now()}`;
                         bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
                         salvarRascunhoBag();
+                        renderColumnPreparacao();
                     }
                     showToast('Pedido devolvido à Preparação.', 'success');
                     recarregarPainelOperacional();
@@ -786,6 +787,7 @@
                         const newBagId = `bag_${Date.now()}`;
                         bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
                         salvarRascunhoBag();
+                        renderColumnPreparacao();
                     }
                     showToast('Rota completa devolvida à Preparação.', 'success');
                     recarregarPainelOperacional();
@@ -809,6 +811,7 @@
                         const newBagId = `bag_${Date.now()}`;
                         bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
                         salvarRascunhoBag();
+                        renderColumnPreparacao();
                     }
                     showToast('⚠️ Rota na Preparação. Selecione o novo motoboy.', 'success');
                     recarregarPainelOperacional();
@@ -1117,10 +1120,39 @@
             const driverSelects = document.querySelectorAll('select[id^="driver-select-"]');
             driverSelects.forEach(select => {
                 const currentSelection = select.value;
-                const optionsHtml = availableDrivers.length > 0 
-                    ? availableDrivers.map(d => `<option value="${d.id}" ${d.id == currentSelection ? 'selected' : ''}>${d.nome} (a ${d.distance.toFixed(1)} km)</option>`).join('') 
-                    : '<option disabled>Nenhum motoboy disponível</option>';
-                select.innerHTML = optionsHtml;
+                const existingOptions = new Map();
+                for (const option of select.options) {
+                    if (option.value) existingOptions.set(option.value, option.text);
+                }
+
+                const newOptions = new Map();
+                if (availableDrivers.length > 0) {
+                    availableDrivers.forEach(d => {
+                        newOptions.set(String(d.id), `${d.nome} (a ${d.distance.toFixed(1)} km)`);
+                    });
+                }
+
+                for (const value of existingOptions.keys()) {
+                    if (!newOptions.has(value)) {
+                        const optionToRemove = Array.from(select.options).find(opt => opt.value === value);
+                        if (optionToRemove) select.remove(optionToRemove.index);
+                    }
+                }
+
+                for (const [value, text] of newOptions.entries()) {
+                    const existingOption = Array.from(select.options).find(opt => opt.value === value);
+                    if (existingOption) {
+                        if (existingOption.text !== text) existingOption.text = text;
+                    } else {
+                        select.add(new Option(text, value));
+                    }
+                }
+
+                if (select.options.length === 0 || (select.options.length === 1 && select.options[0].disabled)) {
+                     select.innerHTML = '<option disabled>Nenhum motoboy disponível</option>';
+                } else if (newOptions.has(currentSelection)) {
+                    select.value = currentSelection;
+                }
             });
         }
         
