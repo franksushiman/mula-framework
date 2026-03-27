@@ -682,44 +682,52 @@ serve({
             return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/mula/force-release') {
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/reverter') {
             try {
-                const { id, rota_id } = await req.json();
+                const body = await req.json();
+                console.log("🚑 TENTANDO REVERTER ROTA/PEDIDO:", body);
+                const { id, rota_id } = body;
+                
+                let motoboy_id: number | null = null;
+                let notificationMessage = '';
+                let result;
 
-                if (id) { // Liberação de pedido único
+                if (id) {
                     const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
-                    if (!delivery) return new Response(JSON.stringify({ error: 'Pedido não encontrado.' }), { status: 404 });
-                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(id);
-
-                    if (delivery.motoboy_id) {
-                        const driver = getDriverById(delivery.motoboy_id) as any;
-                        if (driver) {
-                            const remaining = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(delivery.motoboy_id) as any;
-                            if (remaining.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
-                        }
-                    }
-                } else if (rota_id) { // Liberação de rota inteira
+                    if (!delivery) return new Response(JSON.stringify({ success: false, error: 'Pedido não encontrado.' }), { status: 404 });
+                    
+                    motoboy_id = delivery.motoboy_id;
+                    result = db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(id);
+                    notificationMessage = `❌ O pedido para "${delivery.endereco}" foi retirado da sua rota pelo restaurante.`;
+                } else if (rota_id) {
                     const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
-                    if (deliveries.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
+                    if (deliveries.length === 0) return new Response(JSON.stringify({ success: false, error: 'Rota não encontrada.' }), { status: 404 });
                     
-                    const motoboy_id = deliveries[0].motoboy_id;
-                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
-                    
-                    if (motoboy_id) {
-                        const driver = getDriverById(motoboy_id) as any;
-                        if (driver) {
-                            const remaining = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(motoboy_id) as any;
-                            if (remaining.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
-                        }
-                    }
+                    motoboy_id = deliveries[0].motoboy_id;
+                    result = db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
+                    notificationMessage = "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.";
                 } else {
-                    return new Response(JSON.stringify({ error: 'ID do pedido ou da rota é obrigatório.' }), { status: 400 });
+                    return new Response(JSON.stringify({ success: false, error: 'ID do pedido ou da rota é obrigatório.' }), { status: 400 });
                 }
 
+                if (motoboy_id) {
+                    const driver = getDriverById(motoboy_id) as any;
+                    if (driver) {
+                        const profile = getProfile() as any;
+                        if (profile.telegram_bot_token && driver.chat_id) {
+                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), notificationMessage);
+                        }
+                        const remaining = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(motoboy_id) as any;
+                        if (remaining.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
+                    }
+                }
+                
                 return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+
             } catch (e) {
-                console.error("Erro em /api/mula/force-release:", e);
-                return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
+                const errorMessage = e instanceof Error ? e.message : String(e);
+                console.error("Erro em /api/dispatch/reverter:", errorMessage);
+                return new Response(JSON.stringify({ success: false, error: errorMessage }), { status: 500 });
             }
         }
 
