@@ -751,77 +751,31 @@
             }
         }
 
-        window.removerPedidoUnico = async (id) => {
-            const confirmed = await customConfirm('Retirar Pedido', 'Tem certeza que deseja retirar este pedido do motoboy? Ele voltará para a preparação.');
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch('/api/dispatch/unassign-single', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id}) });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.undoneBag) {
-                        const newBagId = `bag_${Date.now()}`;
-                        bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
-                        salvarRascunhoBag();
-                        renderColumnPreparacao();
-                    }
-                    showToast('Pedido devolvido à Preparação.', 'success');
-                    recarregarPainelOperacional();
-                } else {
-                    showToast('Falha ao devolver pedido.', 'error');
-                }
-            } catch (e) {
-                showToast('Erro de conexão.', 'error');
+        window.forcarLiberacaoPedido = async (id) => {
+            if(!confirm('Deseja arrancar este pedido do motoboy e mandar de volta pra mesa?')) return;
+            const r = await fetch('/api/emergency-release', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ id }) 
+            });
+            if(r.ok) { 
+                showToast('Pedido liberado!'); 
+                location.reload(); // Força o refresh total para garantir a volta dos dados
             }
-        }
+         };
 
-        window.retirarRotaInteira = async (rota_id) => {
-            const confirmed = await customConfirm('Retirar Rota', 'Tem certeza que deseja retirar esta rota completa? Os pedidos voltarão para preparação.');
-            if (!confirmed) return;
-
-            try {
-                const res = await fetch('/api/dispatch/unassign-route', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({rota_id}) });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.undoneBag) {
-                        const newBagId = `bag_${Date.now()}`;
-                        bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
-                        salvarRascunhoBag();
-                        renderColumnPreparacao();
-                    }
-                    showToast('Rota completa devolvida à Preparação.', 'success');
-                    recarregarPainelOperacional();
-                } else {
-                    showToast('Falha ao devolver rota.', 'error');
-                }
-            } catch (e) {
-                showToast('Erro de conexão.', 'error');
+         window.forcarLiberacaoRota = async (rota_id) => {
+            if(!confirm('Deseja arrancar a ROTA INTEIRA do motoboy e mandar de volta pra mesa?')) return;
+            const r = await fetch('/api/dispatch/reverter', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ rota_id }) 
+            });
+            if(r.ok) { 
+                showToast('Rota liberada!'); 
+                location.reload(); // Força o refresh total para garantir a volta dos dados
             }
-        }
-
-        window.trocarMotoboy = async (rota_id) => {
-            const confirmed = await customConfirm('Trocar Motoboy', 'Isso irá devolver a rota para a Preparação. Você poderá então despachá-la para um novo motoboy. Deseja continuar?');
-            if (!confirmed) return;
-            
-            try {
-                const res = await fetch('/api/dispatch/unassign-route', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({rota_id}) });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.undoneBag) {
-                        const newBagId = `bag_${Date.now()}`;
-                        bags[newBagId] = data.undoneBag.map(item => ({...item, id: Date.now() + Math.random()}));
-                        salvarRascunhoBag();
-                        renderColumnPreparacao();
-                    }
-                    showToast('⚠️ Rota na Preparação. Selecione o novo motoboy.', 'success');
-                    recarregarPainelOperacional();
-                } else {
-                    showToast('Falha ao devolver rota.', 'error');
-                }
-            } catch (e) {
-                showToast('Erro de conexão.', 'error');
-            }
-        }
+         };
 
         let lastAlertTimestamp = 0;
         const alertSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3b624c965.mp3');
@@ -1227,7 +1181,7 @@
                 <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px;">
                     <p style="font-weight: 500; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: start;">
                         <span style="padding-right:10px;">${d.endereco}</span>
-                        <button onclick="window.removerPedidoUnico(${d.id})" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
+                        <button onclick="window.forcarLiberacaoPedido(${d.id})" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
                     </p>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         ${renderStatusBadge(d)}
@@ -1240,8 +1194,8 @@
 
             const buttonsHtml = grupo.motoboy_id ? `
                 <div style="white-space: nowrap;">
-                    <button onclick="window.trocarMotoboy('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
-                    <button onclick="window.retirarRotaInteira('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
+                    <button onclick="window.forcarLiberacaoRota('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
+                    <button onclick="window.forcarLiberacaoRota('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
                 </div>` : '';
 
             return `

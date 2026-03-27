@@ -674,7 +674,7 @@ serve({
             return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/dispatch/unassign-single') {
+        if (req.method === 'POST' && url.pathname === '/api/emergency-release') {
             try {
                 const { id } = await req.json();
                 const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
@@ -693,15 +693,14 @@ serve({
                         if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
                     }
                 }
-                const undoneBag = [{ address: delivery.endereco, phone: delivery.cliente_telefone, valor: delivery.valor_corrida, coords: { lat: delivery.lat_destino, lng: delivery.lng_destino } }];
-                return new Response(JSON.stringify({ success: true, undoneBag: undoneBag }), { headers: { "Content-Type": "application/json" } });
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
             } catch (e) {
-                console.error("Erro em /api/dispatch/unassign-single:", e);
+                console.error("Erro em /api/emergency-release:", e);
                 return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
             }
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/dispatch/unassign-route') {
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/reverter') {
             try {
                 const { rota_id } = await req.json();
                 const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
@@ -721,10 +720,9 @@ serve({
                         if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
                     }
                 }
-                const undoneBag = deliveries.map(d => ({ address: d.endereco, phone: d.cliente_telefone, valor: d.valor_corrida, coords: { lat: d.lat_destino, lng: d.lng_destino } }));
-                return new Response(JSON.stringify({ success: true, undoneBag: undoneBag }), { headers: { "Content-Type": "application/json" } });
+                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
             } catch (e) {
-                console.error("Erro em /api/dispatch/unassign-route:", e);
+                console.error("Erro em /api/dispatch/reverter:", e);
                 return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
             }
         }
