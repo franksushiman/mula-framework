@@ -764,17 +764,23 @@
             }
          };
 
-         window.forcarLiberacaoRota = async (rota_id) => {
-            if(!confirm('Deseja arrancar a ROTA INTEIRA do motoboy e mandar de volta pra mesa?')) return;
-            const r = await fetch('/api/dispatch/reverter', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ rota_id }) 
-            });
-            if(r.ok) { 
-                showToast('Rota liberada!'); 
-                location.reload(); // Força o refresh total para garantir a volta dos dados
-            }
+         window.liberacaoBruta = async (rotaId) => {
+             if(!confirm('Deseja arrancar esta rota do motoboy e mandar de volta para a Preparação?')) return;
+             try {
+                 const r = await fetch('/api/mula/force-release', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ rota_id: rotaId })
+                 });
+                 if (r.ok) {
+                     showToast('Rota liberada!');
+                     setTimeout(() => location.reload(), 800);
+                 } else {
+                     alert('ERRO: Não foi possível liberar a rota.');
+                 }
+             } catch(e) {
+                 alert('ERRO DE REDE: Não foi possível liberar a rota.');
+             }
          };
 
         let lastAlertTimestamp = 0;
