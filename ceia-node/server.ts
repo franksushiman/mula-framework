@@ -674,95 +674,57 @@ serve({
             return new Response(JSON.stringify(Object.values(groupedByRota)), { headers: { "Content-Type": "application/json" } });
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/dispatch/reassign') {
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/unassign-single') {
             try {
-                const { rota_id, novo_motoboy_id } = await req.json();
-                const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
-                if (deliveries.length === 0) {
-                    return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
-                }
+                const { id } = await req.json();
+                const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(id) as any;
+                if (!delivery) return new Response(JSON.stringify({ error: 'Pedido não encontrado.' }), { status: 404 });
 
-                const antigo_motoboy_id = deliveries[0].motoboy_id;
-                
-                db.query("UPDATE active_dispatches SET motoboy_id = ? WHERE rota_id = ?").run(novo_motoboy_id, rota_id);
+                db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(id);
 
-                const profile = getProfile() as any;
-                const token = profile?.telegram_bot_token;
-
-                if (antigo_motoboy_id && token) {
-                    const antigoDriver = getDriverById(antigo_motoboy_id) as any;
-                    if (antigoDriver && antigoDriver.chat_id) {
-                        await sendMessage(token, parseInt(antigoDriver.chat_id), "❌ Uma de suas rotas foi reatribuída pela base devido a um imprevisto.");
-                    }
-                    const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(antigo_motoboy_id) as any;
-                    if (remainingDeliveries.count === 0 && antigoDriver) {
-                        updateDriverStatus(antigoDriver.telegram_id, 'ONLINE');
+                if (delivery.motoboy_id) {
+                    const driver = getDriverById(delivery.motoboy_id) as any;
+                    if (driver) {
+                        const profile = getProfile() as any;
+                        if (profile.telegram_bot_token && driver.chat_id) {
+                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), `❌ O pedido para "${delivery.endereco}" foi retirado da sua rota pelo restaurante.`);
+                        }
+                        const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(delivery.motoboy_id) as any;
+                        if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
                     }
                 }
-
-                const novoDriver = getDriverById(novo_motoboy_id) as any;
-                if (novoDriver && novoDriver.chat_id && token) {
-                    updateDriverStatus(novoDriver.telegram_id, 'OCUPADO');
-                    await sendMessage(token, parseInt(novoDriver.chat_id), "✅ Uma nova rota foi atribuída a você!");
-                    await sendRouteDashboard(token, parseInt(novo_motoboy_id), parseInt(novoDriver.chat_id));
-                }
-
-                return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+                const undoneBag = [{ address: delivery.endereco, phone: delivery.cliente_telefone, valor: delivery.valor_corrida, coords: { lat: delivery.lat_destino, lng: delivery.lng_destino } }];
+                return new Response(JSON.stringify({ success: true, undoneBag: undoneBag }), { headers: { "Content-Type": "application/json" } });
             } catch (e) {
-                console.error("Erro em /api/dispatch/reassign:", e);
+                console.error("Erro em /api/dispatch/unassign-single:", e);
                 return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
             }
         }
 
-        if (req.method === 'POST' && url.pathname === '/api/dispatch/undo') {
+        if (req.method === 'POST' && url.pathname === '/api/dispatch/unassign-route') {
             try {
-                const { rota_id, dispatch_id } = await req.json();
+                const { rota_id } = await req.json();
+                const deliveries = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
+                if (deliveries.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
 
-                if (!rota_id && !dispatch_id) {
-                    return new Response(JSON.stringify({ error: 'ID da Rota ou do Pedido é obrigatório.' }), { status: 400 });
-                }
+                db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
 
-                let deliveriesToUndo: any[];
-                let motoboy_id: number | null = null;
-                const profile = getProfile() as any;
-                let notificationMessage = '';
-
-                if (dispatch_id) { // Desfaz um único pedido
-                    const delivery = db.query("SELECT * FROM active_dispatches WHERE id = ?").get(dispatch_id) as any;
-                    if (!delivery) return new Response(JSON.stringify({ error: 'Pedido não encontrado.' }), { status: 404 });
-                    
-                    deliveriesToUndo = [delivery];
-                    motoboy_id = delivery.motoboy_id;
-                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE', rota_id = NULL WHERE id = ?").run(dispatch_id);
-                    notificationMessage = `❌ O pedido para "${delivery.endereco}" foi retirado da sua rota pelo restaurante.`;
-
-                } else { // Desfaz a rota inteira
-                    deliveriesToUndo = db.query("SELECT * FROM active_dispatches WHERE rota_id = ?").all(rota_id) as any[];
-                    if (deliveriesToUndo.length === 0) return new Response(JSON.stringify({ error: 'Rota não encontrada.' }), { status: 404 });
-
-                    motoboy_id = deliveriesToUndo[0].motoboy_id;
-                    db.query("UPDATE active_dispatches SET motoboy_id = NULL, status = 'PENDENTE' WHERE rota_id = ?").run(rota_id);
-                    notificationMessage = "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.";
-                }
-
+                const motoboy_id = deliveries[0].motoboy_id;
                 if (motoboy_id) {
                     const driver = getDriverById(motoboy_id) as any;
                     if (driver) {
+                        const profile = getProfile() as any;
                         if (profile.telegram_bot_token && driver.chat_id) {
-                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), notificationMessage);
+                            await sendMessage(profile.telegram_bot_token, parseInt(driver.chat_id), "❌ Uma de suas rotas foi cancelada/retirada pelo restaurante.");
                         }
                         const remainingDeliveries = db.query("SELECT COUNT(*) as count FROM active_dispatches WHERE motoboy_id = ? AND status IN ('AGUARDANDO_COLETA', 'EM_ROTA')").get(motoboy_id) as any;
-                        if (remainingDeliveries.count === 0) {
-                            updateDriverStatus(driver.telegram_id, 'ONLINE');
-                        }
+                        if (remainingDeliveries.count === 0) updateDriverStatus(driver.telegram_id, 'ONLINE');
                     }
                 }
-
-                const undoneBag = deliveriesToUndo.map(d => ({ address: d.endereco, phone: d.cliente_telefone, valor: d.valor_corrida, coords: { lat: d.lat_destino, lng: d.lng_destino } }));
+                const undoneBag = deliveries.map(d => ({ address: d.endereco, phone: d.cliente_telefone, valor: d.valor_corrida, coords: { lat: d.lat_destino, lng: d.lng_destino } }));
                 return new Response(JSON.stringify({ success: true, undoneBag: undoneBag }), { headers: { "Content-Type": "application/json" } });
-
             } catch (e) {
-                console.error("Erro em /api/dispatch/undo:", e);
+                console.error("Erro em /api/dispatch/unassign-route:", e);
                 return new Response(JSON.stringify({ error: "Erro interno no servidor." }), { status: 500 });
             }
         }
