@@ -294,7 +294,11 @@
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script>
-        let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer, timerAutoSave;
+        window.alert = function() { console.log('ALERT BANIDO:', arguments); };
+        window.confirm = function() { console.log('CONFIRM BANIDO:', arguments); return true; };
+        window.prompt = function() { console.log('PROMPT BANIDO:', arguments); return null; };
+
+        let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer, timerAutoSave, kanbanLock = false;
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -751,37 +755,41 @@
             }
         }
 
-        window.forcarLiberacaoPedido = async (id) => {
-            if(!confirm('Deseja arrancar este pedido do motoboy e mandar de volta pra mesa?')) return;
-            const r = await fetch('/api/emergency-release', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ id }) 
-            });
-            if(r.ok) { 
-                showToast('Pedido liberado!'); 
-                location.reload(); // Força o refresh total para garantir a volta dos dados
+        window.retirarPedido = async (id) => {
+            if(!confirm('Deseja arrancar este pedido do motoboy e mandar de volta para a Preparação?')) return;
+            try {
+                if(window.showToast) window.showToast('Processando retirada...', 'info'); 
+                const response = await fetch('/api/mula/force-release', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                if (response.ok) {
+                    if(window.showToast) window.showToast('✅ Devolvido para a mesa.', 'success');
+                    setTimeout(() => { window.location.reload(); }, 800); 
+                }
+            } catch (error) {
+                console.error("Erro na retirada:", error);
             }
-         };
+        };
 
-         window.liberacaoBruta = async (rotaId) => {
-             if(!confirm('Deseja arrancar esta rota do motoboy e mandar de volta para a Preparação?')) return;
-             try {
-                 const r = await fetch('/api/mula/force-release', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ rota_id: rotaId })
-                 });
-                 if (r.ok) {
-                     showToast('Rota liberada!');
-                     setTimeout(() => location.reload(), 800);
-                 } else {
-                     alert('ERRO: Não foi possível liberar a rota.');
-                 }
-             } catch(e) {
-                 alert('ERRO DE REDE: Não foi possível liberar a rota.');
-             }
-         };
+        window.retirarRota = async (rotaId) => {
+            if(!confirm('Deseja arrancar esta ROTA do motoboy e mandar de volta para a Preparação?')) return;
+            try {
+                if(window.showToast) window.showToast('Processando retirada...', 'info'); 
+                const response = await fetch('/api/mula/force-release', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rota_id: rotaId })
+                });
+                if (response.ok) {
+                    if(window.showToast) window.showToast('✅ Rota devolvida para a mesa.', 'success');
+                    setTimeout(() => { window.location.reload(); }, 800); 
+                }
+            } catch (error) {
+                console.error("Erro na retirada:", error);
+            }
+        };
 
         let lastAlertTimestamp = 0;
         const alertSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_c3b624c965.mp3');
@@ -1220,7 +1228,7 @@
                 <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px;">
                     <p style="font-weight: 500; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: start;">
                         <span style="padding-right:10px;">${d.endereco}</span>
-                        <button onclick="window.forcarLiberacaoPedido(${d.id})" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
+                        <button onclick="window.retirarPedido(${d.id})" title="Retirar Pedido" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; font-weight: 600; padding: 0 5px;">✖</button>
                     </p>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         ${renderStatusBadge(d)}
@@ -1233,8 +1241,8 @@
 
             const buttonsHtml = grupo.motoboy_id ? `
                 <div style="white-space: nowrap;">
-                    <button onclick="window.liberacaoBruta('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
-                    <button onclick="window.liberacaoBruta('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
+                    <button onclick="window.retirarRota('${grupo.rota_id}')" style="background:none; border:none; color: #3b82f6; font-size: 0.8rem; cursor: pointer; font-weight: 600; margin-right: 10px;">🔁 Trocar</button>
+                    <button onclick="window.retirarRota('${grupo.rota_id}')" style="background:none; border:none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-weight: 600;">✖ Retirar</button>
                 </div>` : '';
 
             return `
@@ -1470,16 +1478,22 @@
             }
         };
 
-        setInterval(() => {
+        setInterval(async () => {
             const frotaTab = document.getElementById('tab-frota');
             const despachoTab = document.getElementById('tab-operacional');
             if (frotaTab && frotaTab.classList.contains('active')) {
                 carregarFrota();
             }
             if (despachoTab && despachoTab.classList.contains('active')) {
-                recarregarPainelOperacional();
+                if (kanbanLock) return; // Trava para evitar sobreposição
+                kanbanLock = true;
+                try {
+                    await recarregarPainelOperacional();
+                } finally {
+                    kanbanLock = false;
+                }
             }
-        }, 10000);
+        }, 5000);
     </script>
 </body>
 </html>
