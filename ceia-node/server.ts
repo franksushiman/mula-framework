@@ -877,7 +877,10 @@ serve({
             updateDriverStatus(motoboy.telegram_id, 'OCUPADO');
 
             for (const item of bag) {
-                const valor = calcularTaxa(item.coords.lat, item.coords.lng);
+                const valorInformado = parseFloat(item.valor);
+                const valor = !isNaN(valorInformado) && valorInformado > 0
+                    ? valorInformado
+                    : calcularTaxa(item.coords.lat, item.coords.lng);
                 const pin = Math.floor(1000 + Math.random() * 9000).toString();
                 
                 db.query(`
