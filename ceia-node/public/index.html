@@ -254,8 +254,7 @@
             <button class="modal-close-btn" onclick="document.getElementById('modal-historico').style.display = 'none'">&times;</button>
             <h3 style="margin-top:0;" id="historico-titulo">Histórico de Entregas</h3>
             <div id="historico-conteudo" style="flex: 1; overflow-y: auto; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 0; margin: 15px 0;">
-                <!-- O conteúdo será injetado aqui -->
-            </div>
+                </div>
         </div>
     </div>
 
@@ -391,7 +390,7 @@
                                ${m.chave_pix || 'Pix Não Cadastrado'}
                            </span>
                        </div>
-                   </div>
+                    </div>
                     <div class="zone-actions">
                         <button class="btn-action btn-edit" onclick="abrirModalEdicao(${m.id}, \`${m.nome}\`, \`${m.cpf || ''}\`, \`${m.tipo_vinculo}\`, \`${m.chave_pix}\`)">✏️ Editar</button>
                         <button class="btn-action" onclick="abrirHistorico(${m.id}, '${m.nome}')" style="background-color: #f1f5f9; color: #475569;">📜 Histórico</button>
@@ -1149,9 +1148,12 @@
                         <div style="margin-bottom: 15px;">${pedidosHtml}</div>
                         <button class="btn" onclick="addPedidoToBag('${bagId}')" style="background: #e2e8f0; color: #334155; width: auto; font-size: 0.8rem; padding: 8px 15px; margin-bottom: 15px;">+ Pedido</button>
                         <div id="route-alert-${bagId}" style="display: none; background: #fecaca; color: #991b1b; padding: 10px; border-radius: 6px; font-weight: 500; margin-bottom: 15px; font-size: 0.8rem;"></div>
-                        <div style="border-top: 1px solid var(--border); padding-top: 15px; display:flex; gap: 10px;">
-                            <select id="driver-select-${bagId}" class="form-control" style="flex:1;">${driversOptions}</select>
-                            <button class="btn" onclick="despacharRota('${bagId}')" style="flex: 0 0 120px;">Despachar</button>
+                      <div style="border-top: 1px solid var(--border); padding-top: 15px; display:flex; flex-direction: column; gap: 10px;">
+                            <div style="display:flex; gap: 10px;">
+                                <select id="driver-select-${bagId}" class="form-control" style="flex:1;">${driversOptions}</select>
+                                <button class="btn" onclick="despacharRota('${bagId}')" style="flex: 0 0 120px;">Despachar</button>
+                            </div>
+                            <button class="btn" onclick="window.acionarParceiroDaBag('${bagId}')" style="background: #eab308; color: #000; border: none; font-weight: bold; width: 100%; padding: 10px; border-radius: 6px;">🤝 Frota Compartilhada (taxa de deslocamento)</button>
                         </div>
                     </div>
                 `;
@@ -1206,6 +1208,42 @@
                 showToast("Selecione um motoboy disponível.", 'error');
                 return;
             }
+            
+            const bag = bags[bagId];
+
+            // AUTO-CURA: Se perdeu a coordenada na memória, puxa a força do HTML
+            bag.forEach(item => {
+                if (!item.coords) {
+                    const inp = document.querySelector(`input[data-bag-id="${bagId}"][data-item-id="${item.id}"][data-field="address"]`);
+                    if (inp && inp.dataset.lat && inp.dataset.lng) {
+                        item.coords = { lat: parseFloat(inp.dataset.lat), lng: parseFloat(inp.dataset.lng) };
+                    }
+                }
+            });
+
+            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
+            if (validItems.length === 0 || validItems.length !== bag.length) {
+                showToast('Verifique se todos os pedidos na bag possuem endereço, telefone, taxa e coordenadas válidas.', 'error');
+                return;
+            }
+
+            const res = await fetch('/api/dispatch', { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify({ motoboy_id: motoboyId, bag: validItems }) 
+            });
+
+            if (res.ok) {
+                showToast('Rota despachada com sucesso!');
+                delete bags[bagId];
+                salvarRascunhoBag();
+                renderColumnPreparacao();
+                recarregarPainelOperacional();
+            } else {
+                const err = await res.json();
+                showToast(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`, 'error');
+            }
+        }
             
             const bag = bags[bagId];
             const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
@@ -1286,9 +1324,10 @@
                         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">${motoboyNameHtml} ${progresso}</span>
                     </h4>
                     ${deliveriesHtml}
-                    <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
-                        <button onclick="window.acaoRetirarPedido(this, '${grupo.rota_id}', true)" style="background: #dc3545; color: white; padding: 8px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem;">✖ DEVOLVER ROTA PRA MESA</button>
-                    </div>
+                  <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 15px;">
+    <button onclick="window.acionarEntregaParceira('${grupo.rota_id}')" style="background: #eab308; color: #000; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem; margin-bottom: 8px;">🤝 Frota Compartilhada</button>
+    <button onclick="window.acaoRetirarPedido(this, '${grupo.rota_id}', true)" style="background: #dc3545; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.9rem;">✖ DEVOLVER ROTA PRA MESA</button>
+</div>
                 </div>
             `;
         }
@@ -1491,7 +1530,7 @@
             const colunaPreparacao = document.getElementById('coluna-preparacao');
             colunaPreparacao.addEventListener('input', (event) => {
                 const target = event.target;
-                if (target.matches('.form-control[data-item-id]')) {
+  if (target.matches('.form-control[data-item-id]')) {
                     const bagId = target.dataset.bagId;
                     const itemId = parseInt(target.dataset.itemId);
                     const field = target.dataset.field;
@@ -1543,6 +1582,172 @@
                 }
             }
         }, 5000);
+    </script>
+
+    <script>
+        // ==========================================
+        // 1. O VIGIA DO MAPA (COLUNA DE DESPACHO)
+        // ==========================================
+        document.addEventListener('focusin', function(e) {
+            if (e.target && e.target.classList.contains('bag-address-input') && e.target.dataset.radarLigado !== 'true') {
+                if (!window.google || !google.maps || !google.maps.places) return;
+
+                const autocomplete = new google.maps.places.Autocomplete(e.target, {
+                    componentRestrictions: { country: 'br' }
+                });
+
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    if (!place.geometry) return;
+
+                    e.target.dataset.lat = place.geometry.location.lat();
+                    e.target.dataset.lng = place.geometry.location.lng();
+                    e.target.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    const containerPedido = e.target.closest('.pedido-card');
+                    if (containerPedido) {
+                        const inputTaxa = containerPedido.querySelector('input[data-field="valor"]');
+                        if (inputTaxa) {
+                            fetch('/api/calcular-taxa', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    lat: place.geometry.location.lat(), 
+                                    lng: place.geometry.location.lng() 
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                let valorFinal = data.valor !== undefined ? data.valor : data;
+                                if (valorFinal) {
+                                    inputTaxa.value = parseFloat(valorFinal).toFixed(2);
+                                    inputTaxa.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
+                            }).catch(err => console.error("Erro ao puxar taxa:", err));
+                        }
+                    }
+                });
+
+                e.target.dataset.radarLigado = 'true';
+            }
+        });
+
+        // ==========================================
+        // 2. MATEMÁTICA DA FROTA COMPARTILHADA (COLUNA 2 E 3)
+        // ==========================================
+        window.acionarEntregaParceira = async function(rotaId) {
+            try {
+                const res = await fetch(`/api/rota/${rotaId}`); 
+                const rota = await res.json();
+                
+                const latDestino = rota.lat_destino;
+                const lngDestino = rota.lng_destino;
+                const taxaMapa = parseFloat(rota.valor_corrida) || 0;
+
+                const R = 6371;
+                const dLat = (latDestino - qgLat) * Math.PI / 180;
+                const dLon = (lngDestino - qgLng) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(qgLat * Math.PI / 180) * Math.cos(latDestino * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const distKm = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+
+                const valorPetroleo = 1.80; 
+                const taxaAdicional = distKm * valorPetroleo;
+                const taxaFinalParceiro = taxaMapa + taxaAdicional;
+
+                const mensagem = `CUSTO DA FROTA COMPARTILHADA:\n\n` +
+                                 `📦 Taxa de Entrega (Mapa): R$ ${taxaMapa.toFixed(2)}\n` +
+                                 `🛵 Deslocamento do Motoboy (${distKm.toFixed(1)} km): R$ ${taxaAdicional.toFixed(2)}\n` +
+                                 `----------------------------------\n` +
+                                 `💰 CUSTO TOTAL: R$ ${taxaFinalParceiro.toFixed(2)}\n\n` +
+                                 `Confirmar disparo para a Frota Compartilhada?`;
+
+                if (confirm(mensagem)) {
+                    await fetch('/api/mula-broadcast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rota_id: rotaId, nova_taxa: taxaFinalParceiro })
+                    });
+                    alert('🚀 Disparado para a Frota Compartilhada!');
+                    recarregarPainelOperacional();
+                }
+            } catch (e) {
+                console.error("Erro ao chamar parceiro:", e);
+                alert("Erro ao calcular a rota parceira.");
+            }
+        };
+
+        // ==========================================
+        // 3. MATEMÁTICA DA FROTA COMPARTILHADA (COLUNA 1 - DIRETO DA BAG)
+        // ==========================================
+       window.acionarParceiroDaBag = async function(bagId) {
+            const bag = bags[bagId];
+            if (!bag) return;
+            const validItems = bag.filter(i => i.address && i.phone && i.valor && parseFloat(i.valor) > 0);
+            
+            if (validItems.length === 0) {
+                alert('Preencha o endereço, telefone e taxa antes de chamar a frota compartilhada.');
+                return;
+            }
+
+            const item = validItems[0];
+            const inputEndereco = document.querySelector(`input[data-bag-id="${bagId}"][data-field="address"]`);
+            
+            // AUTO-CURA: Tenta pegar a coordenada do HTML caso a memória tenha zerado
+            let latDestino = (item.coords && item.coords.lat) ? parseFloat(item.coords.lat) : parseFloat(inputEndereco.dataset.lat);
+            let lngDestino = (item.coords && item.coords.lng) ? parseFloat(item.coords.lng) : parseFloat(inputEndereco.dataset.lng);
+            const taxaMapa = parseFloat(item.valor) || 0;
+
+            if (!latDestino || !lngDestino || isNaN(latDestino)) {
+                alert('Coordenadas perdidas no rascunho. Por favor, apague o endereço, digite de novo e clique na lista do Google para destravar.');
+                return;
+            }
+
+            const R = 6371;
+            const dLat = (latDestino - qgLat) * Math.PI / 180;
+            const dLon = (lngDestino - qgLng) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(qgLat * Math.PI / 180) * Math.cos(latDestino * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const distKm = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+
+            const valorPetroleo = 1.80; 
+            const taxaAdicional = distKm * valorPetroleo;
+            const taxaFinalParceiro = taxaMapa + taxaAdicional;
+
+            const mensagem = `CUSTO DA FROTA COMPARTILHADA:\n\n` +
+                             `📦 Taxa de Entrega (Mapa): R$ ${taxaMapa.toFixed(2)}\n` +
+                             `🛵 Deslocamento do Motoboy (${distKm.toFixed(1)} km): R$ ${taxaAdicional.toFixed(2)}\n` +
+                             `----------------------------------\n` +
+                             `💰 CUSTO TOTAL: R$ ${taxaFinalParceiro.toFixed(2)}\n\n` +
+                             `Confirmar disparo direto para a Frota Compartilhada?`;
+
+            if (confirm(mensagem)) {
+                validItems[0].valor = taxaFinalParceiro.toFixed(2);
+                validItems[0].coords = { lat: latDestino, lng: lngDestino }; 
+
+                try {
+                    const res = await fetch('/api/mula-broadcast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ bag: validItems })
+                    });
+
+                    if (res.ok) {
+                        alert('🚀 Disparado direto para a Frota Compartilhada!');
+                        delete bags[bagId]; 
+                        salvarRascunhoBag();
+                        renderColumnPreparacao();
+                        recarregarPainelOperacional();
+                    } else {
+                        const err = await res.json();
+                        alert(`Erro ao despachar frota compartilhada: ${err.error}`);
+                    }
+                } catch (e) {
+                    console.error("Erro ao chamar parceiro:", e);
+                    alert("Erro de conexão com o servidor.");
+                }
+            }
+        };
     </script>
 </body>
 </html>
