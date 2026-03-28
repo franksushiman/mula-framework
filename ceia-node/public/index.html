@@ -292,10 +292,6 @@
 
     <div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
-    <script>
-        window.alert = function() { console.log('ALERT BANIDO:', arguments); };
-        window.confirm = function() { console.log('CONFIRM BANIDO:', arguments); return true; };
-        window.prompt = function() { console.log('PROMPT BANIDO:', arguments); return null; };
 
         let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer, timerAutoSave, kanbanLock = false;
         let qgLat = null, qgLng = null;
@@ -1210,10 +1206,14 @@
             }
             
             const bag = bags[bagId];
+            if (!bag) {
+                showToast('Bag não encontrada.', 'error');
+                return;
+            }
 
             // AUTO-CURA: Se perdeu a coordenada na memória, puxa a força do HTML
             bag.forEach(item => {
-                if (!item.coords) {
+                if (!item.coords || !item.coords.lat || !item.coords.lng) {
                     const inp = document.querySelector(`input[data-bag-id="${bagId}"][data-item-id="${item.id}"][data-field="address"]`);
                     if (inp && inp.dataset.lat && inp.dataset.lng) {
                         item.coords = { lat: parseFloat(inp.dataset.lat), lng: parseFloat(inp.dataset.lng) };
@@ -1221,31 +1221,6 @@
                 }
             });
 
-            const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
-            if (validItems.length === 0 || validItems.length !== bag.length) {
-                showToast('Verifique se todos os pedidos na bag possuem endereço, telefone, taxa e coordenadas válidas.', 'error');
-                return;
-            }
-
-            const res = await fetch('/api/dispatch', { 
-                method: 'POST', 
-                headers: {'Content-Type':'application/json'}, 
-                body: JSON.stringify({ motoboy_id: motoboyId, bag: validItems }) 
-            });
-
-            if (res.ok) {
-                showToast('Rota despachada com sucesso!');
-                delete bags[bagId];
-                salvarRascunhoBag();
-                renderColumnPreparacao();
-                recarregarPainelOperacional();
-            } else {
-                const err = await res.json();
-                showToast(`Erro ao despachar: ${err.error || 'Erro desconhecido'}`, 'error');
-            }
-        }
-            
-            const bag = bags[bagId];
             const validItems = bag.filter(i => i.address && i.phone && i.coords && !i.coords.error && i.valor && parseFloat(i.valor) > 0);
             if (validItems.length === 0 || validItems.length !== bag.length) {
                 showToast('Verifique se todos os pedidos na bag possuem endereço, telefone, taxa e coordenadas válidas.', 'error');
@@ -1652,13 +1627,14 @@
                           Math.sin(dLon/2) * Math.sin(dLon/2);
                 const distKm = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 
-                const valorPetroleo = 1.80; 
-                const taxaAdicional = distKm * valorPetroleo;
+                const VALOR_PETROLEO = 1.80; 
+                const taxaAdicional = distKm * VALOR_PETROLEO;
                 const taxaFinalParceiro = taxaMapa + taxaAdicional;
 
                 const mensagem = `CUSTO DA FROTA COMPARTILHADA:\n\n` +
                                  `📦 Taxa de Entrega (Mapa): R$ ${taxaMapa.toFixed(2)}\n` +
                                  `🛵 Deslocamento do Motoboy (${distKm.toFixed(1)} km): R$ ${taxaAdicional.toFixed(2)}\n` +
+                                 `⛽ Adicional de Petróleo (R$ ${VALOR_PETROLEO.toFixed(2)}/km): R$ ${(distKm * VALOR_PETROLEO).toFixed(2)}\n` +
                                  `----------------------------------\n` +
                                  `💰 CUSTO TOTAL: R$ ${taxaFinalParceiro.toFixed(2)}\n\n` +
                                  `Confirmar disparo para a Frota Compartilhada?`;
@@ -1710,13 +1686,14 @@
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(qgLat * Math.PI / 180) * Math.cos(latDestino * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
             const distKm = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 
-            const valorPetroleo = 1.80; 
-            const taxaAdicional = distKm * valorPetroleo;
+            const VALOR_PETROLEO = 1.80; 
+            const taxaAdicional = distKm * VALOR_PETROLEO;
             const taxaFinalParceiro = taxaMapa + taxaAdicional;
 
             const mensagem = `CUSTO DA FROTA COMPARTILHADA:\n\n` +
                              `📦 Taxa de Entrega (Mapa): R$ ${taxaMapa.toFixed(2)}\n` +
                              `🛵 Deslocamento do Motoboy (${distKm.toFixed(1)} km): R$ ${taxaAdicional.toFixed(2)}\n` +
+                             `⛽ Adicional de Petróleo (R$ ${VALOR_PETROLEO.toFixed(2)}/km): R$ ${(distKm * VALOR_PETROLEO).toFixed(2)}\n` +
                              `----------------------------------\n` +
                              `💰 CUSTO TOTAL: R$ ${taxaFinalParceiro.toFixed(2)}\n\n` +
                              `Confirmar disparo direto para a Frota Compartilhada?`;
