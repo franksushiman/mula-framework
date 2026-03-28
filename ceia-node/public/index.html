@@ -299,6 +299,7 @@
         window.prompt = function() { console.log('PROMPT BANIDO:', arguments); return null; };
 
         let map, drawingManager, formaTemp = null, formaTempTipo = null, zonaEdicao = {}, formasMapa = {}, deleteTimer, timerAutoSave, kanbanLock = false;
+        let qgLat = null, qgLng = null;
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -404,11 +405,9 @@
         }
 
         window.gerarPayloadPix = function(chave, nome, valor) {
-            // Se a chave já for um Copia e Cola inteiro, não recalcula
             if (chave.startsWith('000201')) return chave;
             
             let chaveLimpa = chave.trim();
-            // Limpa o nome para o padrão EMV (sem acentos, max 25 chars)
             let nomeLimpo = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, '').substring(0, 25).trim().toUpperCase() || 'MOTOBOY';
             let cidade = 'BRASIL';
 
@@ -428,7 +427,6 @@
             
             const payloadSemCrc = `000201010212${merchantAccountInfo}520400005303986${transactionAmount}5802BR${merchantName}${merchantCity}${additionalDataField}6304`;
             
-            // Calcula o CRC16
             let crc = 0xFFFF;
             for (let c = 0; c < payloadSemCrc.length; c++) {
                 crc ^= payloadSemCrc.charCodeAt(c) << 8;
@@ -446,7 +444,6 @@
             const valorFloat = parseFloat(saldo || 0);
             const valorFormatado = valorFloat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             
-            // Atualiza o elemento de valor
             const valorElement = document.getElementById('pix-valor-texto'); 
             if (valorElement) {
                 valorElement.innerHTML = `Corridas: R$ ${valorFormatado}`;
@@ -454,23 +451,18 @@
             }
 
             const payload = window.gerarPayloadPix(chavePix || '', nome, valorFloat);
-
-            // Insere o payload gerado no input
             document.getElementById('pix-copia-cola').value = payload;
 
             const qrImg = document.getElementById('qr-pix-img');
             if (qrImg) {
                 if (chavePix && chavePix !== 'Nenhuma chave cadastrada' && chavePix.trim() !== '') {
-                    // Gera o QR code real dinamicamente
                     qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
                     qrImg.style.display = 'block';
                 } else {
-                    // Esconde se não tiver chave
                     qrImg.style.display = 'none';
                 }
             }
 
-            // Abre o modal
             document.getElementById('pixModal').style.display = 'flex';
         };
 
@@ -536,7 +528,7 @@
                     btn.style.background = '#10b981';
                     setTimeout(() => {
                         btn.innerText = 'Despachar Teste';
-                        btn.style.background = ''; // Resets to CSS default
+                        btn.style.background = '';
                     }, 2000);
                 } else {
                     throw new Error('Falha no envio');
@@ -562,12 +554,10 @@
         window.confirmarApiNaoOficial = function() {
             fecharAlertaBanimento();
             document.getElementById('modal-qr-whatsapp').style.display = 'flex';
-            document.getElementById('qr-code-img').src = ''; // Limpa a imagem antiga
+            document.getElementById('qr-code-img').src = '';
             
-            // Inicia o motor no backend
             fetch('/api/whatsapp/start');
             
-            // Fica perguntando pro backend a cada 2 segundos se o QR code já chegou
             window.qrInterval = setInterval(async () => {
                 try {
                     const res = await fetch('/api/whatsapp/status');
@@ -578,9 +568,8 @@
                     if (data.status === 'CONNECTED') {
                         clearInterval(window.qrInterval);
                         const modalBox = document.querySelector('#modal-qr-whatsapp > div');
-                        const htmlOriginal = modalBox.innerHTML; // Guarda o visual do QR code
+                        const htmlOriginal = modalBox.innerHTML;
                         
-                        // Injeta a mensagem de sucesso direto no modal
                         modalBox.innerHTML = `
                             <div style="text-align: center; padding: 30px 10px;">
                                 <div style="font-size: 60px; margin-bottom: 15px;">✅</div>
@@ -589,7 +578,6 @@
                             </div>
                         `;
                         
-                        // Fecha o modal suavemente após 2.5 segundos e restaura o HTML
                         setTimeout(() => {
                             document.getElementById('modal-qr-whatsapp').style.display = 'none';
                             modalBox.innerHTML = htmlOriginal; 
@@ -647,7 +635,7 @@
                 const originalText = btn.innerHTML;
                 const originalBg = btn.style.background;
                 btn.innerText = "🗑️ Tem certeza?";
-                btn.style.background = "#ff4757"; // Vermelho perigo
+                btn.style.background = "#ff4757";
                 btn.style.color = "white";
                 clearTimeout(deleteTimer);
                 deleteTimer = setTimeout(() => {
@@ -756,16 +744,14 @@
         }
 
         window.acaoRetirarPedido = async function(botao, idOriginal, isRota) {
-            // Feedback visual IMEDIATO na tela para provar que o JS rodou
             if (botao) {
                 botao.innerText = "⏳ Enviando...";
                 botao.disabled = true;
                 if (isRota) botao.style.background = "#ccc";
             }
             
-            // O `confirm` está banido, mas a lógica que retorna `true` o torna seguro.
             if (!confirm('Deseja realmente devolver este item para a mesa?')) {
-                if (botao) { // Restaura o botão se o usuário cancelar (hipoteticamente)
+                if (botao) {
                     botao.innerText = isRota ? '✖ DEVOLVER ROTA PRA MESA' : '✖';
                     botao.disabled = false;
                     if (isRota) botao.style.background = "#dc3545";
@@ -782,7 +768,7 @@
                 });
                 
                 if(res.ok) {
-                    window.location.reload(); // Recarrega na marra se der sucesso
+                    window.location.reload();
                 } else {
                     if (botao) botao.innerText = "❌ Erro Servidor";
                 }
@@ -820,7 +806,7 @@
                         notification.style.transform = 'translateX(0)';
                     }, 10);
                 }
-            } catch(e) { /* ignore */ }
+            } catch(e) { }
         }
         
         async function dismissSupportAlert(notificationElement) {
@@ -895,7 +881,6 @@
                     bags = JSON.parse(draft);
                 }
 
-                // Busca por pedidos pendentes do banco
                 const res = await fetch('/api/pending-dispatches');
                 if (res.ok) {
                     const pendingItems = await res.json();
@@ -928,10 +913,10 @@
                 }
             } catch (e) {
                 console.error("Erro ao restaurar rascunho da bag:", e);
-                bags = {}; // Reseta em caso de erro de parsing
+                bags = {};
             }
             renderColumnPreparacao();
-            salvarRascunhoBag(); // Salva a bag restaurada
+            salvarRascunhoBag();
         }
 
         window.inicializarAutocomplete = function(inputElement) {
@@ -940,8 +925,11 @@
                 return;
             }
             
-            const qgLocation = { lat: -26.244, lng: -48.625 };
-            const circle = new google.maps.Circle({ center: qgLocation, radius: 15000 }); // 15km
+            const qgLocation = {
+                lat: qgLat || -26.2163,
+                lng: qgLng || -48.6017
+            };
+            const circle = new google.maps.Circle({ center: qgLocation, radius: 15000 });
 
             const options = {
                 bounds: circle.getBounds(),
@@ -970,7 +958,6 @@
                             item.coords = { lat, lng };
                             checkRoute(bagId);
                             
-                            // Auto-preencher taxa
                             fetch('/api/calcular-taxa', {
                                 method: 'POST',
                                 headers: {'Content-Type':'application/json'},
@@ -994,7 +981,38 @@
             });
         }
 
-        let bags = {}; // Objeto para múltiplas bags
+        function inicializarAutocompleteQG() {
+            const inputQG = document.getElementById('prof-endereco');
+            if (!inputQG || !window.google || !google.maps || !google.maps.places) return;
+
+            if (inputQG.dataset.autocompleteInitialized === 'true') return;
+
+            const autocomplete = new google.maps.places.Autocomplete(inputQG, {
+                componentRestrictions: { country: 'br' },
+                fields: ['formatted_address', 'geometry.location']
+            });
+
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry && place.geometry.location) {
+                    const lat = place.geometry.location.lat();
+                    const lng = place.geometry.location.lng();
+
+                    qgLat = lat;
+                    qgLng = lng;
+                    inputQG.dataset.lat = lat;
+                    inputQG.dataset.lng = lng;
+
+                    if (place.formatted_address) {
+                        inputQG.value = place.formatted_address;
+                    }
+                }
+            });
+
+            inputQG.dataset.autocompleteInitialized = 'true';
+        }
+
+        let bags = {};
         let availableDrivers = [];
         let operacaoTimeout;
 
@@ -1191,12 +1209,10 @@
         
         async function recarregarPainelOperacional() {
             try {
-                // Carrega motoboys disponíveis
                 const fleetRes = await fetch('/api/dispatch/fleet');
                 availableDrivers = await fleetRes.json();
-                updateDriverSelects(); // Apenas atualiza a lista de motoboys, não a bag inteira
+                updateDriverSelects();
 
-                // Carrega rotas ativas para Colunas 2 e 3
                 const routesRes = await fetch('/api/rotas-ativas');
                 const rotasAgrupadas = await routesRes.json();
                 
@@ -1251,7 +1267,7 @@
                 </div>
             `;
         }
-        // --- MAPA E PERFIL ---
+
         window.liberacaoBruta = async (rotaId) => {
             if(!confirm('Deseja arrancar esta rota do motoboy e mandar de volta para a Preparação?')) return;
             const r = await fetch('/api/dispatch/reverter', { 
@@ -1268,11 +1284,11 @@
         };
 
         async function initMap() {
-            const res = await fetch('/api/profile'); const p = await res.json();
+            const res = await fetch('/api/profile');
+            const p = await res.json();
             const pos = { lat: p.lat || -26.2163, lng: p.lng || -48.6017 };
             map = new google.maps.Map(document.getElementById("map"), { zoom: 13, center: pos, disableDefaultUI: true, zoomControl: true, styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }] });
             
-            // 1. Instancia o DrawingManager com os controles nativos DESLIGADOS (drawingControl: false)
             const drawingManager = new google.maps.drawing.DrawingManager({
                 drawingMode: null,
                 drawingControl: false,
@@ -1281,7 +1297,6 @@
             });
             drawingManager.setMap(map);
 
-            // 2. Cria o painel de botões customizados elegantes
             const customControlDiv = document.createElement('div');
             customControlDiv.style.margin = '15px';
             customControlDiv.style.display = 'flex';
@@ -1292,10 +1307,8 @@
                 <button id="btn-raio" style="background: white; color: #333; border: 1px solid #ccc; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.2s;">⭕ Desenhar Raio</button>
             `;
 
-            // 3. Empurra os botões para o topo do mapa
             map.controls[google.maps.ControlPosition.TOP_CENTER].push(customControlDiv);
 
-            // 4. Lógica de clique e mudança de visual (botão ativo)
             const btnMover = customControlDiv.querySelector('#btn-mover');
             const btnPolig = customControlDiv.querySelector('#btn-polig');
             const btnRaio = customControlDiv.querySelector('#btn-raio');
@@ -1319,7 +1332,6 @@
             btnPolig.onclick = () => { drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON); setActive(btnPolig); };
             btnRaio.onclick = () => { drawingManager.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE); setActive(btnRaio); };
 
-            // Inicia com o botão Mover ativo
             setActive(btnMover);
 
             google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
@@ -1334,6 +1346,8 @@
                 document.getElementById('zoneModal').style.display = 'flex';
                 drawingManager.setDrawingMode(null);
             });
+
+            inicializarAutocompleteQG();
             carregarZonas();
         }
 
@@ -1358,7 +1372,7 @@
             const valor = document.getElementById('zone-taxa').value;
             let body = { id, nome, valor };
 
-            if (!id && formaTemp) { // Criando uma nova zona
+            if (!id && formaTemp) {
                 let coordenadas;
                 if (formaTempTipo === 'polygon') {
                     const path = formaTemp.getPath();
@@ -1382,8 +1396,6 @@
             showToast(`Região '${nome}' salva com sucesso!`);
             document.getElementById('zoneModal').style.display = 'none'; 
             
-            // A nova zona não precisa ser removida, pois `carregarZonas` vai redesenhar tudo.
-            // Apenas limpamos a variável temporária.
             if(formaTemp) {
                 formaTemp = null;
                 formaTempTipo = null;
@@ -1392,7 +1404,6 @@
             carregarZonas(); 
         }
         
-        // FUNÇÃO DE EXCLUSÃO LIMPA E DIRETA
         async function delZona(id) { await fetch(`/api/zones/${id}`, { method: 'DELETE' }); carregarZonas(); }
         
         function abrirEdit(id, n, v) { document.getElementById('edit-id').value = id; document.getElementById('zone-nome').value = n; document.getElementById('zone-taxa').value = v; document.getElementById('zoneModal').style.display = 'flex'; }
@@ -1406,7 +1417,6 @@
         }
         
         function loadGoogleMaps(apiKey) {
-            // Evita carregar o script do Google Maps múltiplas vezes
             if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
             
             const script = document.createElement('script');
@@ -1417,23 +1427,34 @@
         }
 
         async function salvarPerfil() {
+            const enderecoInput = document.getElementById('prof-endereco');
+            const lat = enderecoInput.dataset.lat ? parseFloat(enderecoInput.dataset.lat) : qgLat;
+            const lng = enderecoInput.dataset.lng ? parseFloat(enderecoInput.dataset.lng) : qgLng;
+
             const body = { 
                 nome: document.getElementById('prof-nome').value, 
-                endereco: document.getElementById('prof-endereco').value, 
+                endereco: enderecoInput.value, 
                 whatsapp: document.getElementById('prof-whatsapp').value,
                 link_cardapio: document.getElementById('prof-link-cardapio').value,
                 openai_key: document.getElementById('prof-openai-key').value,
                 google_maps_key: document.getElementById('prof-google-maps-key').value,
                 meta_api_token: document.getElementById('prof-meta-api-token').value,
                 telegram_bot_token: document.getElementById('prof-telegram-token').value,
-                lat: -26.2163, 
-                lng: -48.6017 
+                lat: lat || null, 
+                lng: lng || null
             };
             console.log("Salvando perfil:", body);
             const res = await fetch('/api/profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
             const savedData = await res.json();
             console.log("Resposta do servidor (salvar):", savedData);
             
+            if (savedData && typeof savedData.lat === 'number' && typeof savedData.lng === 'number') {
+                qgLat = savedData.lat;
+                qgLng = savedData.lng;
+                enderecoInput.dataset.lat = savedData.lat;
+                enderecoInput.dataset.lng = savedData.lng;
+            }
+
             showToast('Base e Chaves Salvas com sucesso!');
             const btn = document.getElementById('btn-salvar-perfil');
             btn.innerText = 'Salvo!';
@@ -1457,7 +1478,7 @@
             restaurarRascunhoBag();
             carregarFrota();
             recarregarPainelOperacional();
-            setInterval(checkSupportAlerts, 5000); // Checa por alertas de suporte
+            setInterval(checkSupportAlerts, 5000);
             const res = await fetch('/api/profile'); const d = await res.json();
             console.log("Perfil carregado:", d);
             document.getElementById('prof-nome').value = d.nome || '';
@@ -1468,6 +1489,13 @@
             document.getElementById('prof-openai-key').value = d.openai_key || '';
             document.getElementById('prof-meta-api-token').value = d.meta_api_token || '';
             document.getElementById('prof-telegram-token').value = d.telegram_bot_token || '';
+
+            if (typeof d.lat === 'number' && typeof d.lng === 'number') {
+                qgLat = d.lat;
+                qgLng = d.lng;
+                document.getElementById('prof-endereco').dataset.lat = d.lat;
+                document.getElementById('prof-endereco').dataset.lng = d.lng;
+            }
 
             if (d.google_maps_key) {
                 loadGoogleMaps(d.google_maps_key);
@@ -1481,7 +1509,7 @@
                 carregarFrota();
             }
             if (despachoTab && despachoTab.classList.contains('active')) {
-                if (kanbanLock) return; // Trava para evitar sobreposição
+                if (kanbanLock) return;
                 kanbanLock = true;
                 try {
                     await recarregarPainelOperacional();
