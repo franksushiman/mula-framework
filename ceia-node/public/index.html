@@ -920,11 +920,13 @@
         }
 
         window.inicializarAutocomplete = function(inputElement) {
-            if (!google || !google.maps || !google.maps.places) {
+            if (!window.google || !google.maps || !google.maps.places) {
                 console.warn("Google Maps Places library not loaded yet.");
                 return;
             }
-            
+
+            if (inputElement.dataset.autocompleteInitialized === 'true') return;
+
             const qgLocation = {
                 lat: qgLat || -26.2163,
                 lng: qgLng || -48.6017
@@ -934,19 +936,23 @@
             const options = {
                 bounds: circle.getBounds(),
                 componentRestrictions: { country: 'br' },
-                fields: ['geometry.location']
+                fields: ['formatted_address', 'geometry.location']
             };
 
             const autocomplete = new google.maps.places.Autocomplete(inputElement, options);
             
-            autocomplete.addListener('place_changed', () => {
+            autocomplete.addListener('place_changed', async () => {
                 const place = autocomplete.getPlace();
                 if (place.geometry && place.geometry.location) {
                     const lat = place.geometry.location.lat();
                     const lng = place.geometry.location.lng();
-                    
+
                     inputElement.dataset.lat = lat;
                     inputElement.dataset.lng = lng;
+
+                    if (place.formatted_address) {
+                        inputElement.value = place.formatted_address;
+                    }
 
                     const bagId = inputElement.dataset.bagId;
                     const itemId = parseInt(inputElement.dataset.itemId);
@@ -957,28 +963,32 @@
                             item.address = inputElement.value;
                             item.coords = { lat, lng };
                             checkRoute(bagId);
+
+                            const card = inputElement.closest('.pedido-card');
+                            const valorInput = card ? card.querySelector('input[data-field="valor"]') : null;
                             
-                            fetch('/api/calcular-taxa', {
-                                method: 'POST',
-                                headers: {'Content-Type':'application/json'},
-                                body: JSON.stringify({ lat, lng })
-                            }).then(res => res.json()).then(data => {
-                                if (data.valor !== undefined) {
-                                    const card = inputElement.closest('.pedido-card');
-                                    if (card) {
-                                        const valorInput = card.querySelector('input[type="number"]');
-                                        if (valorInput) {
-                                            const valorFinal = data.valor > 0 ? data.valor.toFixed(2) : '';
-                                            valorInput.value = valorFinal;
-                                            updateBagItem(bagId, itemId, 'valor', valorFinal);
-                                        }
-                                    }
+                            try {
+                                const res = await fetch('/api/calcular-taxa', {
+                                    method: 'POST',
+                                    headers: {'Content-Type':'application/json'},
+                                    body: JSON.stringify({ lat, lng })
+                                });
+                                const data = await res.json();
+
+                                if (data.valor !== undefined && valorInput) {
+                                    const valorFinal = data.valor > 0 ? data.valor.toFixed(2) : '';
+                                    valorInput.value = valorFinal;
+                                    updateBagItem(bagId, itemId, 'valor', valorFinal);
                                 }
-                            }).catch(err => console.error("Erro ao calcular taxa:", err));
+                            } catch (err) {
+                                console.error("Erro ao calcular taxa:", err);
+                            }
                         }
                     }
                 }
             });
+
+            inputElement.dataset.autocompleteInitialized = 'true';
         }
 
         function inicializarAutocompleteQG() {
@@ -1129,10 +1139,7 @@
                 `;
             }).join('');
             document.querySelectorAll('.bag-address-input').forEach(input => {
-                if (!input.dataset.autocompleteInitialized) {
-                    window.inicializarAutocomplete(input);
-                    input.dataset.autocompleteInitialized = 'true';
-                }
+                window.inicializarAutocomplete(input);
             });
         }
         function updateDriverSelects() {
