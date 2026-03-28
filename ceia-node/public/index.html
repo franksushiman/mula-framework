@@ -919,19 +919,6 @@
             salvarRascunhoBag();
         }
 
-        // Função para calcular distância em km entre duas coordenadas (fórmula de Haversine)
-        function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Raio da Terra em km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const distancia = R * c;
-            return distancia;
-        }
-
         window.inicializarAutocomplete = function(inputElement) {
             if (!window.google || !google.maps || !google.maps.places) {
                 console.warn("Google Maps Places library not loaded yet.");
@@ -983,28 +970,36 @@
                             const valorInput = card ? card.querySelector('input[data-field="valor"]') : null;
                             
                             if (valorInput) {
-                                // Calcular distância entre QG e destino
-                                const distanciaKm = calcularDistanciaKm(
-                                    qgLocation.lat, 
-                                    qgLocation.lng, 
-                                    lat, 
-                                    lng
-                                );
-                                
-                                // Calcular valor da taxa: R$ 5,00 base + R$ 1,50 por km
-                                const taxaBase = 5.00;
-                                const taxaPorKm = 1.50;
-                                const valorCalculado = taxaBase + (distanciaKm * taxaPorKm);
-                                
-                                // Arredondar para 2 casas decimais
-                                const valorFormatado = Math.round(valorCalculado * 100) / 100;
-                                
-                                // Inserir o valor calculado no input de Taxa
-                                // O input permanece 100% editável (não bloqueamos a edição manual)
-                                valorInput.value = valorFormatado.toFixed(2);
-                                
-                                // Atualizar o item na bag com o valor calculado
-                                updateBagItem(bagId, itemId, 'valor', valorFormatado.toFixed(2));
+                                try {
+                                    // Chamar a API do backend para obter a taxa real do mapa de zonas
+                                    const res = await fetch('/api/calcular-taxa', {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/json'},
+                                        body: JSON.stringify({ lat, lng })
+                                    });
+                                    
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        const valorCalculado = data.valor || 0;
+                                        
+                                        // Inserir o valor calculado no input de Taxa
+                                        // O input permanece 100% editável (não bloqueamos a edição manual)
+                                        valorInput.value = valorCalculado.toFixed(2);
+                                        
+                                        // Atualizar o item na bag com o valor calculado
+                                        updateBagItem(bagId, itemId, 'valor', valorCalculado.toFixed(2));
+                                    } else {
+                                        console.error('Erro ao calcular taxa:', res.status);
+                                        // Em caso de erro, deixar o campo vazio para o usuário preencher manualmente
+                                        valorInput.value = '';
+                                        updateBagItem(bagId, itemId, 'valor', '');
+                                    }
+                                } catch (error) {
+                                    console.error('Erro de conexão ao calcular taxa:', error);
+                                    // Em caso de erro, deixar o campo vazio para o usuário preencher manualmente
+                                    valorInput.value = '';
+                                    updateBagItem(bagId, itemId, 'valor', '');
+                                }
                             }
                         }
                     }
