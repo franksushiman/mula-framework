@@ -24,13 +24,13 @@ try {
 } catch (e) { console.error("Erro na auto-cura do banco:", e); }
 
 // Puxa as chaves do seu Painel (Banco de Dados) ou usa padrão se estiver vazio
-const TELEGRAM_TOKEN = config.telegram_bot_token;
-const OPENAI_API_KEY = config.openai_key;
+const TELEGRAM_TOKEN = config.telegram_bot_token || process.env.TELEGRAM_TOKEN || "";
+const OPENAI_API_KEY = config.openai_key || process.env.OPENAI_API_KEY || "";
 const EVO_URL = "http://127.0.0.1:8080";
 const EVO_INSTANCE = "ceia_zap";
 const EVO_APIKEY = "sua_apikey_evolution";
 
-const bot = new Telegraf(TELEGRAM_TOKEN.length > 10 ? TELEGRAM_TOKEN : "123456789:AAG_Fake_Token_Para_Nao_Travar");
+const bot = new Telegraf(TELEGRAM_TOKEN);
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 function registrarLog(tipo: string, mensagem: string) {
@@ -99,11 +99,19 @@ serve({
             if (req.method === "GET") {
                 try {
                     const cfg = db.query("SELECT * FROM configuracoes LIMIT 1").get();
-                    if (cfg) {
-                        return new Response(JSON.stringify(cfg), { headers: { "Content-Type": "application/json" } });
-                    } else {
-                        return new Response(JSON.stringify({ error: "Configurações não encontradas" }), { status: 404 });
-                    }
+                    return new Response(JSON.stringify(cfg || {
+                        id: null,
+                        nome: "",
+                        endereco: "",
+                        whatsapp: "",
+                        link_cardapio: "",
+                        google_maps_key: "",
+                        openai_key: "",
+                        meta_api_token: "",
+                        telegram_bot_token: "",
+                        lat: "",
+                        lng: ""
+                    }), { headers: { "Content-Type": "application/json" } });
                 } catch(e) { return new Response(JSON.stringify({ error: "Erro ao carregar configurações" }), { status: 500 }); }
             }
             if (req.method === "POST") {
@@ -254,9 +262,7 @@ console.log("🚀 NÓ CEIA INICIANDO...");
 console.log("🔌 Porta: 3000");
 
 const envTelegramToken = process.env.TELEGRAM_TOKEN || "";
-if ((TELEGRAM_TOKEN && TELEGRAM_TOKEN.length > 10) || (envTelegramToken && envTelegramToken.length > 10)) {
-    const tokenToUse = TELEGRAM_TOKEN.length > 10 ? TELEGRAM_TOKEN : envTelegramToken;
-    bot.telegram.token = tokenToUse;
+if (TELEGRAM_TOKEN.length > 10) {
     bot.launch().then(() => {
         console.log("✅ Bot Telegram: CONECTADO E OUVINDO (Chave do Banco de Dados)");
     }).catch(err => {
