@@ -8,12 +8,7 @@ const clientesWs = new Set<any>();
 // === AUTO-CURA E BUSCA DE CHAVES NO BANCO ===
 let config: any = {};
 try {
-    db.run("CREATE TABLE IF NOT EXISTS configuracoes (id INTEGER PRIMARY KEY, nome TEXT, endereco TEXT, whatsapp TEXT, link_cardapio TEXT, google_maps_key TEXT, openai_key TEXT, meta_api_token TEXT, telegram_bot_token TEXT, lat REAL, lng REAL)");
-    db.run("CREATE TABLE IF NOT EXISTS zonas (id INTEGER PRIMARY KEY, nome TEXT, valor REAL, tipo TEXT, coordenadas TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY, tipo TEXT, mensagem TEXT, data DATETIME DEFAULT CURRENT_TIMESTAMP)");
-    db.run("CREATE TABLE IF NOT EXISTS motoboys (id INTEGER PRIMARY KEY, telegram_id TEXT UNIQUE, nome TEXT, cpf TEXT, tipo_vinculo TEXT, chave_pix TEXT, status TEXT, lat REAL, lng REAL, ultima_atualizacao DATETIME, saldo REAL DEFAULT 0, veiculo_tipo TEXT, veiculo_id TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS rotas (id TEXT PRIMARY KEY, motoboy_id INTEGER, valor_corrida REAL, endereco TEXT, status TEXT)");
-    db.run("CREATE TABLE IF NOT EXISTS pedidos (id INTEGER PRIMARY KEY, cliente TEXT, endereco TEXT, status TEXT DEFAULT 'PENDENTE')");
+    // As tabelas já são criadas no arquivo db.ts, não é necessário recriá-las aqui.
     
     config = db.query("SELECT * FROM configuracoes LIMIT 1").get() || {};
     if (!config.id) db.run("INSERT INTO configuracoes (nome) VALUES ('')");
