@@ -15,8 +15,8 @@ try {
 } catch (e) { console.error("Erro na auto-cura do banco:", e); }
 
 // Puxa as chaves do seu Painel (Banco de Dados) ou usa padrão se estiver vazio
-const TELEGRAM_TOKEN = config.telegram_bot_token || "COLOQUE_SEU_TOKEN_AQUI";
-const OPENAI_API_KEY = config.openai_key || "COLOQUE_SUA_CHAVE_OPENAI";
+const TELEGRAM_TOKEN = config.telegram_bot_token;
+const OPENAI_API_KEY = config.openai_key;
 const EVO_URL = "http://127.0.0.1:8080";
 const EVO_INSTANCE = "ceia_zap";
 const EVO_APIKEY = "sua_apikey_evolution";
@@ -90,8 +90,12 @@ serve({
             if (req.method === "GET") {
                 try {
                     const cfg = db.query("SELECT * FROM configuracoes LIMIT 1").get();
-                    return new Response(JSON.stringify(cfg || {}), { headers: { "Content-Type": "application/json" } });
-                } catch(e) { return new Response("{}", { status: 200 }); }
+                    if (cfg) {
+                        return new Response(JSON.stringify(cfg), { headers: { "Content-Type": "application/json" } });
+                    } else {
+                        return new Response(JSON.stringify({ error: "Configurações não encontradas" }), { status: 404 });
+                    }
+                } catch(e) { return new Response(JSON.stringify({ error: "Erro ao carregar configurações" }), { status: 500 }); }
             }
             if (req.method === "POST") {
                 try {
