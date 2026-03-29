@@ -8,10 +8,19 @@ const clientesWs = new Set<any>();
 // === AUTO-CURA E BUSCA DE CHAVES NO BANCO ===
 let config: any = {};
 try {
-    // As tabelas já são criadas no arquivo db.ts, não é necessário recriá-las aqui.
-    
-    config = db.query("SELECT * FROM configuracoes LIMIT 1").get() || {};
-    if (!config.id) db.run("INSERT INTO configuracoes (nome) VALUES ('')");
+    config = db.query("SELECT * FROM configuracoes LIMIT 1").get() || {
+        id: null,
+        nome: "",
+        endereco: "",
+        whatsapp: "",
+        link_cardapio: "",
+        google_maps_key: "",
+        openai_key: "",
+        meta_api_token: "",
+        telegram_bot_token: "",
+        lat: "",
+        lng: ""
+    };
 } catch (e) { console.error("Erro na auto-cura do banco:", e); }
 
 // Puxa as chaves do seu Painel (Banco de Dados) ou usa padrão se estiver vazio
@@ -244,7 +253,10 @@ console.log("----------------------------------------");
 console.log("🚀 NÓ CEIA INICIANDO...");
 console.log("🔌 Porta: 3000");
 
-if (TELEGRAM_TOKEN.length > 10 && TELEGRAM_TOKEN !== "COLOQUE_SEU_TOKEN_AQUI") {
+const envTelegramToken = process.env.TELEGRAM_TOKEN || "";
+if ((TELEGRAM_TOKEN && TELEGRAM_TOKEN.length > 10) || (envTelegramToken && envTelegramToken.length > 10)) {
+    const tokenToUse = TELEGRAM_TOKEN.length > 10 ? TELEGRAM_TOKEN : envTelegramToken;
+    bot.telegram.token = tokenToUse;
     bot.launch().then(() => {
         console.log("✅ Bot Telegram: CONECTADO E OUVINDO (Chave do Banco de Dados)");
     }).catch(err => {
