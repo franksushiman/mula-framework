@@ -87,7 +87,11 @@ serve({
         const url = new URL(req.url);
 
         if (url.pathname === "/ws") {
-            if (server.upgrade(req)) return;
+            if (server.upgrade(req)) {
+                console.log("WebSocket connection established.");
+                return;
+            }
+            console.error("WebSocket upgrade failed.");
             return new Response("Upgrade falhou", { status: 500 });
         }
         
@@ -171,6 +175,8 @@ serve({
 
         if (req.method === "GET" && url.pathname === "/api/whatsapp/start") {
             registrarLog("SISTEMA", "Iniciando processo de conexão com WhatsApp...");
+            // Aqui você deve iniciar a conexão real com o serviço de WhatsApp
+            // Exemplo: startWhatsAppConnection();
             return new Response(JSON.stringify({ status: "Iniciando conexão..." }), { headers: { "Content-Type": "application/json" } });
         }
 
