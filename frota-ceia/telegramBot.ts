@@ -226,14 +226,20 @@ export async function iniciarTelegram() {
                 // MODO CHAT COM O CLIENTE ATIVO
                 if (session?.step === 'CHAT_CLIENTE') {
                     const num = session.data.telefone_cliente?.replace(/\D/g, '');
+                    console.log("[DEBUG WHATSAPP] Iniciando envio. Numero extraido da sessao:", num);
                     if (num) {
                         try {
                             const msgCliente = `*[Mensagem do Entregador]*\n${text}\n\n_(Pode responder a esta mensagem)_`;
                             await enviarMensagemWhatsApp('55' + num, msgCliente);
-                            await ctx.reply('✅ Mensagem entregue ao cliente com sucesso.');
+                            console.log("[DEBUG WHATSAPP] Sucesso na chamada da API");
+                            await ctx.reply("✅ Mensagem enviada ao cliente!");
                         } catch (e) {
-                            await ctx.reply('❌ Erro interno ao acionar o WhatsApp.');
+                            console.error("[DEBUG WHATSAPP] Erro na API:", e);
+                            await ctx.reply("❌ Falha na integracao com o WhatsApp.");
                         }
+                    } else {
+                        console.error("[DEBUG WHATSAPP] Erro: Cliente sem numero de telefone na sessao.");
+                        await ctx.reply("❌ Erro: Cliente sem numero de telefone registado.");
                     }
                     return; 
                 }
