@@ -17,9 +17,10 @@ const userSessions: Record<number, UserSession> = {};
 export let bot: Telegraf | null = null;
 
 export async function enviarMensagemTelegram(telegram_id: string, texto: string) {
-    if (!bot) return false;
+    if (bot === null) { console.error("[DEBUG TELEGRAM] ERRO FATAL: O bot esta null na hora de enviar"); return false; }
     try {
         await bot.telegram.sendMessage(telegram_id, texto);
+        console.log("[DEBUG TELEGRAM] Telegram confirmou o envio com sucesso");
         return true;
     } catch (e) { console.error("[DEBUG TELEGRAM] Falha crítica ao enviar:", e); return false; }
 }
