@@ -86,7 +86,7 @@ export async function iniciarTelegram() {
             const nome = ctx.from.first_name;
             userSessions[ctx.chat.id] = { step: 'SOS_CHAT', data: {} };
             broadcastLog('SOS', `O motoboy ${nome} acionou o ALARME DE EMERGÊNCIA!`, { telegram_id: ctx.chat.id.toString() });
-            await ctx.reply('🚨 O seu sinal de emergência foi enviado para a base. Aguarde, a loja entrará em contacto consigo imediatamente.');
+            await ctx.reply('🚨 O seu sinal de emergência foi enviado para a base. Aguarde, a loja entrará em contacto consigo imediatamente.\n\n_(Para encerrar a conversa, digite /cancelar)_');
         });
 
         // ==========================================
@@ -201,6 +201,11 @@ export async function iniciarTelegram() {
             await upsertFleet({ telegram_id: chatId.toString(), status: 'OFFLINE' });
             broadcastLog('FROTA', `Motoboy [${ctx.from.first_name}] encerrou o expediente via comando 🔴`);
             await ctx.reply('🔴 Expediente encerrado.', Markup.removeKeyboard());
+        });
+
+        bot.command('cancelar', async (ctx) => {
+            delete userSessions[ctx.chat.id];
+            await ctx.reply('✅ Conversa encerrada. Você voltou ao menu principal.', defaultKeyboard);
         });
 
         bot.on('text', async (ctx) => {
