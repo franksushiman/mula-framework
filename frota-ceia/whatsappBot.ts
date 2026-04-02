@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { getConfiguracoes, getMotoboysOnline } from './database'; 
+import { getRotaPeloCliente } from './operacao';
 import { broadcastLog } from './logger';
 
 // =============================================================================
@@ -137,6 +138,32 @@ async function processarMensagemIA(mensagemCliente: string): Promise<string> {
     }
 }
 
+/**
+ * Envia uma mensagem para um chat específico no Telegram.
+ */
+async function sendTelegramMessage(chatId: string, text: string): Promise<void> {
+    try {
+        const config = await getConfiguracoes();
+        // Assumindo que a chave do token está em 'telegram_token' ou 'telegram_bot_token'
+        const token = config.telegram_token || config.telegram_bot_token;
+        
+        if (!token) {
+            broadcastLog('ERROR', 'Token do Telegram não configurado. Não é possível encaminhar mensagem do cliente.');
+            return;
+        }
+
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: text })
+        });
+
+    } catch (error) {
+        broadcastLog('ERROR', `Erro inesperado ao encaminhar mensagem para o Telegram: ${error}`);
+    }
+}
+
 // =============================================================================
 //                           WEBHOOK HANDLER
 // =============================================================================
@@ -150,6 +177,14 @@ export async function handleWhatsAppWebhook(payload: any) {
         if (!mensagemTexto || payload.data?.key?.fromMe) return;
 
         broadcastLog('WHATSAPP', `Recebido de [${numeroCliente.split('@')[0]}]: ${mensagemTexto}`);
+
+        // Tenta encontrar uma rota ativa para este cliente e encaminhar a mensagem para o motoboy
+        const rota = getRotaPeloCliente(numeroCliente.split('@')[0]);
+        if (rota && rota.telegram_id) {
+            const mensagemParaMotoboy = `💬 Cliente do pedido #${rota.pedido.id} diz:\n\n"${mensagemTexto}"`;
+            await sendTelegramMessage(rota.telegram_id, mensagemParaMotoboy);
+            broadcastLog('TELEGRAM', `Mensagem do cliente ${numeroCliente.split('@')[0]} encaminhada para o motoboy.`);
+        }
 
         const respostaIA = await processarMensagemIA(mensagemTexto);
 

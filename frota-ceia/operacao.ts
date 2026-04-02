@@ -7,6 +7,12 @@ export function getRotasMotoboy(telegram_id: string) {
     return rotasAtivas.filter(r => r.telegram_id === telegram_id);
 }
 
+export function getRotaPeloCliente(telefoneCliente: string) {
+    // Normaliza o número para conter apenas dígitos
+    const numeroLimpo = telefoneCliente.replace(/\D/g, '');
+    return rotasAtivas.find(r => r.pedido?.telefone_cliente?.replace(/\D/g, '') === numeroLimpo);
+}
+
 export async function processarBaixaPeloTelegram(telegram_id: string, codigo: string): Promise<boolean> {
     const idx = rotasAtivas.findIndex(r => r.telegram_id === telegram_id && r.pedido.codigo_entrega === codigo);
     if (idx > -1) {
