@@ -44,84 +44,73 @@ export async function processarBaixaPeloTelegram(telegram_id: string, codigo: st
                 if (client.readyState === 1) client.send(payload);
             });
         }
-        
+
         await registrarLog('FINANCEIRO', `Motoboy confirmou entrega via Telegram (Cod: ${codigo}).`);
         return true;
     }
     return false;
 }
 
-// =========================================================================
-// A VACINA SUPREMA: Força a entrega dos dados burlando o bloqueio do Fastify
-// =========================================================================
-const enviarJson = (reply: any, statusCode: number, data: any) => {
-    reply.raw.setHeader('Content-Type', 'application/json');
-    reply.raw.writeHead(statusCode);
-    reply.raw.end(JSON.stringify(data));
-};
-
 export async function startServer() {
+    await initDatabase();
+
     await app.register(cors, { origin: '*' });
     await app.register(websocket);
 
     app.get('/', async (request, reply) => {
         const htmlPath = path.join(__dirname, 'index.html');
         const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
-        reply.type('text/html').send(htmlContent);
+        return reply.type('text/html').send(htmlContent);
     });
 
-    // =========================================================================
-    // ROTAS BLINDADAS: Comunicação direta com a interface
-    // =========================================================================
-
     app.get('/api/profile', async (request, reply) => {
-        console.log("📡 [TELA] Solicitou os dados do QG Logístico...");
+        console.log('📡 [TELA] Solicitou os dados do QG Logístico...');
         const config = await getConfiguracoes();
-        console.log("📦 [SISTEMA] Devolvendo chaves e horários para a tela.");
-        enviarJson(reply, 200, config || {});
+        console.log('📦 [SISTEMA] Devolvendo chaves e horários para a tela.');
+        return reply.code(200).type('application/json; charset=utf-8').send(config || {});
     });
 
     app.post('/api/profile', async (request: any, reply) => {
-        console.log("💾 [TELA] Pediu para gravar novas configurações...");
+        console.log('💾 [TELA] Pediu para gravar novas configurações...');
         await updateConfiguracoes(request.body);
         await broadcastLog('SUCCESS', 'Configurações atualizadas via Painel');
         iniciarTelegram();
-        console.log("🟢 [SISTEMA] Banco SQLite atualizado com sucesso!");
-        enviarJson(reply, 200, { status: 'success' });
+        console.log('🟢 [SISTEMA] Banco SQLite atualizado com sucesso!');
+        return reply.code(200).type('application/json; charset=utf-8').send({ status: 'success' });
     });
 
     app.get('/api/fleet', async (request, reply) => {
         const frota = await getFleet();
-        enviarJson(reply, 200, frota);
+        return reply.code(200).type('application/json; charset=utf-8').send(frota);
     });
 
     app.delete('/api/fleet/:id', async (request: any, reply) => {
         await deletarMotoboy(request.params.id);
         await broadcastLog('FROTA', 'Perfil de motoboy e histórico excluídos.');
-        enviarJson(reply, 200, { ok: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 
     app.put('/api/fleet/:id', async (request: any, reply) => {
         const { veiculo, vinculo } = request.body;
         await atualizarMotoboy(request.params.id, veiculo, vinculo);
         await broadcastLog('FROTA', 'Perfil de motoboy atualizado.');
-        enviarJson(reply, 200, { ok: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 
     app.get('/api/financeiro/:id', async (request: any, reply) => {
         const extrato = await getExtratoFinanceiro(request.params.id);
-        enviarJson(reply, 200, extrato);
+        return reply.code(200).type('application/json; charset=utf-8').send(extrato);
     });
 
     app.post('/api/financeiro/pagar/:id', async (request: any, reply) => {
         await zerarAcertoFinanceiro(request.params.id);
         await broadcastLog('FINANCEIRO', 'Acerto de motoboy liquidado com sucesso.');
-        enviarJson(reply, 200, { ok: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 
     app.post('/api/operacao/despachar', async (request: any, reply) => {
         const { pacoteId, motoboy, pedidos } = request.body;
-        
+
         pedidos.forEach((p: any) => {
             rotasAtivas.push({ pacoteId, telegram_id: motoboy.telegram_id, pedido: p });
         });
@@ -132,7 +121,7 @@ export async function startServer() {
             msgMotoboy += `*Entrega ${index + 1}: ${p.nomeCliente.split(' ')[0]}*\n📍 ${p.endereco.split(',')[0]}\n🗺️ [📍 Abrir no Waze](${wazeLink})\n💰 Receber: ${p.pagamento}\n\n`;
         });
         msgMotoboy += `💡 *Instrução:* Ao chegar, pergunte o código de 4 dígitos ao cliente e digite aqui para dar baixa e faturar.`;
-        
+
         await enviarConviteRotaTelegram(motoboy.telegram_id, msgMotoboy, pacoteId);
 
         for (const p of pedidos) {
@@ -144,7 +133,7 @@ export async function startServer() {
         }
 
         await broadcastLog('SISTEMA', `Convite de rota enviado para ${motoboy.nome}. Aguardando aceite.`);
-        enviarJson(reply, 200, { ok: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 
     app.post('/api/operacao/baixa', async (request: any, reply) => {
@@ -156,28 +145,30 @@ export async function startServer() {
             rotasAtivas.splice(idx, 1);
             await broadcastLog('FINANCEIRO', `Baixa manual concluída. Taxa de R$${rota.pedido.taxa.toFixed(2)} faturada.`);
         }
-        enviarJson(reply, 200, { ok: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 
     app.get('/api/whatsapp/start', async (request, reply) => {
         await conectarEvolutionAPI();
-        enviarJson(reply, 200, { ok: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 
     app.get('/api/whatsapp/status', async (request, reply) => {
-        enviarJson(reply, 200, { qr: qrCodeBase64, status: sessionStatus });
+        return reply.code(200).type('application/json; charset=utf-8').send({ qr: qrCodeBase64, status: sessionStatus });
     });
 
     app.post('/api/whatsapp/webhook', async (request: any, reply) => {
         await handleWhatsAppWebhook(request.body);
-        enviarJson(reply, 200, { recebido: true });
+        return reply.code(200).type('application/json; charset=utf-8').send({ recebido: true });
     });
 
     app.post('/api/whatsapp/send', async (request: any, reply) => {
         const { numero, texto } = request.body;
         const sucesso = await enviarMensagemWhatsApp(numero, texto);
-        if (sucesso) { enviarJson(reply, 200, { ok: true }); } 
-        else { enviarJson(reply, 500, { error: 'Falha no disparo via API' }); }
+        if (sucesso) {
+            return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
+        }
+        return reply.code(500).type('application/json; charset=utf-8').send({ error: 'Falha no disparo via API' });
     });
 
     app.register(async (instance) => {
@@ -189,13 +180,17 @@ export async function startServer() {
     setInterval(async () => {
         try {
             const derrubados = await limparRadarInativo();
-            if (derrubados > 0) broadcastLog('FROTA', `Radar: ${derrubados} motoboy(s) ficaram OFFLINE por perda de sinal GPS.`);
-        } catch (e) { console.error(e); }
+            if (derrubados > 0) {
+                await broadcastLog('FROTA', `Radar: ${derrubados} motoboy(s) ficaram OFFLINE por perda de sinal GPS.`);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }, 60000);
 
     await app.listen({ port: 3000, host: '0.0.0.0' });
-    console.log(`🚀 SERVIDOR CEIA NO AR: Aceda a http://localhost:3000 no navegador`);
-    console.log(`✅ Tudo pronto e operando!`);
-    
-    iniciarTelegram(); 
+    console.log('🚀 SERVIDOR CEIA NO AR: Aceda a http://localhost:3000 no navegador');
+    console.log('✅ Tudo pronto e operando!');
+
+    iniciarTelegram();
 }

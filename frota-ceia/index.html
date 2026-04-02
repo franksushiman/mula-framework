@@ -14,47 +14,43 @@
         .nav-item { padding: 14px 24px; color: #94a3b8; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s ease; border-right: 3px solid transparent; font-weight: 500; font-size: 0.95rem; }
         .nav-item:hover { color: white; background-color: rgba(255,255,255,0.03); }
         .nav-item.active { background-color: rgba(0, 208, 183, 0.08); color: var(--accent); border-right-color: var(--accent); }
-        
+
         .floating-pdv { margin: auto 20px 20px; background: rgba(0, 208, 183, 0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 15px; text-align: center; text-decoration: none; color: var(--accent); font-weight: 600; font-size: 0.85rem; transition: 0.2s; display: block; }
         .floating-pdv:hover { background: var(--accent); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 208, 183, 0.2); }
 
         .main-content { flex: 1; position: relative; display: flex; flex-direction: column; height: 100%;}
         .tab-content { display: none; padding: 40px; overflow-y: auto; height: 100%; box-sizing: border-box; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
-        
+
         .header-title { font-size: 1.8rem; font-weight: 600; margin-top: 0; margin-bottom: 30px; letter-spacing: -0.5px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 24px; max-width: 600px; }
-        
-        /* Map Layout */
+
         .map-section { position: relative; display: flex; flex-grow: 1; height: calc(100vh - 140px); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); justify-content: center; align-items: center; }
         #map { flex: 1; height: 100%; width: 100%; display: none; }
         .map-overlay-panel { position: absolute; top: 15px; right: 15px; z-index: 5; display: flex; flex-direction: column; gap: 10px; width: 320px; }
-        
+
         .zones-list-container { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 400px; overflow-y: auto; display: none; padding: 10px; }
         .zone-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; background: #f8fafc; }
         .zone-color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        
+
         .drawing-tools { display: flex; gap: 8px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); justify-content: space-between; }
         .drawing-btn { flex: 1; padding: 8px; font-size: 0.85rem; font-weight: 600; border: 1px solid var(--border); border-radius: 6px; background: #f8fafc; cursor: pointer; transition: 0.2s; color: var(--text-dark); }
         .drawing-btn:hover { border-color: var(--accent); color: var(--accent); }
         .drawing-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* Forms & Buttons */
         .form-group { margin-bottom: 18px; text-align: left; position: relative; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
         .helper-link { position: absolute; top: 0; right: 0; font-size: 0.75rem; color: #3b82f6; text-decoration: none; font-weight: 600; }
         .helper-link:hover { text-decoration: underline; }
         .form-control { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: var(--font-main); font-size: 0.95rem; outline: none; transition: 0.2s; }
         .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 208, 183, 0.15); }
-        
-        /* Schedule Grid */
+
         .schedule-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
         .schedule-row:last-child { border-bottom: none; }
         .schedule-label { font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 8px; width: 120px;}
         .schedule-inputs { display: flex; align-items: center; gap: 10px; }
         .schedule-inputs input[type="time"] { padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: var(--font-mono); outline: none; }
-        
-        /* Toggle Switch */
+
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
@@ -65,19 +61,18 @@
 
         .btn { background-color: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; width: 100%; transition: 0.2s ease; font-family: var(--font-main); }
         .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 208, 183, 0.2); }
-        
+
         .btn-action { flex: 1; padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; text-align: center; }
         .btn-loc { background-color: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
         .btn-edit { background-color: #f1f5f9; color: #475569; border-color: #e2e8f0; }
         .btn-del { background-color: #fef2f2; color: #ef4444; border-color: #fee2e2; }
         .btn-pay { background-color: #ecfdf5; color: #10b981; border-color: #a7f3d0; }
 
-        /* Kanban Dispatch System */
         .dispatch-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; height: calc(100vh - 150px); }
         .dispatch-column { background: #f1f5f9; border-radius: 12px; padding: 15px; height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 2px solid transparent; transition: 0.2s; }
         .column-header { font-size: 1rem; font-weight: 700; padding: 0 5px 12px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         .column-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; min-height: 150px; }
-        
+
         .kanban-card { background: white; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: grab; position: relative; border-left: 5px solid #cbd5e1; transition: opacity 0.2s; }
         .kanban-card:active { cursor: grabbing; }
         .kanban-card.dragging { opacity: 0.4; border: 2px dashed var(--accent); }
@@ -90,13 +85,12 @@
         .package-header { font-size: 0.8rem; font-weight: 700; color: var(--accent); margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         .package-item { background: #f8fafc; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
         .package-drop-zone { min-height: 50px; border-radius: 8px; transition: 0.2s; }
-        
+
         .drop-zone-active { background-color: rgba(0, 208, 183, 0.1) !important; border-color: var(--accent) !important; }
 
         .btn-create { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
         .btn-create:hover { background: var(--accent-hover); }
 
-        /* Fleet Grid */
         .fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 20px; align-items: start; }
         .fleet-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: 0.2s; }
         .fleet-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 16px; }
@@ -105,17 +99,16 @@
         .status-online { background: #ecfdf5; color: #10b981; }
         .status-em_entrega { background: #eff6ff; color: #3b82f6; }
         .invite-panel { display: flex; gap: 10px; align-items: center; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
-        
+
         .toast { background-color: #dcfce7; color: #166534; padding: 16px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-weight: 500; opacity: 0; transform: translateX(100%); transition: all 0.3s ease; }
         .toast.error { background-color: #fecaca; color: #b91c1c; }
         .toast.show { opacity: 1; transform: translateX(0); }
 
-        /* Modals */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .modal-card { position: relative; background: white; padding: 28px; border-radius: 16px; width: 400px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid var(--border); }
         .modal-close-icon { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: #94a3b8; cursor: pointer; border: none; background: transparent; transition: 0.2s; }
         .modal-close-icon:hover { color: #ef4444; }
-        
+
         .pac-container { z-index: 10000 !important; }
     </style>
 </head>
@@ -124,7 +117,7 @@
     <div id="sos-banner" onclick="abrirModalSOS()" style="position: fixed; top: 0; left: 0; width: 100%; background: #ef4444; color: white; text-align: center; padding: 15px; font-weight: bold; z-index: 10000; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: 0.2s;">
         ⚠️ <span id="sos-text"></span> (Clique para abrir o Chat)
     </div>
-    
+
     <audio id="beep-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
     <div class="sidebar">
@@ -133,7 +126,7 @@
         <div class="nav-item" onclick="switchTab('tab-frota', this)">🛵 Minha Frota</div>
         <div class="nav-item" onclick="switchTab('tab-mapa', this)">🗺️ Mapa de Taxas</div>
         <div class="nav-item" onclick="switchTab('tab-perfil', this)">🏠 QG Logístico</div>
-        
+
         <a href="https://ceia.ia.br" target="_blank" class="floating-pdv">Baixar o Ceia PDV</a>
     </div>
 
@@ -143,12 +136,12 @@
             <div class="dispatch-board">
                 <div class="dispatch-column" ondragover="allowDrop(event)" ondrop="dropToCol1(event)" id="col-1-zone">
                     <div class="column-header">
-                        1. PREPARAÇÃO 
+                        1. PREPARAÇÃO
                         <button class="btn-create" onclick="abrirModalNovoPedido()">+ Pedido</button>
                     </div>
                     <div id="coluna-preparacao" class="column-body"></div>
                 </div>
-                
+
                 <div class="dispatch-column">
                     <div class="column-header">
                         2. AGUARDANDO COLETA
@@ -156,7 +149,7 @@
                     </div>
                     <div id="coluna-aguardando-coleta" class="column-body"></div>
                 </div>
-                
+
                 <div class="dispatch-column">
                     <div class="column-header">3. EM ROTA</div>
                     <div id="coluna-em-rota" class="column-body"></div>
@@ -180,7 +173,7 @@
             <div class="map-section">
                 <div id="map-warning" style="color: var(--text-light); font-weight: 500;">O mapa será carregado após inserir a Chave do Google Maps no QG Logístico.</div>
                 <div id="map"></div>
-                
+
                 <div class="map-overlay-panel" id="map-tools" style="display: none;">
                     <div class="zones-list-container" id="zones-list-container">
                         <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; color: var(--text-dark);">Zonas Cadastradas</div>
@@ -199,13 +192,13 @@
             <h1 class="header-title">QG Logístico</h1>
             <div class="card">
                 <div class="form-group"><label>Nome do Ponto de Coleta (Restaurante)</label><input type="text" id="prof-nome" class="form-control"></div>
-                
+
                 <div class="form-group"><label>Endereço Base (Ponto de Partida)</label><input type="text" id="prof-endereco" class="form-control" placeholder="Ex: Rua das Flores, 123, São Paulo, SP"></div>
-                
+
                 <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
                 <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--text-dark);">Horário de Funcionamento</h3>
                 <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 15px;">Fora deste horário, o sistema convoca parceiros NUVEM automaticamente.</p>
-                
+
                 <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                     <div class="schedule-row"><label class="schedule-label"><input type="checkbox" id="dia-seg"> Segunda</label><div class="schedule-inputs"><input type="time" id="hora-seg-abre"> <span>às</span> <input type="time" id="hora-seg-fecha"></div></div>
                     <div class="schedule-row"><label class="schedule-label"><input type="checkbox" id="dia-ter"> Terça</label><div class="schedule-inputs"><input type="time" id="hora-ter-abre"> <span>às</span> <input type="time" id="hora-ter-fecha"></div></div>
@@ -220,7 +213,7 @@
                     <label class="switch"><input type="checkbox" id="prof-auto-resp"><span class="slider"></span></label>
                     <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-dark);">Atendimento Automático de IA Ligado</span>
                 </div>
-<div style="display: flex; gap: 15px;">
+                <div style="display: flex; gap: 15px;">
                     <div class="form-group" style="flex: 1;"><label>WhatsApp Oficial</label><input type="text" id="prof-whatsapp" class="form-control" placeholder="55..."></div>
                     <div class="form-group" style="flex: 2;"><label>Link do Cardápio (Para Atendimento IA)</label><input type="text" id="prof-link-cardapio" class="form-control" placeholder="Ex: https://meucardapio.com"></div>
                 </div>
@@ -229,7 +222,7 @@
                     <a href="https://t.me/BotFather" target="_blank" class="helper-link">Pegar no @BotFather</a>
                     <input type="password" id="prof-telegram-token" class="form-control">
                 </div>
-                
+
                 <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
                 <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--text-dark);">Motores e APIs</h3>
 
@@ -248,7 +241,7 @@
                     <a href="https://developers.facebook.com/apps/" target="_blank" class="helper-link">Painel da Meta</a>
                     <input type="password" id="prof-meta-api-token" class="form-control">
                 </div>
-                
+
                 <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0;">
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-light);">Ou conecte via QR Code (WhatsApp Não Oficial)</label>
@@ -263,7 +256,7 @@
         <div class="modal-card">
             <button class="modal-close-icon" onclick="fecharModal('modal-novo-pedido')">✖</button>
             <h3 style="margin-top:0; color:var(--text-dark);">Novo Pedido</h3>
-            
+
             <div class="form-group">
                 <label>Nome do Cliente</label>
                 <input type="text" id="pedido-nome" class="form-control" placeholder="Ex: João da Silva">
@@ -298,10 +291,10 @@
             <button class="modal-close-icon" onclick="fecharModal('modal-despacho')">✖</button>
             <h3 style="margin-top:0; color:var(--text-dark);">Despachar Pacote</h3>
             <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 20px;">Selecione um motoboy disponível para assumir esta entrega.</p>
-            
+
             <button class="btn-create" style="width: 100%; padding: 10px; font-size: 0.9rem; background: #8b5cf6; margin-bottom: 15px;" onclick="showToast('Buscando parceiros na Nuvem...', 'success')">☁️ Buscar Parceiro na Nuvem</button>
             <hr style="border: 0; border-top: 1px solid var(--border); margin-bottom: 15px;">
-            
+
             <div id="lista-motoboys-disponiveis" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
     </div>
@@ -368,13 +361,10 @@
 
     <div id="modal-alerta-ban" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); z-index:9999; justify-content:center; align-items:center;"><div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center;"><h3 style="color: #ef4444; margin-top: 0;">⚠️ Risco de Banimento</h3><p style="color: #334155; margin-bottom: 20px; font-size: 15px;">A Meta costuma banir contas que usam APIs não oficiais. Use número secundário.</p><div style="display: flex; gap: 10px; justify-content: center;"><button type="button" onclick="fecharAlertaBanimento()" style="background: #f1f5f9; color: #475569; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 50%;">Cancelar</button><button type="button" onclick="confirmarApiNaoOficial()" style="background: #ef4444; color: white; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 50%;">Estou Ciente</button></div></div></div>
     <div id="modal-qr-whatsapp" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); z-index:9999; justify-content:center; align-items:center;"><div style="background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center;"><h3 style="color: #0f172a; margin-top: 0; margin-bottom: 10px;">Conectar WhatsApp</h3><div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 20px; min-height: 230px; display: flex; justify-content: center; align-items: center;"><img id="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Aguardando_Sessao" alt="QR Code" style="max-width: 100%;"></div><button type="button" onclick="fecharModalQR()" style="background: #f1f5f9; color: #475569; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%;">Cancelar / Fechar</button></div></div>
-    
+
     <div id="notification-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script>
-        // ==========================================
-        // LÓGICA DO CHAT SOS CENTRAL
-        // ==========================================
         let telegramIdSOSAtual = null;
 
         function abrirModalSOS() {
@@ -393,16 +383,13 @@
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
             if(!msg) return;
-            
+
             const hist = document.getElementById('chat-history');
             hist.innerHTML += `<div style="align-self: flex-end; background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.85rem;">${msg}</div>`;
             hist.scrollTop = hist.scrollHeight;
             input.value = '';
         }
 
-        // ==========================================
-        // ESTADO GLOBAL DO KANBAN E ZONAS
-        // ==========================================
         let pedidos = [];
         let pacotes = [];
         let pacoteSelecionadoParaDespacho = null;
@@ -418,9 +405,6 @@
         let latLngPedidoAtual = null;
         let zonaDetectadaAtual = null;
 
-        // ==========================================
-        // SALVAMENTO KANBAN (LOCALSTORAGE)
-        // ==========================================
         function salvarKanbanStorage() {
             localStorage.setItem('ceia_kanban', JSON.stringify({ pedidos, pacotes }));
         }
@@ -437,17 +421,13 @@
             renderizarKanban();
         }
 
-        // ==========================================
-        // GOOGLE MAPS E SALVAMENTO NO LOCALSTORAGE
-        // ==========================================
-function carregarScriptMapa(apiKey) {
-            // A correção que se perdeu no travamento do PC
+        function carregarScriptMapa(apiKey) {
             if (window.google && window.google.maps) {
                 initMap();
                 initAutocomplete();
                 return;
             }
-            
+
             const script = document.createElement('script');
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=drawing,geometry,places`;
             script.async = true;
@@ -462,8 +442,8 @@ function carregarScriptMapa(apiKey) {
             document.getElementById('map-tools').style.display = 'flex';
 
             const enderecoBase = document.getElementById('prof-endereco').value;
-            let centroLatLng = { lat: -23.550520, lng: -46.633308 }; 
-            
+            let centroLatLng = { lat: -23.550520, lng: -46.633308 };
+
             if (enderecoBase) {
                 const geocoder = new google.maps.Geocoder();
                 try {
@@ -475,7 +455,7 @@ function carregarScriptMapa(apiKey) {
             map = new google.maps.Map(document.getElementById('map'), { zoom: 13, center: centroLatLng, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
 
             drawingManager = new google.maps.drawing.DrawingManager({
-                drawingMode: null, drawingControl: false, 
+                drawingMode: null, drawingControl: false,
                 polygonOptions: { fillOpacity: 0.35, strokeWeight: 2, editable: false },
                 circleOptions: { fillOpacity: 0.35, strokeWeight: 2, editable: false }
             });
@@ -483,9 +463,10 @@ function carregarScriptMapa(apiKey) {
 
             google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
                 overlayTemporario = event.overlay;
-                drawingManager.setDrawingMode(null); 
+                drawingManager.setDrawingMode(null);
                 resetarBotoesDesenho();
-                document.getElementById('zone-name').value = ''; document.getElementById('zone-fee').value = '';
+                document.getElementById('zone-name').value = '';
+                document.getElementById('zone-fee').value = '';
                 document.getElementById('modal-zone').style.display = 'flex';
             });
 
@@ -511,7 +492,7 @@ function carregarScriptMapa(apiKey) {
                 let overlay;
                 if(z.tipo === 'polygon') overlay = new google.maps.Polygon({ paths: z.coords, fillColor: z.cor, strokeColor: z.cor, fillOpacity: 0.35, strokeWeight: 2 });
                 else overlay = new google.maps.Circle({ center: z.center, radius: z.radius, fillColor: z.cor, strokeColor: z.cor, fillOpacity: 0.35, strokeWeight: 2 });
-                
+
                 overlay.setMap(map);
                 zonas.push({ id: z.id, nome: z.nome, taxa: z.taxa, cor: z.cor, overlay: overlay });
             });
@@ -557,32 +538,33 @@ function carregarScriptMapa(apiKey) {
 
         function abrirModalNovoPedido() {
             document.getElementById('pedido-nome').value = '';
-            document.getElementById('pedido-telefone').value = ''; 
+            document.getElementById('pedido-telefone').value = '';
             document.getElementById('pedido-endereco').value = '';
-            document.getElementById('pedido-ifood').value = ''; 
+            document.getElementById('pedido-ifood').value = '';
             document.getElementById('feedback-taxa').style.display = 'none';
-            latLngPedidoAtual = null; zonaDetectadaAtual = null;
+            latLngPedidoAtual = null;
+            zonaDetectadaAtual = null;
             document.getElementById('modal-novo-pedido').style.display = 'flex';
         }
 
         function salvarNovoPedido() {
             const nomeCliente = document.getElementById('pedido-nome').value;
             const end = document.getElementById('pedido-endereco').value;
-            
+
             if (!nomeCliente) return showToast("O nome do cliente é obrigatório.", "error");
             if (!end || !latLngPedidoAtual) return showToast("Selecione um endereço válido sugerido pelo Google.", "error");
 
             const novoPedido = {
-                id: "ped_" + Date.now(), 
+                id: "ped_" + Date.now(),
                 nomeCliente: nomeCliente,
-                telefone: document.getElementById('pedido-telefone').value, 
+                telefone: document.getElementById('pedido-telefone').value,
                 endereco: end,
-                ifood: document.getElementById('pedido-ifood').value, 
+                ifood: document.getElementById('pedido-ifood').value,
                 pagamento: document.getElementById('pedido-pagamento').value,
-                taxa: zonaDetectadaAtual ? zonaDetectadaAtual.taxa : 0, 
+                taxa: zonaDetectadaAtual ? zonaDetectadaAtual.taxa : 0,
                 cor: zonaDetectadaAtual ? zonaDetectadaAtual.cor : '#cbd5e1',
                 nomeZona: zonaDetectadaAtual ? zonaDetectadaAtual.nome : 'Fora de Área',
-                codigo_entrega: Math.floor(1000 + Math.random() * 9000).toString() 
+                codigo_entrega: Math.floor(1000 + Math.random() * 9000).toString()
             };
 
             pedidos.push(novoPedido);
@@ -592,7 +574,11 @@ function carregarScriptMapa(apiKey) {
             showToast("Pedido gerado e enviado para Preparação.");
         }
 
-        function criarPacote() { pacotes.push({ id: "pac_" + Date.now(), pedidosIds: [], status: 'AGUARDANDO', motoboy: null }); salvarKanbanStorage(); renderizarKanban(); }
+        function criarPacote() {
+            pacotes.push({ id: "pac_" + Date.now(), pedidosIds: [], status: 'AGUARDANDO', motoboy: null });
+            salvarKanbanStorage();
+            renderizarKanban();
+        }
 
         function deletarPacote(pacId) {
             if(confirm("Deseja desfazer este pacote? Os pedidos voltarão para a fila da coluna 1.")) {
@@ -603,15 +589,24 @@ function carregarScriptMapa(apiKey) {
         }
 
         function renderizarKanban() {
-            const col1 = document.getElementById('coluna-preparacao'); const col2 = document.getElementById('coluna-aguardando-coleta'); const col3 = document.getElementById('coluna-em-rota');
-            col1.innerHTML = ''; col2.innerHTML = ''; col3.innerHTML = '';
+            const col1 = document.getElementById('coluna-preparacao');
+            const col2 = document.getElementById('coluna-aguardando-coleta');
+            const col3 = document.getElementById('coluna-em-rota');
+            col1.innerHTML = '';
+            col2.innerHTML = '';
+            col3.innerHTML = '';
 
             const pedidosEmPacotes = pacotes.flatMap(p => p.pedidosIds);
             const pedidosAvulsos = pedidos.filter(p => !pedidosEmPacotes.includes(p.id));
 
             pedidosAvulsos.forEach(p => {
-                const el = document.createElement('div'); el.className = 'kanban-card'; el.draggable = true; el.id = p.id; el.style.borderLeftColor = p.cor;
-                el.ondragstart = drag; el.ondragend = dragEnd;
+                const el = document.createElement('div');
+                el.className = 'kanban-card';
+                el.draggable = true;
+                el.id = p.id;
+                el.style.borderLeftColor = p.cor;
+                el.ondragstart = drag;
+                el.ondragend = dragEnd;
                 el.innerHTML = `
                     <div class="card-price">R$ ${p.taxa.toFixed(2)}</div>
                     <div class="card-info" style="margin-bottom: 2px;">👤 <strong style="font-size: 0.95rem;">${p.nomeCliente}</strong></div>
@@ -623,11 +618,13 @@ function carregarScriptMapa(apiKey) {
             });
 
             pacotes.forEach(pac => {
-                const container = document.createElement('div'); container.className = 'package-container'; container.id = pac.id;
+                const container = document.createElement('div');
+                container.className = 'package-container';
+                container.id = pac.id;
                 let itemsHtml = '';
-                
+
                 let isPendente = pac.status === 'PENDENTE_ACEITE';
-                
+
                 pac.pedidosIds.forEach(pid => {
                     const p = pedidos.find(x => x.id === pid);
                     if (p) {
@@ -668,9 +665,9 @@ function carregarScriptMapa(apiKey) {
                     let headerText = isPendente ? `⏳ AGUARDANDO: ${pac.motoboy.nome.split(' ')[0]}` : `🚀 ROTA: ${pac.motoboy.nome.split(' ')[0]}`;
                     let headerColor = isPendente ? '#b45309' : '#1d4ed8';
 
-                    container.style.borderColor = borderColor; 
+                    container.style.borderColor = borderColor;
                     container.style.background = bgColor;
-                    
+
                     container.innerHTML = `
                         <div class="package-header" style="color:${headerColor}; margin-bottom: 10px;">
                             <span>${headerText}</span>
@@ -685,28 +682,60 @@ function carregarScriptMapa(apiKey) {
             });
         }
 
-        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); setTimeout(() => ev.target.classList.add('dragging'), 0); }
-        function dragEnd(ev) { ev.target.classList.remove('dragging'); }
-        function allowDrop(ev) { ev.preventDefault(); if (ev.currentTarget.classList.contains('package-drop-zone') || ev.currentTarget.id === 'col-1-zone') { ev.currentTarget.classList.add('drop-zone-active'); } }
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+            setTimeout(() => ev.target.classList.add('dragging'), 0);
+        }
+
+        function dragEnd(ev) {
+            ev.target.classList.remove('dragging');
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            if (ev.currentTarget.classList.contains('package-drop-zone') || ev.currentTarget.id === 'col-1-zone') {
+                ev.currentTarget.classList.add('drop-zone-active');
+            }
+        }
 
         function dropToPackage(ev, packageId) {
-            ev.preventDefault(); ev.currentTarget.classList.remove('drop-zone-active');
-            const pedidoId = ev.dataTransfer.getData("text"); const pacote = pacotes.find(p => p.id === packageId);
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drop-zone-active');
+            const pedidoId = ev.dataTransfer.getData("text");
+            const pacote = pacotes.find(p => p.id === packageId);
             if (pedidos.some(p => p.id === pedidoId) && pacote && !pacote.pedidosIds.includes(pedidoId)) {
                 pacotes.forEach(pac => { pac.pedidosIds = pac.pedidosIds.filter(id => id !== pedidoId); });
-                pacote.pedidosIds.push(pedidoId); salvarKanbanStorage(); renderizarKanban();
+                pacote.pedidosIds.push(pedidoId);
+                salvarKanbanStorage();
+                renderizarKanban();
             }
         }
 
         function dropToCol1(ev) {
-            ev.preventDefault(); ev.currentTarget.classList.remove('drop-zone-active');
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drop-zone-active');
             const pedidoId = ev.dataTransfer.getData("text");
-            pacotes.forEach(pac => { if (pac.pedidosIds.includes(pedidoId)) pac.pedidosIds = pac.pedidosIds.filter(id => id !== pedidoId); }); 
-            salvarKanbanStorage(); renderizarKanban();
+            pacotes.forEach(pac => {
+                if (pac.pedidosIds.includes(pedidoId)) pac.pedidosIds = pac.pedidosIds.filter(id => id !== pedidoId);
+            });
+            salvarKanbanStorage();
+            renderizarKanban();
         }
 
-        function tirarDoPacote(pacId, pedId) { const pac = pacotes.find(p => p.id === pacId); pac.pedidosIds = pac.pedidosIds.filter(id => id !== pedId); salvarKanbanStorage(); renderizarKanban(); }
-        function removerPedidoDefinitivo(id) { if(confirm("Excluir este pedido do sistema?")) { pedidos = pedidos.filter(p => p.id !== id); salvarKanbanStorage(); renderizarKanban(); } }
+        function tirarDoPacote(pacId, pedId) {
+            const pac = pacotes.find(p => p.id === pacId);
+            pac.pedidosIds = pac.pedidosIds.filter(id => id !== pedId);
+            salvarKanbanStorage();
+            renderizarKanban();
+        }
+
+        function removerPedidoDefinitivo(id) {
+            if(confirm("Excluir este pedido do sistema?")) {
+                pedidos = pedidos.filter(p => p.id !== id);
+                salvarKanbanStorage();
+                renderizarKanban();
+            }
+        }
 
         async function abrirModalDespacho(pacId) {
             pacoteSelecionadoParaDespacho = pacId;
@@ -718,30 +747,40 @@ function carregarScriptMapa(apiKey) {
             document.getElementById('modal-despacho').style.display = 'flex';
 
             try {
-                const res = await fetch('/api/fleet'); const frota = await res.json();
+                const res = await fetch('/api/fleet');
+                const frota = await res.json();
                 const online = frota.filter(m => m.status === 'ONLINE' || m.status === 'EM_ENTREGA');
 
-                if (online.length === 0) { container.innerHTML = '<p style="color:#ef4444; font-size:0.85rem">Nenhum motoboy operando no momento.</p>'; return; }
+                if (online.length === 0) {
+                    container.innerHTML = '<p style="color:#ef4444; font-size:0.85rem">Nenhum motoboy operando no momento.</p>';
+                    return;
+                }
 
                 container.innerHTML = '';
                 online.forEach(m => {
-                    const btn = document.createElement('button'); btn.className = 'btn btn-edit'; btn.style.textAlign = 'left'; btn.style.width = '100%';
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-edit';
+                    btn.style.textAlign = 'left';
+                    btn.style.width = '100%';
                     btn.innerHTML = `🛵 <b>${m.nome}</b> <span style="float:right; font-size:0.7rem">${m.veiculo || ''}</span>`;
                     btn.onclick = () => confirmarDespacho(m);
                     container.appendChild(btn);
                 });
-            } catch (e) { container.innerHTML = 'Erro ao carregar frota.'; }
+            } catch (e) {
+                container.innerHTML = 'Erro ao carregar frota.';
+            }
         }
 
         async function confirmarDespacho(motoboy) {
             const pac = pacotes.find(p => p.id === pacoteSelecionadoParaDespacho);
             pac.status = 'PENDENTE_ACEITE';
             pac.motoboy = motoboy;
-            
+
             try {
                 const pedidosDoPacote = pac.pedidosIds.map(pid => pedidos.find(p => p.id === pid));
                 await fetch('/api/operacao/despachar', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ pacoteId: pac.id, motoboy: motoboy, pedidos: pedidosDoPacote })
                 });
             } catch (e) {}
@@ -753,12 +792,23 @@ function carregarScriptMapa(apiKey) {
         }
 
         function cancelarDespacho(pacId) {
-            const pac = pacotes.find(p => p.id === pacId); pac.status = 'AGUARDANDO'; pac.motoboy = null; salvarKanbanStorage(); renderizarKanban(); showToast('O pacote retornou para Aguardando Coleta.');
+            const pac = pacotes.find(p => p.id === pacId);
+            pac.status = 'AGUARDANDO';
+            pac.motoboy = null;
+            salvarKanbanStorage();
+            renderizarKanban();
+            showToast('O pacote retornou para Aguardando Coleta.');
         }
 
         function finalizarEntregaUnica(pacId, pedId) {
             if (confirm("Confirmar a entrega na porta deste cliente?")) {
-                try { fetch('/api/operacao/baixa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pedidoId: pedId }) }); } catch(e){}
+                try {
+                    fetch('/api/operacao/baixa', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pedidoId: pedId })
+                    });
+                } catch(e) {}
                 baixarPedidoPeloSistema(pedId);
             }
         }
@@ -769,79 +819,124 @@ function carregarScriptMapa(apiKey) {
 
             pedidos = pedidos.filter(p => p.id !== pedId);
             pac.pedidosIds = pac.pedidosIds.filter(id => id !== pedId);
-            
+
             if (pac.pedidosIds.length === 0) {
                 pacotes = pacotes.filter(p => p.id !== pac.id);
                 showToast("Todas as entregas da rota foram concluídas!");
-            } else { showToast("Entrega confirmada com sucesso!"); }
-            
+            } else {
+                showToast("Entrega confirmada com sucesso!");
+            }
+
             salvarKanbanStorage();
             renderizarKanban();
         }
 
-        // ==========================================
-        // RESTANTE DAS FUNÇÕES ORIGINAIS
-        // ==========================================
         function setDrawingMode(mode) {
             if (!drawingManager) return;
             resetarBotoesDesenho();
-            if (mode === 'polygon') { drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON); document.getElementById('btn-draw-poly').classList.add('active'); } 
-            else if (mode === 'circle') { drawingManager.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE); document.getElementById('btn-draw-circle').classList.add('active'); } 
-            else { drawingManager.setDrawingMode(null); document.getElementById('btn-draw-hand').style.background = 'var(--accent)'; document.getElementById('btn-draw-hand').style.color = 'white'; }
+            if (mode === 'polygon') {
+                drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+                document.getElementById('btn-draw-poly').classList.add('active');
+            } else if (mode === 'circle') {
+                drawingManager.setDrawingMode(google.maps.drawing.OverlayType.CIRCLE);
+                document.getElementById('btn-draw-circle').classList.add('active');
+            } else {
+                drawingManager.setDrawingMode(null);
+                document.getElementById('btn-draw-hand').style.background = 'var(--accent)';
+                document.getElementById('btn-draw-hand').style.color = 'white';
+            }
         }
 
         function resetarBotoesDesenho() {
-            document.getElementById('btn-draw-poly').classList.remove('active'); document.getElementById('btn-draw-circle').classList.remove('active');
-            document.getElementById('btn-draw-hand').style.background = '#f8fafc'; document.getElementById('btn-draw-hand').style.color = 'var(--text-dark)';
+            document.getElementById('btn-draw-poly').classList.remove('active');
+            document.getElementById('btn-draw-circle').classList.remove('active');
+            document.getElementById('btn-draw-hand').style.background = '#f8fafc';
+            document.getElementById('btn-draw-hand').style.color = 'var(--text-dark)';
         }
 
-        function cancelarCriacaoZona() { if (overlayTemporario) overlayTemporario.setMap(null); overlayTemporario = null; fecharModal('modal-zone'); setDrawingMode('hand'); }
+        function cancelarCriacaoZona() {
+            if (overlayTemporario) overlayTemporario.setMap(null);
+            overlayTemporario = null;
+            fecharModal('modal-zone');
+            setDrawingMode('hand');
+        }
 
         function salvarCriacaoZona() {
-            const nome = document.getElementById('zone-name').value; const taxa = parseFloat(document.getElementById('zone-fee').value);
+            const nome = document.getElementById('zone-name').value;
+            const taxa = parseFloat(document.getElementById('zone-fee').value);
             if (!nome || isNaN(taxa)) return showToast('Preencha o nome e o valor da taxa.', 'error');
-            const corEscolhida = paletaCores[corIndex % paletaCores.length]; corIndex++;
+            const corEscolhida = paletaCores[corIndex % paletaCores.length];
+            corIndex++;
             overlayTemporario.setOptions({ fillColor: corEscolhida, strokeColor: corEscolhida });
             zonas.push({ id: Date.now(), nome: nome, taxa: taxa, cor: corEscolhida, overlay: overlayTemporario });
-            overlayTemporario = null; 
+            overlayTemporario = null;
             salvarZonasStorage();
-            fecharModal('modal-zone'); atualizarListaZonas(); showToast('Zona criada com sucesso!'); setDrawingMode('hand');
+            fecharModal('modal-zone');
+            atualizarListaZonas();
+            showToast('Zona criada com sucesso!');
+            setDrawingMode('hand');
         }
 
         function deletarZona(idZona) {
             const index = zonas.findIndex(z => z.id === idZona);
-            if (index > -1) { zonas[index].overlay.setMap(null); zonas.splice(index, 1); salvarZonasStorage(); atualizarListaZonas(); showToast('Zona excluída.'); }
+            if (index > -1) {
+                zonas[index].overlay.setMap(null);
+                zonas.splice(index, 1);
+                salvarZonasStorage();
+                atualizarListaZonas();
+                showToast('Zona excluída.');
+            }
         }
 
         function atualizarListaZonas() {
-            const container = document.getElementById('zones-list-container'); const content = document.getElementById('zones-list-content'); content.innerHTML = '';
+            const container = document.getElementById('zones-list-container');
+            const content = document.getElementById('zones-list-content');
+            content.innerHTML = '';
             if (zonas.length === 0) return container.style.display = 'none';
             container.style.display = 'block';
             zonas.forEach(z => {
-                const item = document.createElement('div'); item.className = 'zone-item';
+                const item = document.createElement('div');
+                item.className = 'zone-item';
                 item.innerHTML = `<div style="display: flex; align-items: center;"><span class="zone-color-dot" style="background-color: ${z.cor};"></span><div><div style="font-weight: 600; font-size: 0.9rem; color: var(--text-dark);">${z.nome}</div><div style="font-size: 0.8rem; color: var(--text-light); font-family: var(--font-mono);">R$ ${z.taxa.toFixed(2).replace('.', ',')}</div></div></div><button onclick="deletarZona(${z.id})" style="background: none; border: none; color: #ef4444; font-size: 1.2rem; cursor: pointer; padding: 0 5px;">&times;</button>`;
                 content.appendChild(item);
             });
         }
 
-        let mapRastreio = null; let markerRastreio = null;
+        let mapRastreio = null;
+        let markerRastreio = null;
         function localizarNoMapa(lat, lng, nome) {
             if (!lat || !lng) return showToast(`Sem sinal de GPS para ${nome} no momento.`, 'error');
-            document.getElementById('track-nome').innerText = nome; document.getElementById('modal-tracking').style.display = 'flex';
+            document.getElementById('track-nome').innerText = nome;
+            document.getElementById('modal-tracking').style.display = 'flex';
             const posicao = { lat: parseFloat(lat), lng: parseFloat(lng) };
             setTimeout(() => {
-                if (!mapRastreio) { mapRastreio = new google.maps.Map(document.getElementById('tracking-map-canvas'), { zoom: 17, center: posicao, mapTypeControl: false, streetViewControl: false }); } 
-                else { mapRastreio.setCenter(posicao); mapRastreio.setZoom(17); }
+                if (!mapRastreio) {
+                    mapRastreio = new google.maps.Map(document.getElementById('tracking-map-canvas'), { zoom: 17, center: posicao, mapTypeControl: false, streetViewControl: false });
+                } else {
+                    mapRastreio.setCenter(posicao);
+                    mapRastreio.setZoom(17);
+                }
                 if (markerRastreio) markerRastreio.setMap(null);
                 markerRastreio = new google.maps.Marker({ position: posicao, map: mapRastreio, title: nome, animation: google.maps.Animation.DROP });
             }, 200);
         }
 
-        function fecharModalRastreio() { document.getElementById('modal-tracking').style.display = 'none'; }
-        window.abrirAlertaBanimento = function() { document.getElementById('modal-alerta-ban').style.display = 'flex'; };
-        window.fecharAlertaBanimento = function() { document.getElementById('modal-alerta-ban').style.display = 'none'; };
+        function fecharModalRastreio() {
+            document.getElementById('modal-tracking').style.display = 'none';
+        }
+
+        window.abrirAlertaBanimento = function() {
+            document.getElementById('modal-alerta-ban').style.display = 'flex';
+        };
+
+        window.fecharAlertaBanimento = function() {
+            document.getElementById('modal-alerta-ban').style.display = 'none';
+        };
+
         window.confirmarApiNaoOficial = function() {
-            fecharAlertaBanimento(); document.getElementById('modal-qr-whatsapp').style.display = 'flex'; document.getElementById('qr-code-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Aguardando_Sessao';
+            fecharAlertaBanimento();
+            document.getElementById('modal-qr-whatsapp').style.display = 'flex';
+            document.getElementById('qr-code-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Aguardando_Sessao';
             try { fetch('/api/whatsapp/start'); } catch(e) {}
             window.qrInterval = setInterval(async () => {
                 try {
@@ -849,49 +944,68 @@ function carregarScriptMapa(apiKey) {
                     if(res.ok) {
                         const data = await res.json();
                         if (data.qr) document.getElementById('qr-code-img').src = data.qr;
-                        if (data.status === 'CONNECTED') { clearInterval(window.qrInterval); showToast('WhatsApp Conectado com Sucesso!'); setTimeout(() => fecharModalQR(), 1500); }
+                        if (data.status === 'CONNECTED') {
+                            clearInterval(window.qrInterval);
+                            showToast('WhatsApp Conectado com Sucesso!');
+                            setTimeout(() => fecharModalQR(), 1500);
+                        }
                     }
                 } catch (e) {}
             }, 2000);
         };
-        window.fecharModalQR = function() { if (window.qrInterval) clearInterval(window.qrInterval); document.getElementById('modal-qr-whatsapp').style.display = 'none'; };
+
+        window.fecharModalQR = function() {
+            if (window.qrInterval) clearInterval(window.qrInterval);
+            document.getElementById('modal-qr-whatsapp').style.display = 'none';
+        };
 
         function switchTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            document.getElementById(id).classList.add('active'); el.classList.add('active');
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
             if(id === 'tab-frota') carregarFrota();
             if(id === 'tab-mapa' && map) {
                 google.maps.event.trigger(map, 'resize');
                 const enderecoBase = document.getElementById('prof-endereco').value;
-                if(enderecoBase) new google.maps.Geocoder().geocode({ address: enderecoBase }, (res, status) => { if(status === 'OK') map.setCenter(res[0].geometry.location); });
+                if(enderecoBase) new google.maps.Geocoder().geocode({ address: enderecoBase }, (res, status) => {
+                    if(status === 'OK') map.setCenter(res[0].geometry.location);
+                });
             }
         }
 
         function showToast(message, type = 'success') {
-            const container = document.getElementById('notification-container'); const toast = document.createElement('div');
-            toast.className = 'toast'; if (type === 'error') toast.classList.add('error'); toast.innerText = message; container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 10); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (type === 'error') toast.classList.add('error');
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
         function connectWS() {
             const ws = new WebSocket('ws://localhost:3000/ws/logs');
             ws.onmessage = (event) => {
                 try {
-                    const log = JSON.parse(event.data); 
-                    
+                    const log = JSON.parse(event.data);
+
                     if (log.tipo === 'SOS') {
                         telegramIdSOSAtual = log.telegram_id || null;
                         document.getElementById('sos-text').innerText = log.mensagem;
                         document.getElementById('sos-banner').style.display = 'block';
-                        
+
                         const hist = document.getElementById('chat-history');
                         hist.innerHTML += `<div style="align-self: flex-start; background: #ef4444; color: white; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.85rem;"><b>Motoboy:</b> ${log.mensagem}</div>`;
                         hist.scrollTop = hist.scrollHeight;
 
                         const beep = document.getElementById('beep-sound');
                         beep.play().catch(e => console.log('Áudio bloqueado'));
-                    } 
+                    }
                     else if (log.tipo === 'ACEITE_ROTA') {
                         const pac = pacotes.find(p => p.id === log.pacoteId);
                         if (pac) {
@@ -915,19 +1029,18 @@ function carregarScriptMapa(apiKey) {
             ws.onclose = () => { setTimeout(connectWS, 3000); };
         }
 
-async function salvarPerfil() {
-            // Vacina: Só puxa o valor se o campo existir no HTML
+        async function salvarPerfil() {
             const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
             const getChk = (id) => { const el = document.getElementById(id); return el ? el.checked : false; };
 
-            const body = { 
-                nome: getVal('prof-nome'), 
-                endereco: getVal('prof-endereco'), 
+            const body = {
+                nome: getVal('prof-nome'),
+                endereco: getVal('prof-endereco'),
                 whatsapp: getVal('prof-whatsapp'),
                 link_cardapio: getVal('prof-link-cardapio'),
-                telegram_bot_token: getVal('prof-telegram-token'), 
+                telegram_bot_token: getVal('prof-telegram-token'),
                 google_maps_key: getVal('prof-google-maps-key'),
-                openai_key: getVal('prof-openai-key'), 
+                openai_key: getVal('prof-openai-key'),
                 meta_api_token: getVal('prof-meta-api-token'),
                 horarios: {
                     seg: { on: getChk('dia-seg'), abre: getVal('hora-seg-abre'), fecha: getVal('hora-seg-fecha') },
@@ -940,44 +1053,81 @@ async function salvarPerfil() {
                 },
                 auto_responder: getChk('prof-auto-resp')
             };
-            
-            await fetch('/api/profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+
+            const response = await fetch('/api/profile', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Falha ao salvar perfil: HTTP ${response.status}`);
+            }
+
             showToast('Base, Horários e Chaves Salvos!');
             if (body.google_maps_key && !window.google) carregarScriptMapa(body.google_maps_key);
         }
 
         async function dispararConvite() {
-            const input = document.getElementById('moto-zap'); let zap = input.value.replace(/\D/g, ''); 
+            const input = document.getElementById('moto-zap');
+            let zap = input.value.replace(/\D/g, '');
             if (zap.length < 10) return showToast('⚠️ Digite um número válido com DDD.', 'error');
             if (!zap.startsWith('55')) zap = '55' + zap;
             const token = document.getElementById('prof-telegram-token').value;
             if (!token) return showToast('⚠️ Token do Telegram não encontrado.', 'error');
 
             try {
-                const btn = document.getElementById('btn-disparar'); const tx = btn.innerText; btn.innerText = 'Disparando...'; btn.disabled = true;
-                const res = await fetch(`https://api.telegram.org/bot${token}/getMe`); const data = await res.json();
-                if (!data.ok) { showToast('⚠️ Bot fora do ar.', 'error'); btn.innerText = tx; btn.disabled = false; return; }
+                const btn = document.getElementById('btn-disparar');
+                const tx = btn.innerText;
+                btn.innerText = 'Disparando...';
+                btn.disabled = true;
+
+                const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+                const data = await res.json();
+                if (!data.ok) {
+                    showToast('⚠️ Bot fora do ar.', 'error');
+                    btn.innerText = tx;
+                    btn.disabled = false;
+                    return;
+                }
 
                 const linkBot = `https://t.me/${data.result.username}?start=cadastro`;
                 const mensagem = `Fala, parceiro! 🛵\n\nPara começar a rodar com a nossa loja, baixe o Telegram e clique no link abaixo para fazer seu cadastro:\n\n👉 ${linkBot}`;
-                const envio = await fetch('/api/whatsapp/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ numero: zap, texto: mensagem }) });
-                if (envio.ok) { showToast('✅ Convite enviado!'); input.value = ''; } else { showToast('⚠️ Falha no envio.', 'error'); }
-                btn.innerText = tx; btn.disabled = false;
-            } catch (e) { showToast('⚠️ Erro de rede.', 'error'); }
+                const envio = await fetch('/api/whatsapp/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numero: zap, texto: mensagem })
+                });
+                if (envio.ok) {
+                    showToast('✅ Convite enviado!');
+                    input.value = '';
+                } else {
+                    showToast('⚠️ Falha no envio.', 'error');
+                }
+                btn.innerText = tx;
+                btn.disabled = false;
+            } catch (e) {
+                showToast('⚠️ Erro de rede.', 'error');
+            }
         }
 
         async function carregarFrota() {
             try {
-                const res = await fetch('/api/fleet'); if(!res.ok) return;
-                const frota = await res.json(); const container = document.getElementById('fleet-container'); container.innerHTML = ''; 
+                const res = await fetch('/api/fleet');
+                if(!res.ok) return;
+                const frota = await res.json();
+                const container = document.getElementById('fleet-container');
+                container.innerHTML = '';
                 if (frota.length === 0) return container.innerHTML = '<p style="color: var(--text-light); grid-column: 1 / -1;">Nenhum motoboy cadastrado.</p>';
-                
+
                 frota.forEach(moto => {
                     let badgeClass = moto.status === 'ONLINE' ? 'status-online' : (moto.status === 'EM_ENTREGA' ? 'status-em_entrega' : 'status-offline');
                     const dataFormatada = moto.ultima_atualizacao ? new Date(moto.ultima_atualizacao).toLocaleString('pt-BR') : '-';
-                    const escNome = moto.nome ? moto.nome.replace(/'/g, "\\'") : ''; const escPix = moto.pix ? moto.pix.replace(/'/g, "\\'") : '';
-                    
-                    const card = document.createElement('div'); card.className = 'fleet-card';
+                    const escNome = moto.nome ? moto.nome.replace(/'/g, "\\'") : '';
+                    const escPix = moto.pix ? moto.pix.replace(/'/g, "\\'") : '';
+
+                    const card = document.createElement('div');
+                    card.className = 'fleet-card';
                     card.innerHTML = `
                         <div class="fleet-header"><strong style="font-size: 1.1rem; color: var(--text-dark);">${moto.nome || 'Sem Nome'}</strong><span class="status-badge ${badgeClass}">${moto.status}</span></div>
                         <div style="font-size: 0.85rem; color: var(--text-light); line-height: 1.6; margin-bottom: 15px;">
@@ -996,60 +1146,167 @@ async function salvarPerfil() {
             } catch (e) {}
         }
 
-        async function excluirMotoboy(id) { if(confirm("Excluir este motoboy?")) { await fetch(`/api/fleet/${id}`, { method: 'DELETE' }); carregarFrota(); } }
-        function abrirModalEditar(id, vinculo, veiculo) { document.getElementById('edit-id').value = id; document.getElementById('edit-vinculo').value = vinculo === 'Freelancer' ? 'Freelancer' : 'Fixo'; document.getElementById('edit-veiculo').value = veiculo; document.getElementById('modal-edit').style.display = 'flex'; }
-        async function salvarEdicao() { const id = document.getElementById('edit-id').value; const body = { vinculo: document.getElementById('edit-vinculo').value, veiculo: document.getElementById('edit-veiculo').value }; await fetch(`/api/fleet/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) }); fecharModal('modal-edit'); carregarFrota(); showToast('Perfil atualizado'); }
+        async function excluirMotoboy(id) {
+            if(confirm("Excluir este motoboy?")) {
+                await fetch(`/api/fleet/${id}`, { method: 'DELETE' });
+                carregarFrota();
+            }
+        }
+
+        function abrirModalEditar(id, vinculo, veiculo) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-vinculo').value = vinculo === 'Freelancer' ? 'Freelancer' : 'Fixo';
+            document.getElementById('edit-veiculo').value = veiculo;
+            document.getElementById('modal-edit').style.display = 'flex';
+        }
+
+        async function salvarEdicao() {
+            const id = document.getElementById('edit-id').value;
+            const body = {
+                vinculo: document.getElementById('edit-vinculo').value,
+                veiculo: document.getElementById('edit-veiculo').value
+            };
+            await fetch(`/api/fleet/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+            fecharModal('modal-edit');
+            carregarFrota();
+            showToast('Perfil atualizado');
+        }
 
         let financeiroAtual = null;
-        async function abrirModalFinanceiro(id, nome, chavePix) { financeiroAtual = id; document.getElementById('fin-nome').innerText = nome; document.getElementById('fin-chave-pix').innerText = chavePix || 'Não cadastrada'; document.getElementById('modal-financeiro').style.display = 'flex'; await carregarExtrato(id, chavePix, nome); }
-        async function carregarExtrato(id, chavePix, nome) {
-            const res = await fetch(`/api/financeiro/${id}`); const dados = await res.json();
-            document.getElementById('fin-qtd').innerText = dados.qtd; document.getElementById('fin-entregas').innerText = `R$ ${dados.total_entregas.toFixed(2).replace('.', ',')}`; document.getElementById('fin-deslocamento').innerText = `R$ ${dados.total_deslocamento.toFixed(2).replace('.', ',')}`; document.getElementById('fin-total').innerText = `R$ ${dados.total_geral.toFixed(2).replace('.', ',')}`;
-            const containerPix = document.getElementById('pix-container'); const btnZerar = document.getElementById('btn-zerar-acerto'); const emptyState = document.getElementById('fin-empty-state');
-            if (dados.total_geral > 0) { emptyState.style.display = 'none'; containerPix.style.display = 'flex'; btnZerar.style.display = 'block'; new QRious({ element: document.getElementById('qr-code-pix'), value: gerarPayloadPix(chavePix, dados.total_geral, nome), size: 200, level: 'M' }); } 
-            else { emptyState.style.display = 'block'; containerPix.style.display = 'none'; btnZerar.style.display = 'none'; }
+        async function abrirModalFinanceiro(id, nome, chavePix) {
+            financeiroAtual = id;
+            document.getElementById('fin-nome').innerText = nome;
+            document.getElementById('fin-chave-pix').innerText = chavePix || 'Não cadastrada';
+            document.getElementById('modal-financeiro').style.display = 'flex';
+            await carregarExtrato(id, chavePix, nome);
         }
-        async function zerarAcerto() { if(confirm("Confirma pagamento?")) { await fetch(`/api/financeiro/pagar/${financeiroAtual}`, { method: 'POST' }); fecharModal('modal-financeiro'); showToast('Liquidado!'); } }
-        
-        function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
-        function crc16(str) { let crc = 0xFFFF; for (let i = 0; i < str.length; i++) { crc ^= str.charCodeAt(i) << 8; for (let j = 0; j < 8; j++) { if ((crc & 0x8000) > 0) crc = (crc << 1) ^ 0x1021; else crc = crc << 1; } } return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0'); }
-        function gerarPayloadPix(chave, valor, nome) { if(!chave) return "ERRO"; const valStr = valor.toFixed(2); let payload = `00020101021126${(chave.length + 22).toString().padStart(2, '0')}0014br.gov.bcb.pix01${chave.length.toString().padStart(2, '0')}${chave}52040000530398654${valStr.length.toString().padStart(2, '0')}${valStr}5802BR59${nome.substring(0,25).length.toString().padStart(2, '0')}${nome.substring(0,25)}6009SAO PAULO62070503***6304`; return payload + crc16(payload); }
-window.onload = async () => {
-            carregarKanbanStorage(); 
-            carregarFrota(); 
-            connectWS();
-            try {
-                const res = await fetch('/api/profile?t=' + new Date().getTime()); 
-                if (res.ok) {
-                    const d = await res.json();
-                    
-                    // Vacina: Só injeta o valor na tela se a caixa existir no HTML
-                    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val || false; };
 
-                    setVal('prof-nome', d.nome); 
-                    setVal('prof-endereco', d.endereco); 
-                    setVal('prof-whatsapp', d.whatsapp);
-                    setVal('prof-link-cardapio', d.link_cardapio);
-                    setVal('prof-telegram-token', d.telegram_bot_token); 
-                    setVal('prof-google-maps-key', d.google_maps_key); 
-                    setVal('prof-openai-key', d.openai_key); 
-                    setVal('prof-meta-api-token', d.meta_api_token);
-                    
-                    if (d.horarios) {
-                        ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].forEach(dia => {
-                            if(d.horarios[dia]) {
-                                setChk(`dia-${dia}`, d.horarios[dia].on);
-                                setVal(`hora-${dia}-abre`, d.horarios[dia].abre);
-                                setVal(`hora-${dia}-fecha`, d.horarios[dia].fecha);
-                            }
-                        });
-                    }
-                    if (d.auto_responder !== undefined) setChk('prof-auto-resp', d.auto_responder);
-                    if (d.google_maps_key) carregarScriptMapa(d.google_maps_key);
+        async function carregarExtrato(id, chavePix, nome) {
+            const res = await fetch(`/api/financeiro/${id}`);
+            const dados = await res.json();
+            document.getElementById('fin-qtd').innerText = dados.qtd;
+            document.getElementById('fin-entregas').innerText = `R$ ${dados.total_entregas.toFixed(2).replace('.', ',')}`;
+            document.getElementById('fin-deslocamento').innerText = `R$ ${dados.total_deslocamento.toFixed(2).replace('.', ',')}`;
+            document.getElementById('fin-total').innerText = `R$ ${dados.total_geral.toFixed(2).replace('.', ',')}`;
+            const containerPix = document.getElementById('pix-container');
+            const btnZerar = document.getElementById('btn-zerar-acerto');
+            const emptyState = document.getElementById('fin-empty-state');
+            if (dados.total_geral > 0) {
+                emptyState.style.display = 'none';
+                containerPix.style.display = 'flex';
+                btnZerar.style.display = 'block';
+                new QRious({ element: document.getElementById('qr-code-pix'), value: gerarPayloadPix(chavePix, dados.total_geral, nome), size: 200, level: 'M' });
+            } else {
+                emptyState.style.display = 'block';
+                containerPix.style.display = 'none';
+                btnZerar.style.display = 'none';
+            }
+        }
+
+        async function zerarAcerto() {
+            if(confirm("Confirma pagamento?")) {
+                await fetch(`/api/financeiro/pagar/${financeiroAtual}`, { method: 'POST' });
+                fecharModal('modal-financeiro');
+                showToast('Liquidado!');
+            }
+        }
+
+        function fecharModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function crc16(str) {
+            let crc = 0xFFFF;
+            for (let i = 0; i < str.length; i++) {
+                crc ^= str.charCodeAt(i) << 8;
+                for (let j = 0; j < 8; j++) {
+                    if ((crc & 0x8000) > 0) crc = (crc << 1) ^ 0x1021;
+                    else crc = crc << 1;
                 }
-            } catch(e) { 
-                console.error("Erro ao preencher formulário (Crash evitado):", e); 
+            }
+            return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        function gerarPayloadPix(chave, valor, nome) {
+            if(!chave) return "ERRO";
+            const valStr = valor.toFixed(2);
+            let payload = `00020101021126${(chave.length + 22).toString().padStart(2, '0')}0014br.gov.bcb.pix01${chave.length.toString().padStart(2, '0')}${chave}52040000530398654${valStr.length.toString().padStart(2, '0')}${valStr}5802BR59${nome.substring(0,25).length.toString().padStart(2, '0')}${nome.substring(0,25)}6009SAO PAULO62070503***6304`;
+            return payload + crc16(payload);
+        }
+
+        async function carregarPerfilInicial() {
+            const response = await fetch('/api/profile?t=' + Date.now(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Falha ao carregar perfil: HTTP ${response.status}`);
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.toLowerCase().includes('application/json')) {
+                const rawText = await response.text();
+                throw new Error(`Resposta inválida em /api/profile. Content-Type recebido: ${contentType}. Corpo: ${rawText.substring(0, 300)}`);
+            }
+
+            return await response.json();
+        }
+
+        window.onload = async () => {
+            carregarKanbanStorage();
+            carregarFrota();
+            connectWS();
+
+            try {
+                const d = await carregarPerfilInicial();
+
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = val || '';
+                };
+
+                const setChk = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = !!val;
+                };
+
+                setVal('prof-nome', d.nome);
+                setVal('prof-endereco', d.endereco);
+                setVal('prof-whatsapp', d.whatsapp);
+                setVal('prof-link-cardapio', d.link_cardapio);
+                setVal('prof-telegram-token', d.telegram_bot_token);
+                setVal('prof-google-maps-key', d.google_maps_key);
+                setVal('prof-openai-key', d.openai_key);
+                setVal('prof-meta-api-token', d.meta_api_token);
+
+                if (d.horarios) {
+                    ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].forEach(dia => {
+                        if(d.horarios[dia]) {
+                            setChk(`dia-${dia}`, d.horarios[dia].on);
+                            setVal(`hora-${dia}-abre`, d.horarios[dia].abre);
+                            setVal(`hora-${dia}-fecha`, d.horarios[dia].fecha);
+                        }
+                    });
+                }
+
+                if (d.auto_responder !== undefined) {
+                    setChk('prof-auto-resp', d.auto_responder);
+                }
+
+                if (d.google_maps_key) {
+                    carregarScriptMapa(d.google_maps_key);
+                }
+            } catch(e) {
+                console.error('Erro ao preencher formulário:', e);
+                showToast('Não foi possível carregar os dados do QG Logístico.', 'error');
             }
         };
     </script>

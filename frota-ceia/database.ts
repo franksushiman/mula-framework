@@ -5,8 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// Garante que o banco seja criado SEMPRE na mesma pasta do código
-const dbPath = path.join(__dirname, 'database.sqlite'); 
+const dbPath = path.join(__dirname, 'database.sqlite');
 
 export let db: Database | null = null;
 let dbPromise: Promise<Database> | null = null;
@@ -17,7 +16,7 @@ export async function initDatabase(): Promise<Database> {
 
     dbPromise = open({ filename: dbPath, driver: sqlite3.Database }).then(async (database) => {
         console.log('✔ Conexão com SQLite estabelecida (Caminho Absoluto Ativado).');
-        
+
         await database.exec(`
             CREATE TABLE IF NOT EXISTS configuracoes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,8 +26,7 @@ export async function initDatabase(): Promise<Database> {
                 horarios TEXT, auto_responder INTEGER DEFAULT 0
             );
         `);
-        
-        // Vacinas de colunas
+
         try { await database.exec('ALTER TABLE configuracoes ADD COLUMN horarios TEXT;'); } catch (e) {}
         try { await database.exec('ALTER TABLE configuracoes ADD COLUMN auto_responder INTEGER DEFAULT 0;'); } catch (e) {}
         try { await database.exec('ALTER TABLE configuracoes ADD COLUMN link_cardapio TEXT;'); } catch (e) {}
@@ -37,7 +35,6 @@ export async function initDatabase(): Promise<Database> {
         try { await database.exec('ALTER TABLE configuracoes ADD COLUMN meta_api_token TEXT;'); } catch (e) {}
         try { await database.exec('ALTER TABLE configuracoes ADD COLUMN telegram_bot_token TEXT;'); } catch (e) {}
 
-        // Garante que existe estritamente uma única linha de configuração (ID = 1)
         await database.run('DELETE FROM configuracoes WHERE id != 1');
         const check = await database.get('SELECT id FROM configuracoes WHERE id = 1');
         if (!check) {
@@ -85,7 +82,9 @@ export async function getConfiguracoes() {
     const config = await database.get('SELECT * FROM configuracoes WHERE id = 1');
     if (config) {
         if (config.horarios) {
-            try { config.horarios = JSON.parse(config.horarios); } catch(e) {}
+            try {
+                config.horarios = JSON.parse(config.horarios);
+            } catch(e) {}
         }
         config.auto_responder = config.auto_responder === 1;
     }
@@ -94,31 +93,30 @@ export async function getConfiguracoes() {
 
 export async function updateConfiguracoes(dados: any) {
     const database = await initDatabase();
-    
-    // Garante segurança antes do Update
+
     const check = await database.get('SELECT id FROM configuracoes WHERE id = 1');
     if (!check) {
         await database.run('INSERT INTO configuracoes (id, nome) VALUES (1, "Minha Base Ceia")');
     }
 
     const query = `
-        UPDATE configuracoes SET 
+        UPDATE configuracoes SET
             nome = ?, endereco = ?, whatsapp = ?, link_cardapio = ?,
-            google_maps_key = ?, openai_key = ?, meta_api_token = ?, 
+            google_maps_key = ?, openai_key = ?, meta_api_token = ?,
             telegram_bot_token = ?, horarios = ?, auto_responder = ?
         WHERE id = 1
     `;
-    
+
     await database.run(query, [
-        dados.nome || null, 
-        dados.endereco || null, 
-        dados.whatsapp || null, 
+        dados.nome || null,
+        dados.endereco || null,
+        dados.whatsapp || null,
         dados.link_cardapio || null,
-        dados.google_maps_key || null, 
-        dados.openai_key || null, 
-        dados.meta_api_token || null, 
-        dados.telegram_bot_token || null, 
-        dados.horarios ? JSON.stringify(dados.horarios) : null, 
+        dados.google_maps_key || null,
+        dados.openai_key || null,
+        dados.meta_api_token || null,
+        dados.telegram_bot_token || null,
+        dados.horarios ? JSON.stringify(dados.horarios) : null,
         dados.auto_responder ? 1 : 0
     ]);
 }
@@ -127,10 +125,6 @@ export async function registrarLog(tipo: string, mensagem: string) {
     const database = await initDatabase();
     await database.run('INSERT INTO logs (tipo, mensagem, data) VALUES (?, ?, ?)', [tipo, mensagem, new Date().toISOString()]);
 }
-
-// =========================================================================
-// MÓDULO DA FROTA
-// =========================================================================
 
 export async function getMotoboysOnline() {
     const database = await initDatabase();
@@ -173,7 +167,7 @@ export async function upsertFleet(dados: any) {
 export async function limparRadarInativo() {
     const database = await initDatabase();
     const result = await database.run(`
-        UPDATE motoboys SET status = 'OFFLINE' 
+        UPDATE motoboys SET status = 'OFFLINE'
         WHERE status IN ('ONLINE', 'EM_ENTREGA') AND datetime(ultima_atualizacao) < datetime('now', '-5 minutes')
     `);
     return result.changes || 0;
@@ -190,13 +184,9 @@ export async function atualizarMotoboy(telegram_id: string, veiculo: string, vin
     await database.run('UPDATE motoboys SET veiculo = ?, vinculo = ? WHERE telegram_id = ?', [veiculo, vinculo, telegram_id]);
 }
 
-// =========================================================================
-// MÓDULO FINANCEIRO & MATEMÁTICA DE GPS
-// =========================================================================
-
 function calcularDistanciaKm(lat1: number, lon1: number, lat2: number, lon2: number) {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-    const R = 6371; 
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
@@ -229,9 +219,9 @@ export async function registrarEntrega(telegram_id: string, valor_entrega: numbe
 
 export async function getExtratoFinanceiro(telegram_id: string) {
     const database = await initDatabase();
-    
+
     const entregas = await database.all('SELECT * FROM entregas WHERE telegram_id = ? AND status = "PENDENTE"', [telegram_id]);
-    
+
     let total_entregas = 0;
     let total_deslocamento = 0;
 
