@@ -195,16 +195,22 @@ export async function startServer() {
         });
     });
 
-    setInterval(async () => {
+    const checkInactiveDrivers = async () => {
         try {
             const derrubados = await limparRadarInativo();
             if (derrubados > 0) {
                 await broadcastLog('FROTA', `Radar: ${derrubados} motoboy(s) ficaram OFFLINE por perda de sinal GPS.`);
             }
         } catch (e) {
-            console.error(e);
+            console.error("Erro ao verificar motoboys inativos:", e);
+        } finally {
+            // Re-agenda a próxima verificação
+            setTimeout(checkInactiveDrivers, 60000);
         }
-    }, 60000);
+    };
+
+    // Inicia a primeira verificação após 1 minuto
+    setTimeout(checkInactiveDrivers, 60000);
 
     await app.listen({ port: 3000, host: '0.0.0.0' });
     console.log('🚀 SERVIDOR CEIA NO AR: Aceda a http://localhost:3000 no navegador');
