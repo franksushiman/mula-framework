@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { getConfiguracoes, getMotoboysOnline } from './database'; 
-import { broadcastLog } from './server';
+import { broadcastLog } from './logger';
 
 // =============================================================================
 //                      CONTROLE DE SESSÃO E CONEXÃO (EVOLUTION)
