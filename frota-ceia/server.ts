@@ -159,6 +159,7 @@ export async function startServer() {
 
     app.post('/api/operacao/sos/reply', async (request: any, reply) => {
         const { telegram_id, texto } = request.body;
+        console.log("[DEBUG SOS] O Painel tentou enviar mensagem para o ID:", request.body.telegram_id, "| Texto:", request.body.texto);
         await enviarMensagemTelegram(telegram_id, texto);
         return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });

@@ -21,7 +21,7 @@ export async function enviarMensagemTelegram(telegram_id: string, texto: string)
     try {
         await bot.telegram.sendMessage(telegram_id, texto);
         return true;
-    } catch (e) { return false; }
+    } catch (e) { console.error("[DEBUG TELEGRAM] Falha crítica ao enviar:", e); return false; }
 }
 
 // NOVO: Envia convite com botões interativos
