@@ -122,7 +122,9 @@ export async function iniciarTelegram() {
             const nome = ctx.from.first_name;
             userSessions[ctx.chat.id] = { step: 'SOS_CHAT', data: {} };
             broadcastLog('SOS', `O motoboy ${nome} acionou o ALARME DE EMERGÊNCIA!`, { telegram_id: ctx.chat.id.toString() });
-            await ctx.reply('🚨 O seu sinal de emergência foi enviado para a base. Aguarde, a loja entrará em contacto consigo imediatamente.\n\n_(Para encerrar a conversa, digite /cancelar)_');
+            await ctx.reply('🚨 O seu sinal de emergência foi enviado para a base. Aguarde, a loja entrará em contacto consigo imediatamente.', Markup.inlineKeyboard([
+                Markup.button.callback('✖️ Encerrar Emergência', 'cancelar_chat')
+            ]));
         });
 
         // ==========================================
@@ -148,7 +150,12 @@ export async function iniciarTelegram() {
             console.log("[DEBUG PEDIDO] Dados do pedido selecionado:", rota.pedido);
             userSessions[chatId] = { step: "CHAT_CLIENTE", data: { telefone_cliente: rota.pedido.telefone || rota.pedido.telefoneCliente || rota.pedido.whatsapp || rota.pedido.telefone_cliente, nome_cliente: rota.pedido.nomeCliente } };
             
-            await ctx.editMessageText(`Aberta linha direta com *${rota.pedido.nomeCliente.split(' ')[0]}*.\n\nDigite a mensagem abaixo e eu enviarei para o WhatsApp do cliente de forma oculta.\n\n_(Para encerrar a conversa, digite /cancelar)_`, { parse_mode: 'Markdown' });
+            await ctx.editMessageText(`Aberta linha direta com *${rota.pedido.nomeCliente.split(' ')[0]}*.\n\nDigite a mensagem abaixo e eu enviarei para o WhatsApp do cliente de forma oculta.`, {
+                parse_mode: 'Markdown',
+                ...Markup.inlineKeyboard([
+                    Markup.button.callback('✖️ Encerrar Conversa', 'cancelar_chat')
+                ])
+            });
             await ctx.answerCbQuery();
         });
 
@@ -194,6 +201,13 @@ export async function iniciarTelegram() {
 
         bot.action('recusar_nuvem', async (ctx) => {
             await ctx.editMessageText('☁️ Convite da rede nuvem recusado.');
+            await ctx.answerCbQuery();
+        });
+
+        bot.action('cancelar_chat', async (ctx) => {
+            delete userSessions[ctx.chat.id];
+            await ctx.editMessageText('✅ Conversa encerrada.');
+            await ctx.reply('Você voltou ao menu principal.', defaultKeyboard);
             await ctx.answerCbQuery();
         });
 
