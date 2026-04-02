@@ -111,16 +111,37 @@ export async function startServer() {
     app.post('/api/operacao/despachar', async (request: any, reply) => {
         const { pacoteId, motoboy, pedidos } = request.body;
 
+        const config = await getConfiguracoes();
+        if (!config.openai_key) {
+            return reply.code(500).type('application/json; charset=utf-8').send({ error: 'Chave OpenAI não configurada no QG Logístico.' });
+        }
+
+        let resumoBairros;
+        try {
+            const allEnderecos = pedidos.map((p: any) => p.endereco).join('\n');
+            const resOpenAI = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.openai_key}` },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{ role: 'user', content: `Resuma os bairros destes endereços em no máximo 4 palavras:\n\n${allEnderecos}` }],
+                    max_tokens: 20
+                })
+            });
+            if (!resOpenAI.ok) throw new Error('Falha na API OpenAI');
+            const data = await resOpenAI.json();
+            resumoBairros = data.choices[0].message.content.trim();
+        } catch (e) {
+            console.error("FALHA NA OPENAI:", e);
+            return reply.code(500).type('application/json; charset=utf-8').send({ error: 'A IA não conseguiu analisar os endereços desta rota.' });
+        }
+
         pedidos.forEach((p: any) => {
             rotasAtivas.push({ pacoteId, telegram_id: motoboy.telegram_id, pedido: p });
         });
 
-        let msgMotoboy = `🚀 *NOVA ROTA DE ENTREGA!* (Pacote #${pacoteId.split('_')[1].substring(6)})\n\n`;
-        pedidos.forEach((p: any, index: number) => {
-            const wazeLink = `https://waze.com/ul?q=${encodeURIComponent(p.endereco)}`;
-            msgMotoboy += `*Entrega ${index + 1}: ${p.nomeCliente.split(' ')[0]}*\n📍 ${p.endereco.split(',')[0]}\n🗺️ [📍 Abrir no Waze](${wazeLink})\n💰 Receber: ${p.pagamento}\n\n`;
-        });
-        msgMotoboy += `💡 *Instrução:* Ao chegar, pergunte o código de 4 dígitos ao cliente e digite aqui para dar baixa e faturar.`;
+        const totalTaxa = pedidos.reduce((acc: number, p: any) => acc + (p.taxa || 0), 0);
+        const msgMotoboy = `🚀 *NOVA ROTA DE ENTREGA!*\n\n*Setor:* ${resumoBairros}\n*Qtd:* ${pedidos.length} entregas\n*Total a Faturar:* R$ ${totalTaxa.toFixed(2)}`;
 
         await enviarConviteRotaTelegram(motoboy.telegram_id, msgMotoboy, pacoteId);
 
@@ -133,6 +154,12 @@ export async function startServer() {
         }
 
         await broadcastLog('SISTEMA', `Convite de rota enviado para ${motoboy.nome}. Aguardando aceite.`);
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
+    });
+
+    app.post('/api/operacao/sos/reply', async (request: any, reply) => {
+        const { telegram_id, texto } = request.body;
+        await enviarMensagemTelegram(telegram_id, texto);
         return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 

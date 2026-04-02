@@ -84,6 +84,7 @@ export async function iniciarTelegram() {
 
         bot.hears('🆘 Pedir Ajuda (SOS)', async (ctx) => {
             const nome = ctx.from.first_name;
+            userSessions[ctx.chat.id] = { step: 'SOS_CHAT', data: {} };
             broadcastLog('SOS', `O motoboy ${nome} acionou o ALARME DE EMERGÊNCIA!`, { telegram_id: ctx.chat.id.toString() });
             await ctx.reply('🚨 O seu sinal de emergência foi enviado para a base. Aguarde, a loja entrará em contacto consigo imediatamente.');
         });
@@ -122,6 +123,21 @@ export async function iniciarTelegram() {
             broadcastLog('ACEITE_ROTA', `Motoboy confirmou a rota ${pacoteId}`, { pacoteId });
             await ctx.editMessageText(ctx.callbackQuery.message?.text + '\n\n✅ *ROTA ACEITE!* Pode iniciar o deslocamento.', { parse_mode: 'Markdown', disable_web_page_preview: true });
             await ctx.answerCbQuery('Rota Aceite!');
+
+            const rotasDoPacote = rotasAtivas.filter(r => r.pacoteId === pacoteId);
+            if (rotasDoPacote.length > 0) {
+                let detalheMsg = '📝 *DETALHES DA ROTA:*\n\n';
+                rotasDoPacote.forEach((rota, index) => {
+                    const p = rota.pedido;
+                    const wazeLink = `https://waze.com/ul?q=${encodeURIComponent(p.endereco)}`;
+                    const mapsLink = `https://maps.google.com/?q=${encodeURIComponent(p.endereco)}`;
+                    detalheMsg += `*Cliente ${index + 1}: ${p.nomeCliente}*\n`;
+                    detalheMsg += `📍 ${p.endereco}\n`;
+                    detalheMsg += `[🗺️ Waze](${wazeLink}) | [📍 Maps](${mapsLink})\n\n`;
+                });
+                detalheMsg += `💡 Ao chegar, peça o *código de 4 dígitos* ao cliente e digite aqui para dar baixa.`;
+                await ctx.reply(detalheMsg, { parse_mode: 'Markdown', disable_web_page_preview: true });
+            }
         });
 
         bot.action(/^recusar_(.+)$/, async (ctx) => {
@@ -195,6 +211,11 @@ export async function iniciarTelegram() {
 
                 if (text.startsWith('/')) return;
                 
+                if (session?.step === 'SOS_CHAT') {
+                    broadcastLog("SOS_MSG", text, { telegram_id: chatId.toString() });
+                    return;
+                }
+
                 // MODO CHAT COM O CLIENTE ATIVO
                 if (session?.step === 'CHAT_CLIENTE') {
                     const num = session.data.telefone_cliente?.replace(/\D/g, '');

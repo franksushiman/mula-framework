@@ -379,10 +379,21 @@
             showToast('Conversa de emergência encerrada.');
         }
 
-        function enviarMensagemSOS() {
+        async function enviarMensagemSOS() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
-            if(!msg) return;
+            if (!msg || !telegramIdSOSAtual) return;
+
+            try {
+                await fetch('/api/operacao/sos/reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_id: telegramIdSOSAtual, texto: msg })
+                });
+            } catch (e) {
+                console.error(e);
+                showToast('Falha ao enviar mensagem para o motoboy.', 'error');
+            }
 
             const hist = document.getElementById('chat-history');
             hist.innerHTML += `<div style="align-self: flex-end; background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.85rem;">${msg}</div>`;
@@ -994,7 +1005,12 @@
                 try {
                     const log = JSON.parse(event.data);
 
-                    if (log.tipo === 'SOS') {
+                    if (log.tipo === 'SOS_MSG') {
+                        const hist = document.getElementById('chat-history');
+                        hist.innerHTML += `<div style="align-self: flex-start; background: #f1f5f9; color: #0f172a; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 0.85rem;">${log.mensagem}</div>`;
+                        hist.scrollTop = hist.scrollHeight;
+                    }
+                    else if (log.tipo === 'SOS') {
                         telegramIdSOSAtual = log.telegram_id || null;
                         document.getElementById('sos-text').innerText = log.mensagem;
                         document.getElementById('sos-banner').style.display = 'block';
