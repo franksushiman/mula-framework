@@ -1,16 +1,17 @@
 import { Telegraf, Markup } from 'telegraf';
-import { upsertFleet, getConfiguracoes } from './database';
+import { upsertFleet, getConfiguracoes, getMotoboyByTelegramId } from './database';
 import { broadcastLog } from './logger';
 import { processarBaixaPeloTelegram, getRotasMotoboy, rotasAtivas } from './operacao';
 import { enviarMensagemWhatsApp } from './whatsappBot';
 
-type Step = 'NOME' | 'CPF' | 'VINCULO' | 'PIX' | 'VEICULO' | 'CHAT_CLIENTE';
+type Step = 'NOME' | 'CPF' | 'VINCULO' | 'PIX' | 'VEICULO' | 'CHAT_CLIENTE' | 'AGUARDANDO_GPS_NUVEM';
 
 interface UserSession {
-    step: Step;
+    step: Step | 'SOS_CHAT';
     data: {
         nome?: string; cpf?: string; vinculo?: string; pix?: string; veiculo?: string;
         telefone_cliente?: string; nome_cliente?: string;
+        pacote_id_nuvem?: string;
     };
 }
 
@@ -24,6 +25,27 @@ export async function enviarMensagemTelegram(telegram_id: string, texto: string)
         console.log("[DEBUG TELEGRAM] Telegram confirmou o envio com sucesso");
         return true;
     } catch (e) { console.error("[DEBUG TELEGRAM] Falha crítica ao enviar:", e); return false; }
+}
+
+export async function repassarConviteNuvem(telegram_id: string, dados_loja: { loja_destino_nome: string, link_bot_destino: string, taxa_estimada: number }) {
+    if (!bot) return false;
+
+    const texto = `☁️ *CHAMADO NUVEM* ☁️\n\nA loja *${dados_loja.loja_destino_nome}* precisa de um motoboy para uma entrega.\n\n*Taxa Estimada:* R$ ${dados_loja.taxa_estimada.toFixed(2)}`;
+
+    try {
+        await bot.telegram.sendMessage(telegram_id, texto, {
+            parse_mode: 'Markdown',
+            disable_web_page_preview: true,
+            ...Markup.inlineKeyboard([
+                Markup.button.url('✅ Aceitar Rota', dados_loja.link_bot_destino),
+                Markup.button.callback('❌ Recusar', 'recusar_nuvem')
+            ])
+        });
+        return true;
+    } catch (e) {
+        console.error("Falha ao repassar convite nuvem:", e);
+        return false;
+    }
 }
 
 // NOVO: Envia convite com botões interativos
@@ -79,6 +101,18 @@ export async function iniciarTelegram() {
         bot.start(async (ctx) => {
             try {
                 const chatId = ctx.chat.id;
+                const startPayload = (ctx as any).startPayload;
+
+                if (startPayload && startPayload.startsWith('nuvem_')) {
+                    const pacoteId = startPayload.replace('nuvem_', '');
+                    const nomeNuvem = `${ctx.from.first_name || 'Motoboy'} (Nuvem)`;
+                    await upsertFleet({ telegram_id: chatId.toString(), nome: nomeNuvem, vinculo: 'Nuvem', status: 'CADASTRANDO' });
+                    userSessions[chatId] = { step: 'AGUARDANDO_GPS_NUVEM', data: { pacote_id_nuvem: pacoteId } };
+                    broadcastLog('NUVEM', `Motoboy ${nomeNuvem} aceitou um convite da rede e está se registrando.`);
+                    await ctx.reply(`Bem-vindo! Você aceitou uma rota da rede Nuvem.\n\nPara prosseguir e receber os dados da entrega, por favor, partilhe a sua **Localização em Tempo Real** comigo.`, Markup.removeKeyboard());
+                    return;
+                }
+
                 userSessions[chatId] = { step: 'NOME', data: {} };
                 await ctx.reply(`Olá! Bem-vindo à frota da CEIA.\nVamos iniciar o seu registo. Por favor, digite o seu **Nome Completo**:`, Markup.removeKeyboard());
             } catch (e) {}
@@ -158,6 +192,11 @@ export async function iniciarTelegram() {
             await ctx.answerCbQuery('Rota Recusada');
         });
 
+        bot.action('recusar_nuvem', async (ctx) => {
+            await ctx.editMessageText('☁️ Convite da rede nuvem recusado.');
+            await ctx.answerCbQuery();
+        });
+
         // ==========================================
         // LEITOR DE CÓDIGO DE BAIXA
         // ==========================================
@@ -178,6 +217,36 @@ export async function iniciarTelegram() {
             try {
                 const chatId = ctx.chat.id;
                 const { latitude, longitude } = ctx.message.location;
+                const motoboy = await getMotoboyByTelegramId(chatId.toString());
+                const session = userSessions[chatId];
+
+                if (motoboy && motoboy.vinculo === 'Nuvem' && session?.step === 'AGUARDANDO_GPS_NUVEM' && ctx.message.location.live_period) {
+                    await upsertFleet({ telegram_id: chatId.toString(), latitude, longitude, status: 'ONLINE' });
+                    broadcastLog('NUVEM', `Motoboy Nuvem [${motoboy.nome}] está ONLINE e pronto para a rota.`);
+                    await ctx.reply('✅ Localização recebida! A sua rota está a ser preparada...');
+                    const pacoteId = session.data.pacote_id_nuvem;
+                    if (pacoteId) {
+                        const rotasDoPacote = rotasAtivas.filter(r => r.pacoteId === pacoteId);
+                        if (rotasDoPacote.length > 0) {
+                            rotasDoPacote.forEach(r => r.telegram_id = chatId.toString());
+                            let detalheMsg = '📝 *DETALHES DA ROTA:*\n\n';
+                            rotasDoPacote.forEach((rota, index) => {
+                                const p = rota.pedido;
+                                const wazeLink = `https://waze.com/ul?q=${encodeURIComponent(p.endereco)}`;
+                                const mapsLink = `https://maps.google.com/?q=${encodeURIComponent(p.endereco)}`;
+                                detalheMsg += `*Cliente ${index + 1}: ${p.nomeCliente}*\n`;
+                                detalheMsg += `📍 ${p.endereco}\n`;
+                                detalheMsg += `[🗺️ Waze](${wazeLink}) | [📍 Maps](${mapsLink})\n\n`;
+                            });
+                            detalheMsg += `💡 Ao chegar, peça o *código de 4 dígitos* ao cliente e digite aqui para dar baixa.`;
+                            await ctx.reply(detalheMsg, { parse_mode: 'Markdown', disable_web_page_preview: true, ...defaultKeyboard });
+                            delete userSessions[chatId];
+                        } else {
+                            await ctx.reply('⚠️ Não foi possível encontrar os detalhes da sua rota. Por favor, contacte a loja.');
+                        }
+                    }
+                    return;
+                }
 
                 if (ctx.message.location.live_period) {
                     await upsertFleet({ telegram_id: chatId.toString(), latitude, longitude, status: 'ONLINE' });

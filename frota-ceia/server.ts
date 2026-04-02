@@ -5,9 +5,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { initDatabase, getConfiguracoes, updateConfiguracoes, registrarLog, getFleet, limparRadarInativo, deletarMotoboy, atualizarMotoboy, getExtratoFinanceiro, zerarAcertoFinanceiro, registrarEntrega } from './database';
+import { initDatabase, getConfiguracoes, updateConfiguracoes, registrarLog, getFleet, limparRadarInativo, deletarMotoboy, atualizarMotoboy, getExtratoFinanceiro, zerarAcertoFinanceiro, registrarEntrega, getMotoboyByTelegramId } from './database';
 import { conectarEvolutionAPI, qrCodeBase64, sessionStatus, handleWhatsAppWebhook, enviarMensagemWhatsApp } from './whatsappBot';
-import { iniciarTelegram, enviarConviteRotaTelegram, enviarMensagemTelegram } from './telegramBot';
+import { iniciarTelegram, enviarConviteRotaTelegram, enviarMensagemTelegram, repassarConviteNuvem } from './telegramBot';
 import { initLogger, broadcastLog } from './logger';
 import { rotasAtivas } from './operacao';
 
@@ -70,8 +70,31 @@ export async function startServer() {
     });
 
     app.post('/api/financeiro/pagar/:id', async (request: any, reply) => {
-        await zerarAcertoFinanceiro(request.params.id);
+        const telegram_id = request.params.id;
+        await zerarAcertoFinanceiro(telegram_id);
         await broadcastLog('FINANCEIRO', 'Acerto de motoboy liquidado com sucesso.');
+
+        const motoboy = await getMotoboyByTelegramId(telegram_id);
+        if (motoboy && motoboy.vinculo === 'Nuvem') {
+            await enviarMensagemTelegram(telegram_id, '💸 Acerto recebido! Obrigado por rodar connosco hoje. A sua sessão nesta loja foi encerrada.');
+            await deletarMotoboy(telegram_id);
+            await broadcastLog('NUVEM', `Motoboy Nuvem [${motoboy.nome}] finalizou o ciclo e foi removido da base.`);
+        }
+
+        return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
+    });
+
+    app.post('/api/nuvem/receber-convite', async (request: any, reply) => {
+        const { telegram_id, loja_destino_nome, link_bot_destino, taxa_estimada } = request.body;
+        const frota = await getFleet();
+        const motoboy = frota.find((m: any) => m.telegram_id === telegram_id);
+
+        if (!motoboy) {
+            return reply.code(404).type('application/json; charset=utf-8').send({ error: 'Motoboy não encontrado na base local.' });
+        }
+
+        await repassarConviteNuvem(telegram_id, { loja_destino_nome, link_bot_destino, taxa_estimada });
+        await broadcastLog('NUVEM', `Convite da loja ${loja_destino_nome} repassado para ${motoboy.nome}.`);
         return reply.code(200).type('application/json; charset=utf-8').send({ ok: true });
     });
 

@@ -136,6 +136,11 @@ export async function getFleet() {
     return await database.all('SELECT * FROM motoboys ORDER BY nome ASC');
 }
 
+export async function getMotoboyByTelegramId(telegram_id: string) {
+    const database = await initDatabase();
+    return await database.get('SELECT * FROM motoboys WHERE telegram_id = ?', [telegram_id]);
+}
+
 export async function upsertFleet(dados: any) {
     const database = await initDatabase();
     const { telegram_id, ...campos } = dados;
@@ -204,7 +209,7 @@ export async function registrarEntrega(telegram_id: string, valor_entrega: numbe
     let distancia = 0;
     let taxa_deslocamento = 0;
 
-    if (moto.vinculo === 'Freelancer' && config.lat && config.lng && moto.lat && moto.lng) {
+    if (moto.vinculo === 'Nuvem' && config.lat && config.lng && moto.lat && moto.lng) {
         distancia = calcularDistanciaKm(moto.lat, moto.lng, config.lat, config.lng);
         taxa_deslocamento = distancia * 1.50;
     }
