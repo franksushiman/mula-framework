@@ -783,6 +783,7 @@
         }
 
         async function confirmarDespacho(motoboy) {
+            document.getElementById("lista-motoboys-disponiveis").innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-dark);"><b>⏳ Processando Despacho...</b><br><br><small>A Inteligência Artificial está a resumir a rota. Por favor, aguarde uns segundos.</small></div>';
             const pac = pacotes.find(p => p.id === pacoteSelecionadoParaDespacho);
             pac.status = 'PENDENTE_ACEITE';
             pac.motoboy = motoboy;
