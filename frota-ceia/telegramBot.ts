@@ -1,6 +1,7 @@
 import { Telegraf, Markup } from 'telegraf';
 import { upsertFleet, getConfiguracoes } from './database';
-import { broadcastLog, processarBaixaPeloTelegram, getRotasMotoboy, rotasAtivas } from './server';
+import { broadcastLog } from './logger';
+import { processarBaixaPeloTelegram, getRotasMotoboy, rotasAtivas } from './operacao';
 import { enviarMensagemWhatsApp } from './whatsappBot';
 
 type Step = 'NOME' | 'CPF' | 'VINCULO' | 'PIX' | 'VEICULO' | 'CHAT_CLIENTE';

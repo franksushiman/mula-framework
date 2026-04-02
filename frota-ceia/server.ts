@@ -7,55 +7,22 @@ import { fileURLToPath } from 'url';
 
 import { initDatabase, getConfiguracoes, updateConfiguracoes, registrarLog, getFleet, limparRadarInativo, deletarMotoboy, atualizarMotoboy, getExtratoFinanceiro, zerarAcertoFinanceiro, registrarEntrega } from './database';
 import { conectarEvolutionAPI, qrCodeBase64, sessionStatus, handleWhatsAppWebhook, enviarMensagemWhatsApp } from './whatsappBot';
-import { iniciarTelegram, enviarConviteRotaTelegram } from './telegramBot';
+import { iniciarTelegram, enviarConviteRotaTelegram, enviarMensagemTelegram } from './telegramBot';
+import { initLogger, broadcastLog } from './logger';
+import { rotasAtivas } from './operacao';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const app: FastifyInstance = Fastify({ logger: false });
 
-export const rotasAtivas: any[] = [];
-
-export function getRotasMotoboy(telegram_id: string) {
-    return rotasAtivas.filter(r => r.telegram_id === telegram_id);
-}
-
-export const broadcastLog = async (tipo: string, mensagem: string, dadosExtras: any = {}) => {
-    const payload = JSON.stringify({ tipo, mensagem, data: new Date().toISOString(), ...dadosExtras });
-    await registrarLog(tipo, mensagem);
-    if (app.websocketServer && app.websocketServer.clients) {
-        app.websocketServer.clients.forEach(function (client: any) {
-            if (client.readyState === 1) client.send(payload);
-        });
-    }
-    console.log(`[${tipo}] ${mensagem}`);
-};
-
-export async function processarBaixaPeloTelegram(telegram_id: string, codigo: string): Promise<boolean> {
-    const idx = rotasAtivas.findIndex(r => r.telegram_id === telegram_id && r.pedido.codigo_entrega === codigo);
-    if (idx > -1) {
-        const rota = rotasAtivas[idx];
-        await registrarEntrega(telegram_id, rota.pedido.taxa);
-        rotasAtivas.splice(idx, 1);
-
-        const payload = JSON.stringify({ tipo: 'BAIXA_PEDIDO', mensagem: 'Baixa pelo App', pedidoId: rota.pedido.id, data: new Date().toISOString() });
-        if (app.websocketServer && app.websocketServer.clients) {
-            app.websocketServer.clients.forEach((client: any) => {
-                if (client.readyState === 1) client.send(payload);
-            });
-        }
-
-        await registrarLog('FINANCEIRO', `Motoboy confirmou entrega via Telegram (Cod: ${codigo}).`);
-        return true;
-    }
-    return false;
-}
-
 export async function startServer() {
     await initDatabase();
 
     await app.register(cors, { origin: '*' });
     await app.register(websocket);
+
+    initLogger(app);
 
     app.get('/', async (request, reply) => {
         const htmlPath = path.join(__dirname, 'index.html');
