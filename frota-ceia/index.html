@@ -382,7 +382,10 @@
         async function enviarMensagemSOS() {
             const input = document.getElementById('chat-input');
             const msg = input.value.trim();
-            if (!msg || !telegramIdSOSAtual) return;
+            if (!msg) return;
+            if (!telegramIdSOSAtual) {
+                return showToast("Erro: ID do motoboy nao encontrado.", "error");
+            }
 
             try {
                 await fetch('/api/operacao/sos/reply', {
@@ -390,6 +393,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ telegram_id: telegramIdSOSAtual, texto: msg })
                 });
+                showToast("Enviado para o motoboy com sucesso.", "success");
             } catch (e) {
                 console.error(e);
                 showToast('Falha ao enviar mensagem para o motoboy.', 'error');

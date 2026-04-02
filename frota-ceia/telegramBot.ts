@@ -19,7 +19,7 @@ export let bot: Telegraf | null = null;
 export async function enviarMensagemTelegram(telegram_id: string, texto: string) {
     if (!bot) return false;
     try {
-        await bot.telegram.sendMessage(telegram_id, texto, { parse_mode: 'Markdown' });
+        await bot.telegram.sendMessage(telegram_id, texto);
         return true;
     } catch (e) { return false; }
 }
@@ -225,9 +225,13 @@ export async function iniciarTelegram() {
                 if (session?.step === 'CHAT_CLIENTE') {
                     const num = session.data.telefone_cliente?.replace(/\D/g, '');
                     if (num) {
-                        const msgCliente = `*[Mensagem do Entregador]*\n${text}\n\n_(Pode responder a esta mensagem)_`;
-                        await enviarMensagemWhatsApp('55' + num, msgCliente);
-                        await ctx.reply('✅ Mensagem enviada de forma oculta ao cliente!');
+                        try {
+                            const msgCliente = `*[Mensagem do Entregador]*\n${text}\n\n_(Pode responder a esta mensagem)_`;
+                            await enviarMensagemWhatsApp('55' + num, msgCliente);
+                            await ctx.reply('✅ Mensagem entregue ao cliente com sucesso.');
+                        } catch (e) {
+                            await ctx.reply('❌ Erro interno ao acionar o WhatsApp.');
+                        }
                     }
                     return; 
                 }
