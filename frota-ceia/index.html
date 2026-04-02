@@ -1032,6 +1032,16 @@
                             showToast(`Motoboy confirmou a rota!`, 'success');
                         }
                     }
+                    else if (log.tipo === 'RECUSA_ROTA') {
+                        const pac = pacotes.find(p => p.id === log.pacoteId);
+                        if (pac) {
+                            pac.status = 'AGUARDANDO';
+                            pac.motoboy = null;
+                            salvarKanbanStorage();
+                            renderizarKanban();
+                            document.getElementById("beep-sound").play();
+                        }
+                    }
                     else if (log.tipo === 'BAIXA_PEDIDO') {
                         baixarPedidoPeloSistema(log.pedidoId);
                         showToast(`Motoboy confirmou a entrega pelo app!`, 'success');

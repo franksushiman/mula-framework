@@ -150,7 +150,7 @@ export async function iniciarTelegram() {
                 if (idx > -1) rotasAtivas.splice(idx, 1);
             });
             
-            broadcastLog('ERROR', `O motoboy ${ctx.from.first_name} RECUSOU o Pacote #${pacoteId.split('_')[1].substring(6)}.`);
+            broadcastLog('RECUSA_ROTA', `O motoboy ${ctx.from.first_name} RECUSOU o Pacote #${pacoteId.split('_')[1].substring(6)}.`, { pacoteId });
             await ctx.editMessageText('❌ *ROTA RECUSADA*. Foi devolvida para a base.', { parse_mode: 'Markdown' });
             await ctx.answerCbQuery('Rota Recusada');
         });
