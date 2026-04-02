@@ -184,6 +184,7 @@ export async function handleWhatsAppWebhook(payload: any) {
             const mensagemParaMotoboy = `💬 Cliente do pedido #${rota.pedido.id} diz:\n\n"${mensagemTexto}"`;
             await sendTelegramMessage(rota.telegram_id, mensagemParaMotoboy);
             broadcastLog('TELEGRAM', `Mensagem do cliente ${numeroCliente.split('@')[0]} encaminhada para o motoboy.`);
+            return; // Impede a IA de responder quando a mensagem é para o motoboy
         }
 
         const respostaIA = await processarMensagemIA(mensagemTexto);
