@@ -111,7 +111,8 @@ export async function iniciarTelegram() {
             
             if (!rota) return ctx.answerCbQuery('Pedido não encontrado ou já finalizado.');
             
-            userSessions[chatId] = { step: 'CHAT_CLIENTE', data: { telefone_cliente: rota.pedido.telefone, nome_cliente: rota.pedido.nomeCliente } };
+            console.log("[DEBUG PEDIDO] Dados do pedido selecionado:", rota.pedido);
+            userSessions[chatId] = { step: "CHAT_CLIENTE", data: { telefone_cliente: rota.pedido.telefone || rota.pedido.telefoneCliente || rota.pedido.whatsapp || rota.pedido.telefone_cliente, nome_cliente: rota.pedido.nomeCliente } };
             
             await ctx.editMessageText(`Aberta linha direta com *${rota.pedido.nomeCliente.split(' ')[0]}*.\n\nDigite a mensagem abaixo e eu enviarei para o WhatsApp do cliente de forma oculta.\n\n_(Para encerrar a conversa, digite /cancelar)_`, { parse_mode: 'Markdown' });
             await ctx.answerCbQuery();
